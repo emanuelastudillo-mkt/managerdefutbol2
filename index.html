@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fútbol Manager MVP V3.09</title>
+  <meta name="description" content="MVP de juego manager de fútbol en navegador con datos JSON y guardado local." />
+  <link rel="icon" type="image/png" sizes="50x50" href="favicon.png?v=3.09" />
+  <link rel="shortcut icon" type="image/png" href="favicon.png?v=3.09" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">MVP local · V3.09</p>
+      <h1>Fútbol Manager</h1>
+    </div>
+    <div class="top-actions">
+      <button id="btnSave" class="ghost">Guardar</button>
+      <button id="btnLoad" class="ghost">Cargar</button>
+      <button id="btnReset" class="danger ghost">Reset</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <aside class="panel side">
+      <section id="newGameBox" class="new-game new-game-collapsed">
+        <button id="btnOpenNewGame" class="new-game-toggle" type="button"><span>Nueva partida</span><span aria-hidden="true">▾</span></button>
+      </section>
+
+      <section class="status-card">
+        <p class="label">Club</p>
+        <h2 id="managerClub">Sin partida</h2>
+        <p id="currentSeason">Temporada: —</p>
+        <p id="currentDate">Fecha: —</p>
+        <p id="currentRound">Jornada: —</p>
+      </section>
+
+      <nav class="tabs" aria-label="Secciones del juego">
+        <button data-tab="home" class="active">Inicio</button>
+        <button data-tab="messages">Mensajes</button>
+        <button data-tab="market">Mercado</button>
+        <button data-tab="academy">Academia</button>
+        <button data-tab="finance">Finanzas</button>
+        <button data-tab="firstTeam">Primer Equipo</button>
+        <button data-tab="stadium">Estadio</button>
+        <button data-tab="employees">Empleados</button>
+        <button data-tab="fixture">Calendario</button>
+        <button data-tab="standings">Tabla</button>
+        <button data-tab="stats">Estadísticas</button>
+        <button data-tab="mystats">Tus estadísticas</button>
+        <button data-tab="ranking">Ranking Online</button>
+      </nav>
+    </aside>
+
+    <section class="content">
+      <div id="notice" class="notice hidden"></div>
+      <section id="view" class="panel view"></section>
+    </section>
+  </main>
+
+  <template id="emptyState">
+    <div class="empty">
+      <h2>Creá una partida para empezar</h2>
+      <p>El juego carga clubes desde <code>data/Liga Argentina.json</code> y la base inicial desde <code>data/jugadores.json</code>. El progreso se guarda en el navegador con IndexedDB.</p>
+    </div>
+  </template>
+
+  <script src="config.js"></script>
+  <script src="simulador-2.0.js"></script>
+  <script src="js/core/01-config-constants.js"></script>
+  <script src="js/core/02-ui-utils.js"></script>
+  <script src="js/core/03-player-tactics-utils.js"></script>
+  <script src="js/data/04-data-storage.js"></script>
+  <script src="js/game/05-state-season.js"></script>
+  <script src="js/ui/06-render-home-messages.js"></script>
+  <script src="js/ui/07-render-team-market.js"></script>
+  <script src="js/game/08-sponsors-stadium-stats.js"></script>
+  <script src="js/game/09-simulation-economy-training.js"></script>
+  <script src="js/game/10-academy-employees.js"></script>
+  <script src="js/game/11-match-engine.js"></script>
+  <script src="js/ui/12-modals.js"></script>
+  <script src="js/game/13-ranking-online.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

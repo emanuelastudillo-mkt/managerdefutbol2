@@ -1,0 +1,79 @@
+{
+  "leagues": [
+    {
+      "name": "Liga Profesional",
+      "teams": [
+        { "name": "River Plate",           "reputation": 92 },
+        { "name": "Boca Juniors",          "reputation": 99 },
+        { "name": "Racing Club",           "reputation": 90 },
+        { "name": "Independiente",         "reputation": 89 },
+        { "name": "San Lorenzo",           "reputation": 87 },
+        { "name": "Estudiantes",           "reputation": 85 },
+        { "name": "Vélez",                 "reputation": 84 },
+        { "name": "Rosario",               "reputation": 83 },
+        { "name": "Newell's",              "reputation": 82 },
+        { "name": "Talleres",              "reputation": 81 },
+        { "name": "Huracán",               "reputation": 80 },
+        { "name": "Lanús",                 "reputation": 79 },
+        { "name": "Belgrano",              "reputation": 78 },
+        { "name": "Gimnasia",              "reputation": 77 },
+        { "name": "Defensa",               "reputation": 76 },
+        { "name": "Banfield",              "reputation": 75 },
+        { "name": "Atlético Tucumán",      "reputation": 74 },
+        { "name": "Platense",              "reputation": 73 },
+        { "name": "Unión",                 "reputation": 72 },
+        { "name": "Instituto",             "reputation": 70 }
+      ]
+    },
+    {
+      "name": "Primera Nacional",
+      "teams": [
+        { "name": "Tigre",                 "reputation": 75 },
+        { "name": "Independiente Rivadavia","reputation": 72 },
+        { "name": "San Martín Tucumán",    "reputation": 70 },
+        { "name": "Barracas",              "reputation": 68 },
+        { "name": "Godoy Cruz",            "reputation": 67 },
+        { "name": "Argentinos",            "reputation": 66 },
+        { "name": "Central Córdoba SdE",   "reputation": 65 },
+        { "name": "Aldosivi",              "reputation": 64 },
+        { "name": "Sarmiento",             "reputation": 63 },
+        { "name": "San Martín San Juan",   "reputation": 62 },
+        { "name": "Riestra",               "reputation": 61 },
+        { "name": "Morón",                 "reputation": 60 },
+        { "name": "Deportivo Maipú",       "reputation": 59 },
+        { "name": "Deportivo Madryn",      "reputation": 58 },
+        { "name": "Olimpo",                "reputation": 57 },
+        { "name": "Atlanta",               "reputation": 56 },
+        { "name": "Temperley",             "reputation": 55 },
+        { "name": "Agropecuario",          "reputation": 53 },
+        { "name": "Atlético Rafaela",      "reputation": 52 },
+        { "name": "Gimnasia de Jujuy",     "reputation": 50 }
+      ]
+    },
+    {
+      "name": "Federal A",
+      "teams": [
+        { "name": "Acassuso",              "reputation": 60 },
+        { "name": "Deportivo Armenio",     "reputation": 55 },
+        { "name": "Midland",               "reputation": 50 },
+        { "name": "Tristan Suárez",        "reputation": 45 },
+        { "name": "Real Pilar",            "reputation": 42 },
+        { "name": "Camioneros",            "reputation": 40 },
+        { "name": "Chaco For Ever",        "reputation": 38 },
+        { "name": "Deportivo Rincón",      "reputation": 35 },
+        { "name": "San Martín de Formosa", "reputation": 33 },
+        { "name": "Ituzaingó",             "reputation": 30 },
+        { "name": "Claypole",              "reputation": 28 },
+        { "name": "Ciudad de Bolívar",     "reputation": 26 },
+        { "name": "San Miguel",            "reputation": 24 },
+        { "name": "Argentino Merlo",       "reputation": 22 },
+        { "name": "Sportivo Barracas",     "reputation": 20 },
+        { "name": "Atenas Río Cuarto",     "reputation": 18 },
+        { "name": "Argentino Monte Maíz",  "reputation": 16 },
+        { "name": "Sarmiento La Banda",    "reputation": 14 },
+        { "name": "Sportivo Belgrano",     "reputation": 12 },
+        { "name": "Gimnasia y Tiro",       "reputation": 10 }
+      ]
+    }
+  ]
+}

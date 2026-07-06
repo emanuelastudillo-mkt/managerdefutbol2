@@ -1,0 +1,2190 @@
+{
+  "version": "V1.03",
+  "archivo": "data/sponsors.json",
+  "descripcion": "Base inicial de lugares y sponsors para ofertas de patrocinio de clubes de fútbol.",
+  "moneda": "dinero_juego",
+  "reglas_calculo": {
+    "pago_oferta": "La oferta se paga completa en el momento de aceptar el sponsor.",
+    "duracion_oferta_turnos": {
+      "min": 3,
+      "max": 35,
+      "criterio": "En nuevas ofertas puede sortearse dentro de este rango. Esta base inicial ya trae una duración generada por sponsor."
+    },
+    "multiplicadores_por_division": {
+      "division_1": 10,
+      "division_2": 4,
+      "division_3": 1
+    },
+    "bonus_posicion_tabla": {
+      "min": 0,
+      "max": 0.2,
+      "formula": "((total_equipos - posicion_tabla) / (total_equipos - 1)) * 0.20",
+      "nota": "Con 18 equipos: 1º cobra +20%; 18º cobra +0%."
+    },
+    "bonus_moral_equipo": {
+      "min": 0,
+      "max": 0.1,
+      "formula": "(moral_equipo_0_100 / 100) * 0.10"
+    },
+    "bonus_cohesion_equipo": {
+      "min": 0,
+      "max": 0.1,
+      "formula": "(cohesion_equipo_0_100 / 100) * 0.10"
+    },
+    "formula_valor_final_por_turno": "round(valor_base_por_turno * multiplicador_division * multiplicador_lugar * (1 + bonus_posicion_tabla + bonus_moral_equipo + bonus_cohesion_equipo))",
+    "formula_pago_total_inmediato": "valor_final_por_turno * turnos_duracion_oferta",
+    "total_equipos_default": 18
+  },
+  "lugares_sponsor": [
+    {
+      "id_lugar": "LUG001",
+      "nombre": "Frente de la camiseta",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 2.0,
+      "requiere_exclusividad": true
+    },
+    {
+      "id_lugar": "LUG002",
+      "nombre": "Pecho superior de la camiseta",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 1.35,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG003",
+      "nombre": "Espalda sobre el dorsal",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 1.55,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG004",
+      "nombre": "Espalda baja de la camiseta",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 1.2,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG005",
+      "nombre": "Manga izquierda de la camiseta",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 1.0,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG006",
+      "nombre": "Manga derecha de la camiseta",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 1.0,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG007",
+      "nombre": "Hombros de la camiseta",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 0.9,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG008",
+      "nombre": "Lateral de la camiseta",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 0.75,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG009",
+      "nombre": "Frente del pantalón",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 0.85,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG010",
+      "nombre": "Lateral derecho del pantalón",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 0.7,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG011",
+      "nombre": "Lateral izquierdo del pantalón",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 0.7,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG012",
+      "nombre": "Medias",
+      "tipo": "equipacion",
+      "multiplicador_lugar": 0.45,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG013",
+      "nombre": "Campera de entrenamiento",
+      "tipo": "club",
+      "multiplicador_lugar": 0.9,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG014",
+      "nombre": "Chaleco de calentamiento",
+      "tipo": "club",
+      "multiplicador_lugar": 0.6,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG015",
+      "nombre": "Banco de suplentes",
+      "tipo": "estadio",
+      "multiplicador_lugar": 0.95,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG016",
+      "nombre": "Vallas grada norte",
+      "tipo": "estadio",
+      "multiplicador_lugar": 0.8,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG017",
+      "nombre": "Vallas grada sur",
+      "tipo": "estadio",
+      "multiplicador_lugar": 0.8,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG018",
+      "nombre": "Vallas grada este",
+      "tipo": "estadio",
+      "multiplicador_lugar": 0.75,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG019",
+      "nombre": "Vallas grada oeste",
+      "tipo": "estadio",
+      "multiplicador_lugar": 0.75,
+      "requiere_exclusividad": false
+    },
+    {
+      "id_lugar": "LUG020",
+      "nombre": "Cartel de ingreso al estadio",
+      "tipo": "estadio",
+      "multiplicador_lugar": 0.65,
+      "requiere_exclusividad": false
+    }
+  ],
+  "sponsors": [
+    {
+      "id_sponsor": "SPO001",
+      "nombre_marca": "YPF",
+      "categoria": "Energía",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 320000,
+      "turnos_duracion_oferta": 35,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO002",
+      "nombre_marca": "Axion Energy",
+      "categoria": "Energía",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 450000,
+      "turnos_duracion_oferta": 26,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO003",
+      "nombre_marca": "Shell",
+      "categoria": "Energía",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 720000,
+      "turnos_duracion_oferta": 30,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO004",
+      "nombre_marca": "Puma Energy",
+      "categoria": "Energía",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 780000,
+      "turnos_duracion_oferta": 6,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO005",
+      "nombre_marca": "TotalEnergies",
+      "categoria": "Energía",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 740000,
+      "turnos_duracion_oferta": 30,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO006",
+      "nombre_marca": "Castrol",
+      "categoria": "Lubricantes",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 680000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO007",
+      "nombre_marca": "Mobil",
+      "categoria": "Lubricantes",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 710000,
+      "turnos_duracion_oferta": 17,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO008",
+      "nombre_marca": "Pirelli",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 570000,
+      "turnos_duracion_oferta": 6,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO009",
+      "nombre_marca": "Bridgestone",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 720000,
+      "turnos_duracion_oferta": 19,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO010",
+      "nombre_marca": "Michelin",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 900000,
+      "turnos_duracion_oferta": 21,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO011",
+      "nombre_marca": "Goodyear",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 580000,
+      "turnos_duracion_oferta": 23,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO012",
+      "nombre_marca": "Firestone",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 640000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO013",
+      "nombre_marca": "Continental",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 940000,
+      "turnos_duracion_oferta": 16,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO014",
+      "nombre_marca": "Dunlop",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 590000,
+      "turnos_duracion_oferta": 3,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO015",
+      "nombre_marca": "Fate",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 380000,
+      "turnos_duracion_oferta": 32,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO016",
+      "nombre_marca": "Yokohama",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 920000,
+      "turnos_duracion_oferta": 28,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO017",
+      "nombre_marca": "Hankook",
+      "categoria": "Neumáticos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 630000,
+      "turnos_duracion_oferta": 10,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO018",
+      "nombre_marca": "Toyota",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1030000,
+      "turnos_duracion_oferta": 9,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO019",
+      "nombre_marca": "Ford",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1540000,
+      "turnos_duracion_oferta": 18,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO020",
+      "nombre_marca": "Chevrolet",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1120000,
+      "turnos_duracion_oferta": 10,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO021",
+      "nombre_marca": "Volkswagen",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1050000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO022",
+      "nombre_marca": "Renault",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 750000,
+      "turnos_duracion_oferta": 32,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO023",
+      "nombre_marca": "Peugeot",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 760000,
+      "turnos_duracion_oferta": 3,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO024",
+      "nombre_marca": "Citroën",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 700000,
+      "turnos_duracion_oferta": 17,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO025",
+      "nombre_marca": "Fiat",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 890000,
+      "turnos_duracion_oferta": 27,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO026",
+      "nombre_marca": "Jeep",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1250000,
+      "turnos_duracion_oferta": 11,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO027",
+      "nombre_marca": "Nissan",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 640000,
+      "turnos_duracion_oferta": 31,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO028",
+      "nombre_marca": "Honda",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1310000,
+      "turnos_duracion_oferta": 8,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO029",
+      "nombre_marca": "Hyundai",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 740000,
+      "turnos_duracion_oferta": 15,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO030",
+      "nombre_marca": "Kia",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 760000,
+      "turnos_duracion_oferta": 16,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO031",
+      "nombre_marca": "Mercedes-Benz",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1110000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO032",
+      "nombre_marca": "BMW",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1300000,
+      "turnos_duracion_oferta": 25,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO033",
+      "nombre_marca": "Audi",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1360000,
+      "turnos_duracion_oferta": 17,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO034",
+      "nombre_marca": "Volvo",
+      "categoria": "Automotriz",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1290000,
+      "turnos_duracion_oferta": 19,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO035",
+      "nombre_marca": "Scania",
+      "categoria": "Transporte",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 880000,
+      "turnos_duracion_oferta": 3,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO036",
+      "nombre_marca": "Iveco",
+      "categoria": "Transporte",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 710000,
+      "turnos_duracion_oferta": 6,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO037",
+      "nombre_marca": "Mercado Libre",
+      "categoria": "E-commerce",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 940000,
+      "turnos_duracion_oferta": 14,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO038",
+      "nombre_marca": "Mercado Pago",
+      "categoria": "Fintech",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 980000,
+      "turnos_duracion_oferta": 29,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO039",
+      "nombre_marca": "Ualá",
+      "categoria": "Fintech",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 250000,
+      "turnos_duracion_oferta": 15,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO040",
+      "nombre_marca": "Naranja X",
+      "categoria": "Fintech",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 390000,
+      "turnos_duracion_oferta": 6,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO041",
+      "nombre_marca": "MODO",
+      "categoria": "Fintech",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 480000,
+      "turnos_duracion_oferta": 29,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO042",
+      "nombre_marca": "Banco Galicia",
+      "categoria": "Banco",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 520000,
+      "turnos_duracion_oferta": 25,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO043",
+      "nombre_marca": "Banco Nación",
+      "categoria": "Banco",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 320000,
+      "turnos_duracion_oferta": 10,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO044",
+      "nombre_marca": "Banco Provincia",
+      "categoria": "Banco",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 440000,
+      "turnos_duracion_oferta": 34,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO045",
+      "nombre_marca": "Santander",
+      "categoria": "Banco",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 870000,
+      "turnos_duracion_oferta": 13,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO046",
+      "nombre_marca": "BBVA",
+      "categoria": "Banco",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 580000,
+      "turnos_duracion_oferta": 9,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO047",
+      "nombre_marca": "ICBC",
+      "categoria": "Banco",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 860000,
+      "turnos_duracion_oferta": 23,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO048",
+      "nombre_marca": "Banco Macro",
+      "categoria": "Banco",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 420000,
+      "turnos_duracion_oferta": 30,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO049",
+      "nombre_marca": "Banco Supervielle",
+      "categoria": "Banco",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 370000,
+      "turnos_duracion_oferta": 18,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO050",
+      "nombre_marca": "HSBC",
+      "categoria": "Banco",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 790000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO051",
+      "nombre_marca": "Visa",
+      "categoria": "Pagos",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1210000,
+      "turnos_duracion_oferta": 28,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO052",
+      "nombre_marca": "Mastercard",
+      "categoria": "Pagos",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1390000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO053",
+      "nombre_marca": "American Express",
+      "categoria": "Pagos",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1550000,
+      "turnos_duracion_oferta": 3,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO054",
+      "nombre_marca": "PayPal",
+      "categoria": "Pagos",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 970000,
+      "turnos_duracion_oferta": 28,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO055",
+      "nombre_marca": "Western Union",
+      "categoria": "Pagos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 800000,
+      "turnos_duracion_oferta": 32,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO056",
+      "nombre_marca": "Telecom",
+      "categoria": "Telecomunicaciones",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 510000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO057",
+      "nombre_marca": "Personal",
+      "categoria": "Telecomunicaciones",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 380000,
+      "turnos_duracion_oferta": 31,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO058",
+      "nombre_marca": "Claro",
+      "categoria": "Telecomunicaciones",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 650000,
+      "turnos_duracion_oferta": 18,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO059",
+      "nombre_marca": "Movistar",
+      "categoria": "Telecomunicaciones",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 700000,
+      "turnos_duracion_oferta": 24,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO060",
+      "nombre_marca": "Flow",
+      "categoria": "Telecomunicaciones",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 380000,
+      "turnos_duracion_oferta": 28,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO061",
+      "nombre_marca": "DirecTV",
+      "categoria": "Televisión",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 680000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO062",
+      "nombre_marca": "Starlink",
+      "categoria": "Telecomunicaciones",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1320000,
+      "turnos_duracion_oferta": 35,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO063",
+      "nombre_marca": "Apple",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 910000,
+      "turnos_duracion_oferta": 25,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO064",
+      "nombre_marca": "Samsung",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1360000,
+      "turnos_duracion_oferta": 7,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO065",
+      "nombre_marca": "LG",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 690000,
+      "turnos_duracion_oferta": 18,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO066",
+      "nombre_marca": "Sony",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 660000,
+      "turnos_duracion_oferta": 34,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO067",
+      "nombre_marca": "Philips",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 620000,
+      "turnos_duracion_oferta": 8,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO068",
+      "nombre_marca": "Lenovo",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 710000,
+      "turnos_duracion_oferta": 11,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO069",
+      "nombre_marca": "HP",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 780000,
+      "turnos_duracion_oferta": 6,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO070",
+      "nombre_marca": "Dell",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 670000,
+      "turnos_duracion_oferta": 14,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO071",
+      "nombre_marca": "Asus",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 750000,
+      "turnos_duracion_oferta": 14,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO072",
+      "nombre_marca": "Acer",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 860000,
+      "turnos_duracion_oferta": 21,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO073",
+      "nombre_marca": "Motorola",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 810000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO074",
+      "nombre_marca": "Xiaomi",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 630000,
+      "turnos_duracion_oferta": 6,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO075",
+      "nombre_marca": "Huawei",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 800000,
+      "turnos_duracion_oferta": 24,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO076",
+      "nombre_marca": "Microsoft",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1120000,
+      "turnos_duracion_oferta": 15,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO077",
+      "nombre_marca": "Google",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1440000,
+      "turnos_duracion_oferta": 8,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO078",
+      "nombre_marca": "Amazon",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1350000,
+      "turnos_duracion_oferta": 22,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO079",
+      "nombre_marca": "Meta",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 990000,
+      "turnos_duracion_oferta": 3,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO080",
+      "nombre_marca": "Netflix",
+      "categoria": "Streaming",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1440000,
+      "turnos_duracion_oferta": 32,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO081",
+      "nombre_marca": "Disney+",
+      "categoria": "Streaming",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1300000,
+      "turnos_duracion_oferta": 35,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO082",
+      "nombre_marca": "Spotify",
+      "categoria": "Streaming",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1480000,
+      "turnos_duracion_oferta": 7,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO083",
+      "nombre_marca": "Globant",
+      "categoria": "Software",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 570000,
+      "turnos_duracion_oferta": 15,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO084",
+      "nombre_marca": "Accenture",
+      "categoria": "Consultoría",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 880000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO085",
+      "nombre_marca": "Oracle",
+      "categoria": "Software",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1420000,
+      "turnos_duracion_oferta": 17,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO086",
+      "nombre_marca": "SAP",
+      "categoria": "Software",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1570000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO087",
+      "nombre_marca": "Salesforce",
+      "categoria": "Software",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1240000,
+      "turnos_duracion_oferta": 9,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO088",
+      "nombre_marca": "IBM",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1280000,
+      "turnos_duracion_oferta": 13,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO089",
+      "nombre_marca": "Cisco",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 680000,
+      "turnos_duracion_oferta": 32,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO090",
+      "nombre_marca": "Intel",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1270000,
+      "turnos_duracion_oferta": 35,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO091",
+      "nombre_marca": "AMD",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 690000,
+      "turnos_duracion_oferta": 19,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO092",
+      "nombre_marca": "NVIDIA",
+      "categoria": "Tecnología",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1070000,
+      "turnos_duracion_oferta": 9,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO093",
+      "nombre_marca": "Coca-Cola",
+      "categoria": "Bebidas",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1450000,
+      "turnos_duracion_oferta": 17,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO094",
+      "nombre_marca": "Pepsi",
+      "categoria": "Bebidas",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1250000,
+      "turnos_duracion_oferta": 25,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO095",
+      "nombre_marca": "Sprite",
+      "categoria": "Bebidas",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 560000,
+      "turnos_duracion_oferta": 21,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO096",
+      "nombre_marca": "Fanta",
+      "categoria": "Bebidas",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 860000,
+      "turnos_duracion_oferta": 16,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO097",
+      "nombre_marca": "Manaos",
+      "categoria": "Bebidas",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 520000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO098",
+      "nombre_marca": "Villavicencio",
+      "categoria": "Bebidas",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 360000,
+      "turnos_duracion_oferta": 30,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO099",
+      "nombre_marca": "Eco de los Andes",
+      "categoria": "Bebidas",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 490000,
+      "turnos_duracion_oferta": 25,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO100",
+      "nombre_marca": "Gatorade",
+      "categoria": "Bebidas deportivas",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 550000,
+      "turnos_duracion_oferta": 8,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO101",
+      "nombre_marca": "Powerade",
+      "categoria": "Bebidas deportivas",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 940000,
+      "turnos_duracion_oferta": 11,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO102",
+      "nombre_marca": "Monster Energy",
+      "categoria": "Bebidas energéticas",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 790000,
+      "turnos_duracion_oferta": 15,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO103",
+      "nombre_marca": "Red Bull",
+      "categoria": "Bebidas energéticas",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 980000,
+      "turnos_duracion_oferta": 6,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO104",
+      "nombre_marca": "Quilmes",
+      "categoria": "Bebidas",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 370000,
+      "turnos_duracion_oferta": 7,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO105",
+      "nombre_marca": "Brahma",
+      "categoria": "Bebidas",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 940000,
+      "turnos_duracion_oferta": 22,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO106",
+      "nombre_marca": "Stella Artois",
+      "categoria": "Bebidas",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 850000,
+      "turnos_duracion_oferta": 26,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO107",
+      "nombre_marca": "Budweiser",
+      "categoria": "Bebidas",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 760000,
+      "turnos_duracion_oferta": 34,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO108",
+      "nombre_marca": "Heineken",
+      "categoria": "Bebidas",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1590000,
+      "turnos_duracion_oferta": 5,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO109",
+      "nombre_marca": "La Serenísima",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 390000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO110",
+      "nombre_marca": "Sancor",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 300000,
+      "turnos_duracion_oferta": 29,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO111",
+      "nombre_marca": "Ilolay",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 510000,
+      "turnos_duracion_oferta": 5,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO112",
+      "nombre_marca": "Arcor",
+      "categoria": "Alimentos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 750000,
+      "turnos_duracion_oferta": 34,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO113",
+      "nombre_marca": "Bagley",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 540000,
+      "turnos_duracion_oferta": 8,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO114",
+      "nombre_marca": "Terrabusi",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 370000,
+      "turnos_duracion_oferta": 30,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO115",
+      "nombre_marca": "Havanna",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 350000,
+      "turnos_duracion_oferta": 31,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO116",
+      "nombre_marca": "Bonafide",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 300000,
+      "turnos_duracion_oferta": 8,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO117",
+      "nombre_marca": "Cachafaz",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 350000,
+      "turnos_duracion_oferta": 28,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO118",
+      "nombre_marca": "Lucchetti",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 370000,
+      "turnos_duracion_oferta": 26,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO119",
+      "nombre_marca": "Matarazzo",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 520000,
+      "turnos_duracion_oferta": 29,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO120",
+      "nombre_marca": "Knorr",
+      "categoria": "Alimentos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 760000,
+      "turnos_duracion_oferta": 27,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO121",
+      "nombre_marca": "Hellmann's",
+      "categoria": "Alimentos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 940000,
+      "turnos_duracion_oferta": 28,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO122",
+      "nombre_marca": "Natura",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 540000,
+      "turnos_duracion_oferta": 21,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO123",
+      "nombre_marca": "Molinos Río de la Plata",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 420000,
+      "turnos_duracion_oferta": 28,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO124",
+      "nombre_marca": "Cañuelas",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 470000,
+      "turnos_duracion_oferta": 19,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO125",
+      "nombre_marca": "Ledesma",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 400000,
+      "turnos_duracion_oferta": 26,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO126",
+      "nombre_marca": "Bimbo",
+      "categoria": "Alimentos",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 640000,
+      "turnos_duracion_oferta": 13,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO127",
+      "nombre_marca": "Fargo",
+      "categoria": "Alimentos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 430000,
+      "turnos_duracion_oferta": 31,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO128",
+      "nombre_marca": "Carrefour",
+      "categoria": "Retail",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 750000,
+      "turnos_duracion_oferta": 6,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO129",
+      "nombre_marca": "Coto",
+      "categoria": "Retail",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 450000,
+      "turnos_duracion_oferta": 7,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO130",
+      "nombre_marca": "Jumbo",
+      "categoria": "Retail",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 230000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO131",
+      "nombre_marca": "Disco",
+      "categoria": "Retail",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 210000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO132",
+      "nombre_marca": "Vea",
+      "categoria": "Retail",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 200000,
+      "turnos_duracion_oferta": 3,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO133",
+      "nombre_marca": "Día",
+      "categoria": "Retail",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 630000,
+      "turnos_duracion_oferta": 9,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO134",
+      "nombre_marca": "ChangoMâs",
+      "categoria": "Retail",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 480000,
+      "turnos_duracion_oferta": 30,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO135",
+      "nombre_marca": "Easy",
+      "categoria": "Retail hogar",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 240000,
+      "turnos_duracion_oferta": 24,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO136",
+      "nombre_marca": "Sodimac",
+      "categoria": "Retail hogar",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 310000,
+      "turnos_duracion_oferta": 7,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO137",
+      "nombre_marca": "Frávega",
+      "categoria": "Retail tecnología",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 440000,
+      "turnos_duracion_oferta": 29,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO138",
+      "nombre_marca": "Musimundo",
+      "categoria": "Retail tecnología",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 340000,
+      "turnos_duracion_oferta": 27,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO139",
+      "nombre_marca": "Adidas",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1190000,
+      "turnos_duracion_oferta": 4,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO140",
+      "nombre_marca": "Nike",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1070000,
+      "turnos_duracion_oferta": 23,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO141",
+      "nombre_marca": "Puma",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1280000,
+      "turnos_duracion_oferta": 4,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO142",
+      "nombre_marca": "Under Armour",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 890000,
+      "turnos_duracion_oferta": 10,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO143",
+      "nombre_marca": "Reebok",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 760000,
+      "turnos_duracion_oferta": 11,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO144",
+      "nombre_marca": "Umbro",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 670000,
+      "turnos_duracion_oferta": 23,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO145",
+      "nombre_marca": "New Balance",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 610000,
+      "turnos_duracion_oferta": 14,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO146",
+      "nombre_marca": "Topper",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 380000,
+      "turnos_duracion_oferta": 35,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO147",
+      "nombre_marca": "Kappa",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 830000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO148",
+      "nombre_marca": "Lotto",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 790000,
+      "turnos_duracion_oferta": 35,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO149",
+      "nombre_marca": "Joma",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 910000,
+      "turnos_duracion_oferta": 17,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO150",
+      "nombre_marca": "Macron",
+      "categoria": "Indumentaria deportiva",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 830000,
+      "turnos_duracion_oferta": 22,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO151",
+      "nombre_marca": "Farmacity",
+      "categoria": "Farmacia",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 360000,
+      "turnos_duracion_oferta": 16,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO152",
+      "nombre_marca": "Swiss Medical",
+      "categoria": "Salud",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 370000,
+      "turnos_duracion_oferta": 34,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO153",
+      "nombre_marca": "OSDE",
+      "categoria": "Salud",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 450000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO154",
+      "nombre_marca": "Galeno",
+      "categoria": "Salud",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 290000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO155",
+      "nombre_marca": "SanCor Salud",
+      "categoria": "Salud",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 410000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO156",
+      "nombre_marca": "Medicus",
+      "categoria": "Salud",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 420000,
+      "turnos_duracion_oferta": 13,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO157",
+      "nombre_marca": "Omint",
+      "categoria": "Salud",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 540000,
+      "turnos_duracion_oferta": 32,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO158",
+      "nombre_marca": "Andreani",
+      "categoria": "Logística",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 550000,
+      "turnos_duracion_oferta": 8,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO159",
+      "nombre_marca": "OCA",
+      "categoria": "Logística",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 420000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO160",
+      "nombre_marca": "Correo Argentino",
+      "categoria": "Logística",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 430000,
+      "turnos_duracion_oferta": 16,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO161",
+      "nombre_marca": "DHL",
+      "categoria": "Logística",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 720000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO162",
+      "nombre_marca": "FedEx",
+      "categoria": "Logística",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 710000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO163",
+      "nombre_marca": "UPS",
+      "categoria": "Logística",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 790000,
+      "turnos_duracion_oferta": 18,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO164",
+      "nombre_marca": "Aerolíneas Argentinas",
+      "categoria": "Viajes",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 450000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO165",
+      "nombre_marca": "Flybondi",
+      "categoria": "Viajes",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 310000,
+      "turnos_duracion_oferta": 21,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO166",
+      "nombre_marca": "JetSMART",
+      "categoria": "Viajes",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 240000,
+      "turnos_duracion_oferta": 35,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO167",
+      "nombre_marca": "Despegar",
+      "categoria": "Viajes",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 150000,
+      "turnos_duracion_oferta": 19,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO168",
+      "nombre_marca": "Booking.com",
+      "categoria": "Viajes",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1380000,
+      "turnos_duracion_oferta": 21,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO169",
+      "nombre_marca": "Airbnb",
+      "categoria": "Viajes",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 970000,
+      "turnos_duracion_oferta": 10,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO170",
+      "nombre_marca": "Mostaza",
+      "categoria": "Gastronomía",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 380000,
+      "turnos_duracion_oferta": 13,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO171",
+      "nombre_marca": "McDonald's",
+      "categoria": "Gastronomía",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 950000,
+      "turnos_duracion_oferta": 23,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO172",
+      "nombre_marca": "Burger King",
+      "categoria": "Gastronomía",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 760000,
+      "turnos_duracion_oferta": 8,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO173",
+      "nombre_marca": "KFC",
+      "categoria": "Gastronomía",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 900000,
+      "turnos_duracion_oferta": 22,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO174",
+      "nombre_marca": "Starbucks",
+      "categoria": "Gastronomía",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 750000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO175",
+      "nombre_marca": "Café Martínez",
+      "categoria": "Gastronomía",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 550000,
+      "turnos_duracion_oferta": 19,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO176",
+      "nombre_marca": "Grido",
+      "categoria": "Gastronomía",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 480000,
+      "turnos_duracion_oferta": 30,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO177",
+      "nombre_marca": "Freddo",
+      "categoria": "Gastronomía",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 390000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO178",
+      "nombre_marca": "Rappi",
+      "categoria": "Delivery",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 300000,
+      "turnos_duracion_oferta": 4,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO179",
+      "nombre_marca": "PedidosYa",
+      "categoria": "Delivery",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 150000,
+      "turnos_duracion_oferta": 34,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO180",
+      "nombre_marca": "Uber",
+      "categoria": "Movilidad",
+      "alcance_comercial": "global_premium",
+      "valor_base_por_turno": 1330000,
+      "turnos_duracion_oferta": 5,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO181",
+      "nombre_marca": "Cabify",
+      "categoria": "Movilidad",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 260000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO182",
+      "nombre_marca": "Siemens",
+      "categoria": "Industria",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 590000,
+      "turnos_duracion_oferta": 29,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO183",
+      "nombre_marca": "Schneider Electric",
+      "categoria": "Industria",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 600000,
+      "turnos_duracion_oferta": 15,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO184",
+      "nombre_marca": "3M",
+      "categoria": "Industria",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 790000,
+      "turnos_duracion_oferta": 27,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO185",
+      "nombre_marca": "Saint-Gobain",
+      "categoria": "Construcción",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 780000,
+      "turnos_duracion_oferta": 28,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO186",
+      "nombre_marca": "Sika",
+      "categoria": "Construcción",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 550000,
+      "turnos_duracion_oferta": 33,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO187",
+      "nombre_marca": "Cementos Avellaneda",
+      "categoria": "Construcción",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 540000,
+      "turnos_duracion_oferta": 24,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO188",
+      "nombre_marca": "Loma Negra",
+      "categoria": "Construcción",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 420000,
+      "turnos_duracion_oferta": 30,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO189",
+      "nombre_marca": "Aluar",
+      "categoria": "Industria",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 330000,
+      "turnos_duracion_oferta": 20,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO190",
+      "nombre_marca": "Acindar",
+      "categoria": "Industria",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 330000,
+      "turnos_duracion_oferta": 25,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO191",
+      "nombre_marca": "Ternium",
+      "categoria": "Industria",
+      "alcance_comercial": "regional",
+      "valor_base_por_turno": 210000,
+      "turnos_duracion_oferta": 34,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO192",
+      "nombre_marca": "Techint",
+      "categoria": "Industria",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 780000,
+      "turnos_duracion_oferta": 10,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO193",
+      "nombre_marca": "Edenor",
+      "categoria": "Servicios públicos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 430000,
+      "turnos_duracion_oferta": 19,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO194",
+      "nombre_marca": "Edesur",
+      "categoria": "Servicios públicos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 390000,
+      "turnos_duracion_oferta": 16,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO195",
+      "nombre_marca": "Metrogas",
+      "categoria": "Servicios públicos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 370000,
+      "turnos_duracion_oferta": 17,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO196",
+      "nombre_marca": "Camuzzi Gas",
+      "categoria": "Servicios públicos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 350000,
+      "turnos_duracion_oferta": 3,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO197",
+      "nombre_marca": "Aysa",
+      "categoria": "Servicios públicos",
+      "alcance_comercial": "nacional",
+      "valor_base_por_turno": 390000,
+      "turnos_duracion_oferta": 12,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO198",
+      "nombre_marca": "Prosegur",
+      "categoria": "Seguridad",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 840000,
+      "turnos_duracion_oferta": 15,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO199",
+      "nombre_marca": "ADT",
+      "categoria": "Seguridad",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 930000,
+      "turnos_duracion_oferta": 24,
+      "pago": "total_al_aceptar",
+      "activo": true
+    },
+    {
+      "id_sponsor": "SPO200",
+      "nombre_marca": "Securitas",
+      "categoria": "Seguridad",
+      "alcance_comercial": "global",
+      "valor_base_por_turno": 700000,
+      "turnos_duracion_oferta": 21,
+      "pago": "total_al_aceptar",
+      "activo": true
+    }
+  ],
+  "validacion": {
+    "cantidad_lugares_sponsor": 20,
+    "cantidad_sponsors": 200,
+    "valor_minimo_base_por_turno": 150000,
+    "valor_maximo_base_por_turno": 1590000,
+    "duracion_minima_generada": 3,
+    "duracion_maxima_generada": 35
+  }
+}
