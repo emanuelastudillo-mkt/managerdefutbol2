@@ -1,2 +1,2 @@
-/* V3.13 · Punto de entrada. Los módulos principales se cargan desde index.html. */
+/* V3.14 · Punto de entrada. Los módulos principales se cargan desde index.html. */
 init();

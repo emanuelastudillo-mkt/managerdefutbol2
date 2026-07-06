@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V3.13',
+  version: 'V3.14',
   data: {
     seedUrl: 'data/seed.json',
     playersUrl: 'data/jugadores.json',
@@ -86,8 +86,7 @@ window.GAME_CONFIG = {
     multiplicadorEntrenamiento: 3
   },
   entrenamiento: {
-    // Cada avance semanal aplica 7 días. Cada casilla usa el 50% de una sesión diaria.
-    // Si se completan las 4 casillas de cada día, la carga semanal máxima equivale a 2x el sistema previo.
+    // Cada avance semanal aplica el plan de 7 días con 4 turnos por día.
     efectividadPorCasilla: 0.50,
     planSemanalInicial: {
       pre: 'regenerative',

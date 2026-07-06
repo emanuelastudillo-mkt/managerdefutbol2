@@ -1,54 +1,28 @@
-# Fútbol Manager MVP V3.13
+# Fútbol Manager MVP V3.14
 
-Versión basada en V3.12.
+## Cambios V3.14
 
-## Cambios V3.13
+- Ajuste visual de la pantalla **Entrenamiento**.
+- El plan semanal ahora ocupa menos espacio.
+- Las casillas dejaron de usar menús desplegables.
+- Cada turno se muestra como una tarjeta rectangular compacta.
+- Al hacer click en una casilla se abre una ventana con tarjetas de entrenamiento.
+- Al elegir un entrenamiento, se aplica y la ventana se cierra automáticamente.
+- “Día libre” ahora se muestra como **Turno libre**.
+- Se ocultó información técnica de carga semanal para limpiar la interfaz.
+- El resumen visible muestra la cantidad semanal por tipo:
+  - Regenerativo
+  - Entrenamiento intenso
+  - Entrenamiento táctico
+  - Turno libre
 
-- Nueva pantalla de **Entrenamiento** con planificación semanal.
-- 7 días visibles por semana.
-- 4 casillas por día:
-  - Pre turno
-  - Turno mañana
-  - Turno tarde
-  - Turno noche
-- Cada casilla permite elegir un entrenamiento.
-- Se agregaron tonos de color por tipo de entrenamiento.
-- La efectividad por casilla baja al 50%.
-- El avance sigue siendo semanal, por eso el juego convierte el plan a 7 días al avanzar.
-- Usar las 4 casillas diarias permite alcanzar hasta el doble de carga semanal del sistema anterior.
-- La planificación afecta al primer equipo completo.
-- La tabla de jugadores queda como lectura de estado físico, moral y media.
+## Base funcional
 
-## Configuración principal
+- La temporada anual mantiene 365/366 días según año bisiesto.
+- La liga se juega ida y vuelta.
+- El avance sigue siendo semanal, de domingo a domingo.
+- La planificación de entrenamiento semanal se aplica al avanzar.
 
-En `config.js`:
+## Ranking online
 
-```js
-entrenamiento: {
-  efectividadPorCasilla: 0.50,
-  planSemanalInicial: {
-    pre: 'regenerative',
-    morning: 'intense',
-    afternoon: 'tactical',
-    night: 'dayoff'
-  }
-}
-```
-
-## Archivos principales modificados
-
-- `config.js`
-- `style.css`
-- `js/core/01-config-constants.js`
-- `js/game/05-state-season.js`
-- `js/game/09-simulation-economy-training.js`
-- `README.md`
-- `VERSION.md`
-- `CARACTERISTICAS_VERSION.md`
-
-## Validación
-
-- Scripts JS validados con `node --check`.
-- Archivo Apps Script validado como JavaScript.
-- JSON principales validados.
-- ZIP verificado.
+La URL del ranking online ya está configurada internamente para el Web App entregado.

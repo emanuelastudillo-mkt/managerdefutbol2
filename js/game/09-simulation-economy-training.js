@@ -1,4 +1,4 @@
-/* V3.13 · Selección automática, calendario anual, economía, estadio, moral y entrenamiento. */
+/* V3.14 · Selección automática, calendario anual, economía, estadio, moral y entrenamiento. */
 
 function selectLineup(clubId, tactic){
   if(clubId === game?.selectedClubId && tactic?.starters?.length === 11){
@@ -776,9 +776,13 @@ function applyTrainingEffects(){
   }
   game.lastTrainingApplied = { ...turnStamp(), tacticalGain, intenseSessions, slotsApplied:slots.length, slotEffectiveness:TRAINING_SLOT_EFFECTIVENESS };
 }
-function trainingSelectMarkup(dayIndex, slotKey, current){
+function trainingSlotButtonMarkup(dayIndex, slot, current){
+  const option = trainingOptionByValue(current) || trainingOptionByValue(DEFAULT_TRAINING_TYPE);
   const tone = trainingTone(current);
-  return `<select class="training-slot-select training-tone-${tone}" data-training-day="${dayIndex}" data-training-slot="${slotKey}">${trainingOptionsMarkup(current)}</select>`;
+  return `<button type="button" class="training-slot training-tone-${tone}" data-open-training-picker="1" data-training-day="${dayIndex}" data-training-slot="${escapeHtml(slot.key)}">
+    <span class="training-slot-band">${escapeHtml(slot.label)}</span>
+    <strong>${escapeHtml(option.label)}</strong>
+  </button>`;
 }
 function trainingDayCard(dayLabel, dayIndex){
   const schedule = currentTrainingSchedule();
@@ -788,20 +792,56 @@ function trainingDayCard(dayLabel, dayIndex){
     <div class="training-day-slots">
       ${TRAINING_DAY_SLOTS.map(slot => {
         const current = safeTrainingType(schedule[dayIndex]?.[slot.key]);
-        return `<label class="training-slot training-tone-${trainingTone(current)}"><span>${escapeHtml(slot.label)}</span>${trainingSelectMarkup(dayIndex, slot.key, current)}</label>`;
+        return trainingSlotButtonMarkup(dayIndex, slot, current);
       }).join('')}
     </div>
   </div>`;
 }
 function trainingSummaryMarkup(){
   const counts = trainingScheduleCounts();
-  const used = TRAINING_OPTIONS.filter(opt => counts[opt.value]).map(opt => `<span class="pill training-pill training-tone-${opt.tone}">${escapeHtml(opt.label)}: ${counts[opt.value]}</span>`).join('');
-  return `<div class="training-summary-row">
-    <span class="pill">Casillas semanales: ${TRAINING_DAY_LABELS.length * TRAINING_DAY_SLOTS.length}</span>
-    <span class="pill">Efectividad por casilla: ${Math.round(TRAINING_SLOT_EFFECTIVENESS * 100)}%</span>
-    <span class="pill">Carga máxima: ${trainingLoadMultiplier().toFixed(1)}x</span>
-    ${used}
-  </div>`;
+  const preferred = ['regenerative','intense','tactical','dayoff'];
+  const selected = preferred
+    .map(value => trainingOptionByValue(value))
+    .filter(Boolean)
+    .concat(TRAINING_OPTIONS.filter(opt => !preferred.includes(opt.value) && counts[opt.value]));
+  const used = selected.map(opt => `<span class="pill training-pill training-tone-${opt.tone}">${escapeHtml(opt.label)}: ${Number(counts[opt.value] || 0)}</span>`).join('');
+  return `<div class="training-summary-row">${used}</div>`;
+}
+function openTrainingPicker(dayIndex, slotKey){
+  const day = TRAINING_DAY_LABELS[dayIndex] || 'Día';
+  const slot = TRAINING_DAY_SLOTS.find(item => item.key === slotKey);
+  if(!slot) return;
+  const schedule = currentTrainingSchedule();
+  const current = safeTrainingType(schedule[dayIndex]?.[slotKey]);
+  const cards = TRAINING_OPTIONS.map(opt => `
+    <button type="button" class="training-picker-card training-tone-${opt.tone} ${current===opt.value?'selected':''}" data-training-choice="${escapeHtml(opt.value)}">
+      <strong>${escapeHtml(opt.label)}</strong>
+      <span>${trainingOptionDescription(opt.value)}</span>
+    </button>`).join('');
+  openModal(`
+    <div class="training-picker-modal">
+      <p class="label">${escapeHtml(day)} · ${escapeHtml(slot.label)}</p>
+      <h2>Elegir entrenamiento</h2>
+      <div class="training-picker-grid">${cards}</div>
+    </div>`);
+  document.querySelectorAll('[data-training-choice]').forEach(button => {
+    button.addEventListener('click', () => {
+      game.trainingSchedule = normalizeTrainingSchedule(game.trainingSchedule);
+      game.trainingSchedule[dayIndex][slotKey] = safeTrainingType(button.dataset.trainingChoice);
+      saveLocal(true);
+      closeModal();
+      renderTraining();
+      showNotice('Plan semanal actualizado. Se aplicará al próximo avance.');
+    });
+  });
+}
+function trainingOptionDescription(value){
+  if(value === 'regenerative') return '+ forma física.';
+  if(value === 'massage') return '+ forma física y moral.';
+  if(value === 'intense') return 'Puede mejorar habilidad; baja forma y moral.';
+  if(value === 'tactical') return 'Puede mejorar cohesión total.';
+  if(value === 'dayoff') return '+ forma física y mucha moral.';
+  return 'Entrenamiento semanal.';
 }
 function renderTraining(){
   const squad = sortedTrainingPlayers();
@@ -810,23 +850,13 @@ function renderTraining(){
     <div class="row section-title">
       <div>
         <h2>Entrenamiento</h2>
-        <p class="tagline">Planificá 7 días de trabajo. Cada día tiene pre turno, mañana, tarde y noche. Los efectos se aplican al avanzar hasta el próximo domingo.</p>
+        <p class="tagline">Planificá 7 días de trabajo. Cada casilla abre una selección rápida de entrenamiento.</p>
       </div>
       <span class="pill">Cohesión: ${cohesionValue(game.selectedClubId)}/100</span>
     </div>
-    <div class="card training-help">
-      <div class="grid cols-5 training-option-grid">
-        <div class="training-tone-regen"><strong>Regenerativo</strong><span>+ forma física.</span></div>
-        <div class="training-tone-massage"><strong>Masajista</strong><span>+ forma física y moral.</span></div>
-        <div class="training-tone-intense"><strong>Intenso</strong><span>Puede mejorar habilidad; baja forma y moral.</span></div>
-        <div class="training-tone-tactical"><strong>Táctico</strong><span>Puede mejorar cohesión total.</span></div>
-        <div class="training-tone-dayoff"><strong>Día libre</strong><span>+ forma física y mucha moral.</span></div>
-      </div>
-      <p class="muted training-help-note">Cada casilla aplica el 50% de una sesión diaria. Con las 4 casillas completas se puede alcanzar hasta el doble de carga semanal del sistema anterior.</p>
-      ${trainingSummaryMarkup()}
-    </div>
-    <div class="card training-calendar-card" style="margin-top:14px">
+    <div class="card training-calendar-card">
       <div class="row"><h3>Plan semanal</h3><button class="btn ghost small" data-reset-training-week>Restablecer semana</button></div>
+      ${trainingSummaryMarkup()}
       <div class="training-week-grid">${TRAINING_DAY_LABELS.map((label, index) => trainingDayCard(label, index)).join('')}</div>
     </div>
     <div class="card" style="margin-top:14px">
@@ -842,16 +872,9 @@ function renderTraining(){
       if(select.value){ trainingSort = select.value; renderTraining(); }
     });
   });
-  document.querySelectorAll('[data-training-day][data-training-slot]').forEach(select => {
-    select.addEventListener('change', () => {
-      const dayIndex = Number(select.dataset.trainingDay);
-      const slotKey = select.dataset.trainingSlot;
-      if(!TRAINING_DAY_SLOTS.some(slot => slot.key === slotKey)) return;
-      game.trainingSchedule = normalizeTrainingSchedule(game.trainingSchedule);
-      game.trainingSchedule[dayIndex][slotKey] = safeTrainingType(select.value);
-      saveLocal(true);
-      renderTraining();
-      showNotice('Plan semanal actualizado. Se aplicará al próximo avance.');
+  document.querySelectorAll('[data-open-training-picker]').forEach(button => {
+    button.addEventListener('click', () => {
+      openTrainingPicker(Number(button.dataset.trainingDay), button.dataset.trainingSlot);
     });
   });
   document.querySelector('[data-reset-training-week]')?.addEventListener('click', () => {

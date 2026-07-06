@@ -1,4 +1,4 @@
-/* V3.13 · Carga de JSON, calendario anual, normalización inicial, persistencia local e inicialización. */
+/* V3.14 · Carga de JSON, calendario anual, normalización inicial, persistencia local e inicialización. */
 
 async function fetchJsonIfExists(url){
   try{

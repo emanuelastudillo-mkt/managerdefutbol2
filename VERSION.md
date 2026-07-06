@@ -1,57 +1,40 @@
-# Versión V3.13
+# Versión V3.14
 
 ## Tipo de versión
 
-Actualización funcional de entrenamiento sobre V3.12.
+Ajuste visual y funcional sobre la pantalla de entrenamiento semanal de V3.13.
 
 ## Cambios
 
-- Nueva pantalla de entrenamiento semanal por días.
-- Cada semana muestra 7 días, de domingo a sábado.
-- Cada día tiene 4 casillas:
-  - Pre turno
-  - Turno mañana
-  - Turno tarde
-  - Turno noche
-- Cada casilla permite elegir un tipo de entrenamiento.
-- Los tipos conservados son:
+- La grilla semanal de entrenamiento ahora es más compacta.
+- Se eliminaron los selectores desplegables de cada casilla.
+- Cada casilla se muestra como una pieza rectangular con:
+  - cinta gris superior con el nombre del turno,
+  - entrenamiento elegido debajo con color propio.
+- Al hacer click en una casilla se abre una ventana pequeña con tarjetas de entrenamiento.
+- Al elegir una tarjeta, el entrenamiento se aplica a esa casilla y la ventana se cierra.
+- “Día libre” pasa a llamarse **Turno libre**.
+- Se ocultó el texto explicativo técnico de carga semanal.
+- Se conserva el resumen visible por tipo de entrenamiento:
   - Regenerativo
-  - Masajista
   - Entrenamiento intenso
   - Entrenamiento táctico
-  - Día libre
-- Cada tipo tiene tono visual propio para leer rápido la carga semanal.
-- La efectividad de cada casilla baja al 50% de una sesión diaria.
-- Como el avance actual sigue siendo semanal, el sistema convierte la planificación a 7 días.
-- Si se usan las 4 casillas diarias, la carga máxima semanal puede llegar a 2x respecto del sistema anterior.
-- El entrenamiento ahora afecta globalmente al primer equipo según el plan semanal.
-- La tabla inferior de entrenamiento queda como estado del plantel, sin selector individual por jugador.
+  - Turno libre
 
 ## Compatibilidad
 
-- Las partidas anteriores cargan con un plan semanal inicial automático.
-- Se conserva `trainingPlan` interno para no romper guardados antiguos, aunque la nueva pantalla usa `trainingSchedule`.
-- El avance sigue siendo de domingo a domingo.
+- No cambia la lógica de efectos del entrenamiento.
+- No cambia la efectividad del 50% por casilla.
+- No cambia el avance semanal de domingo a domingo.
+- Las partidas anteriores siguen cargando el plan semanal existente.
 
-## Configuración nueva
+## Archivos modificados
 
-En `config.js`:
-
-```js
-entrenamiento: {
-  efectividadPorCasilla: 0.50,
-  planSemanalInicial: {
-    pre: 'regenerative',
-    morning: 'intense',
-    afternoon: 'tactical',
-    night: 'dayoff'
-  }
-}
-```
-
-## Validación
-
-- `node --check` correcto en todos los `.js`.
-- `apps-script-ranking.gs` validado como JavaScript.
-- JSON válidos.
-- ZIP verificado.
+- `config.js`
+- `index.html`
+- `style.css`
+- `js/core/01-config-constants.js`
+- `js/game/09-simulation-economy-training.js`
+- `README.md`
+- `VERSION.md`
+- `CARACTERISTICAS_VERSION.md`

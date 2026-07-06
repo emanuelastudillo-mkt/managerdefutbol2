@@ -1,4 +1,4 @@
-/* V3.13 · Configuración, calendario anual, constantes generales y estado global. */
+/* V3.14 · Configuración, calendario anual, constantes generales y estado global. */
 
 const GAME_CONFIG = window.GAME_CONFIG || {};
 function configValue(path, fallback){
@@ -40,7 +40,7 @@ const ACTION_FEEDBACK_RESULT_MS = configNumber('ui.accionesFeedbackResultadoMs',
 const PRESEASON_TURNS = Math.ceil(configNumber('calendario.diasPretemporada', 70, 0) / DAYS_PER_ADVANCE);
 const POSTSEASON_TURNS_CONFIG = Math.ceil(configNumber('calendario.diasPostemporada', 0, 0) / DAYS_PER_ADVANCE);
 const MAX_PRESEASON_FRIENDLIES = configNumber('calendario.amistososMaximosPretemporada', 5, 0);
-const APP_VERSION = configValue('version', 'V3.13');
+const APP_VERSION = configValue('version', 'V3.14');
 
 const RANKING_APPS_SCRIPT_URL = configValue('ranking.appsScriptUrl', '');
 const RANKING_TOKEN = configValue('ranking.token', '');
@@ -65,7 +65,7 @@ const TRAINING_OPTIONS = [
   { value:'massage', label:'Masajista', tone:'massage' },
   { value:'intense', label:'Entrenamiento intenso', tone:'intense' },
   { value:'tactical', label:'Entrenamiento táctico', tone:'tactical' },
-  { value:'dayoff', label:'Día libre', tone:'dayoff' }
+  { value:'dayoff', label:'Turno libre', tone:'dayoff' }
 ];
 const TRAINING_DAY_LABELS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const TRAINING_DAY_SLOTS = [

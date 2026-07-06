@@ -1,4 +1,4 @@
-/* V3.13 · Render general, inicio, calendario anual, mensajes y ofertas de venta recibidas. */
+/* V3.14 · Render general, inicio, calendario anual, mensajes y ofertas de venta recibidas. */
 
 function renderAll(){
   document.querySelectorAll('.tabs button').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab === activeTab));

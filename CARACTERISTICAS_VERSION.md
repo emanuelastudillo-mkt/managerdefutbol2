@@ -1,43 +1,25 @@
-# Características internas de versión · V3.13
+# Características internas de versión · V3.14
 
 ## Objetivo
 
-Transformar la sección **Entrenamiento** en una planificación semanal basada en días y franjas horarias, aprovechando la migración previa del juego a calendario anual.
+Compactar la pantalla de entrenamiento semanal para reducir espacio visual y hacer más rápida la selección de cada turno.
 
-## Pantalla de entrenamiento
+## Entrenamiento
 
-- La pantalla muestra 7 días consecutivos desde la fecha actual.
-- Cada día tiene 4 casillas:
-  - Pre turno
-  - Turno mañana
-  - Turno tarde
-  - Turno noche
-- Cada casilla permite seleccionar un tipo de entrenamiento.
-- Los colores diferencian rápidamente recuperación, carga intensa, táctica, descanso y masajes.
+- Reemplazo de selectores desplegables por casillas clickeables.
+- Cada casilla muestra una cinta gris con el nombre del turno.
+- La elección de entrenamiento se hace desde una ventana modal con tarjetas.
+- La selección se guarda inmediatamente y vuelve a renderizar la grilla.
+- “Día libre” se renombra como **Turno libre**.
 
-## Conversión de efectos
+## Interfaz
 
-- El avance todavía equivale a 7 días.
-- Cada casilla aplica el 50% de una sesión diaria.
-- La escala interna usada al avanzar es:
-  - `efectividadPorCasilla / diasPorAvance`
-- Con 4 casillas por día durante 7 días, la carga máxima equivale a 2x el sistema anterior.
+- Grilla más rectangular, compacta y pegada.
+- Se eliminó el texto visible sobre carga máxima y efectividad.
+- Se mantiene un resumen simple de cantidad de sesiones por tipo.
 
-## Efectos por tipo
+## Lógica
 
-- Regenerativo: mejora forma física.
-- Masajista: mejora forma física y moral.
-- Intenso: puede mejorar habilidades, pero reduce forma física y moral.
-- Táctico: puede mejorar cohesión.
-- Día libre: mejora forma física y moral.
-
-## Compatibilidad
-
-- Se agrega `trainingSchedule` al estado de partida.
-- Si una partida anterior no tiene `trainingSchedule`, se genera automáticamente.
-- Se conserva `trainingPlan` para compatibilidad con partidas viejas y datos heredados.
-
-## Notas
-
-- No se implementó todavía avance día por día.
-- El sistema queda preparado para que más adelante cada día pueda procesarse de forma individual.
+- Sin cambios en el balance de entrenamiento.
+- Sin cambios en los efectos por tipo.
+- Sin cambios en avance semanal ni calendario.

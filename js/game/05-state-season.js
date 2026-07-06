@@ -1,4 +1,4 @@
-/* V3.13 · Eventos principales, normalización de partida, calendario anual, temporadas y ascensos/descensos. */
+/* V3.14 · Eventos principales, normalización de partida, calendario anual, temporadas y ascensos/descensos. */
 
 function clubSelectOptionsMarkup(){
   const divisions = seed.divisions || [{ id:'default', name:'Liga única' }];
