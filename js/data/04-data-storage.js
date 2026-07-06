@@ -1,4 +1,4 @@
-/* V3.08 · Carga de JSON, normalización inicial, persistencia local e inicialización. */
+/* V3.13 · Carga de JSON, calendario anual, normalización inicial, persistencia local e inicialización. */
 
 async function fetchJsonIfExists(url){
   try{
@@ -166,7 +166,7 @@ function buildSeedFromLigaArgentina(raw, sourceUrl){
     divisions:normalizedDivisions,
     clubs,
     players,
-    fixtures:generateFixturesForDivisions(clubs, normalizedDivisions)
+    fixtures:generateFixturesForDivisions(clubs, normalizedDivisions, { seasonYear:SEASON_START_YEAR })
   };
   seedData.meta.signature = seedSignature(seedData);
   return seedData;
@@ -436,26 +436,32 @@ function averageGeneratedVisible(position, skills){
   const temp = { position, skills, overall:50 };
   return clamp(Math.round(avg(Object.values(visibleStats(temp)))), 1, 99);
 }
-function generateFixturesForDivisions(clubs, divisions){
-  const schedules = divisions.map(division => roundRobinSchedule(clubs.filter(c => c.divisionId === division.id), division));
+function sortedSeasonDivisions(divisions){
+  return (divisions || [{ id:'default', name:'Liga única', order:1 }]).slice().sort((a,b)=>(a.order || 0)-(b.order || 0));
+}
+function generateFixturesForDivisions(clubs, divisions, options={}){
+  const seasonYear = Math.round(Number(options.seasonYear || SEASON_START_YEAR));
+  const sortedDivisions = sortedSeasonDivisions(divisions);
+  const schedules = sortedDivisions.map(division => roundRobinSchedule(clubs.filter(c => c.divisionId === division.id), division));
   const maxRounds = Math.max(...schedules.map(s => s.length), 0);
+  const firstLeagueDate = leagueStartDateForSeason(seasonYear);
   const fixtures = [];
   for(let roundIndex=0; roundIndex<maxRounds; roundIndex++){
-    const date = new Date(Date.UTC(2026, 1, 1 + roundIndex * 7));
+    const date = addDaysToIsoDate(firstLeagueDate, roundIndex * DAYS_PER_ADVANCE);
     const matches = [];
     schedules.forEach(schedule => {
-      (schedule[roundIndex] || []).forEach(match => matches.push(match));
+      (schedule[roundIndex] || []).forEach(match => matches.push({ ...match, date }));
     });
-    fixtures.push({ matchday:roundIndex+1, date:date.toISOString().slice(0,10), matches });
+    fixtures.push({ matchday:roundIndex+1, date, matches });
   }
   return fixtures;
 }
 function roundRobinSchedule(clubsInDivision, division){
   const teams = clubsInDivision.slice();
   if(teams.length % 2 === 1) teams.push(null);
-  const rounds = [];
+  const firstLeg = [];
   const n = teams.length;
-  if(n < 2) return rounds;
+  if(n < 2) return firstLeg;
   let arr = teams.slice();
   for(let r=0; r<n-1; r++){
     const matches = [];
@@ -465,14 +471,53 @@ function roundRobinSchedule(clubsInDivision, division){
       if(a && b){
         const home = r % 2 === 0 ? a : b;
         const away = r % 2 === 0 ? b : a;
-        matches.push({ id:`${division.id}-j${r+1}-${home.id}-${away.id}`, matchday:r+1, divisionId:division.id, divisionName:division.name, homeId:home.id, awayId:away.id, played:false });
+        matches.push({ id:`${division.id}-j${r+1}-${home.id}-${away.id}`, matchday:r+1, leg:1, divisionId:division.id, divisionName:division.name, homeId:home.id, awayId:away.id, played:false });
       }
     }
-    rounds.push(matches);
+    firstLeg.push(matches);
     arr = [arr[0], arr[n-1], ...arr.slice(1,n-1)];
   }
-  return rounds;
+  if(!SEASON_HOME_AWAY) return firstLeg;
+  const secondLeg = firstLeg.map((matches, roundIndex) => {
+    const matchday = firstLeg.length + roundIndex + 1;
+    return matches.map(match => ({
+      ...match,
+      id:`${division.id}-j${matchday}-${match.awayId}-${match.homeId}`,
+      matchday,
+      leg:2,
+      homeId:match.awayId,
+      awayId:match.homeId,
+      played:false,
+      homeGoals:undefined,
+      awayGoals:undefined
+    }));
+  });
+  return firstLeg.concat(secondLeg);
 }
+function mergePlayedFixturesIntoCalendar(nextFixtures, previousFixtures=[]){
+  const previousById = new Map();
+  (previousFixtures || []).forEach(round => {
+    (round.matches || []).forEach(match => previousById.set(String(match.id), match));
+  });
+  if(!previousById.size) return nextFixtures;
+  return nextFixtures.map(round => ({
+    ...round,
+    matches:(round.matches || []).map(match => {
+      const previous = previousById.get(String(match.id));
+      if(!previous || !previous.played) return match;
+      return { ...match, played:true, homeGoals:previous.homeGoals, awayGoals:previous.awayGoals };
+    })
+  }));
+}
+function normalizeSeasonFixtures(existingFixtures, seasonNumber=1, seasonYear=null){
+  const year = Math.round(Number(seasonYear || 0)) || seasonYearForNumber(seasonNumber || 1);
+  const expected = generateFixturesForDivisions(seed.clubs || [], sortedSeasonDivisions(seed.divisions || []), { seasonYear:year });
+  const current = Array.isArray(existingFixtures) ? existingFixtures : [];
+  const currentYear = String(current?.[0]?.date || '').slice(0,4);
+  const needsCalendar = current.length !== expected.length || currentYear !== String(year) || current.some(round => !validIsoDate(round.date));
+  return needsCalendar ? mergePlayedFixturesIntoCalendar(expected, current) : current;
+}
+
 
 async function openDb(){
   return new Promise((resolve,reject)=>{

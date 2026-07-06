@@ -215,7 +215,7 @@ function submitPurchaseOffer(playerId, kind){
   activeTab = 'messages';
   saveLocal(true);
   renderAll();
-  showNotice('Oferta aceptada. El jugador llegará en el próximo turno.');
+  showNotice('Oferta aceptada. El jugador llegará el próximo domingo.');
 }
 function processPendingTransfers(){
   if(!game) return;
@@ -296,7 +296,7 @@ function showMatchRevealModal(match, onRevealComplete=null){
   const html = `
     <div class="match-reveal-shell">
       <div class="match-modal-head">
-        <p class="label">Jornada ${match.matchday} · ${match.date}</p>
+        <p class="label">Fecha ${match.matchday} · ${match.date}</p>
         <h2>${clubLink(match.homeId)} <span id="revealScore">0 - 0</span> ${clubLink(match.awayId)}</h2>
       </div>
       <div class="reveal-control-row">
@@ -470,7 +470,7 @@ function showMatchModal(matchId){
   const context = match.matchContext || { weather:'No registrado', pitch:'No registrado', homeFans:0, awayFans:0 };
   const body = `
     <div class="match-modal-head">
-      <p class="label">Jornada ${match.matchday} · ${match.date}</p>
+      <p class="label">Fecha ${match.matchday} · ${match.date}</p>
       <h2>${clubLink(match.homeId)} ${match.homeGoals} - ${match.awayGoals} ${clubLink(match.awayId)}</h2>
     </div>
     <div class="card inner match-context-card">
@@ -553,7 +553,7 @@ function showClubModal(clubId){
       </div>
       <div class="card inner">
         <h3>Scouting parcial</h3>
-        <p class="muted small">En cada nueva jornada se revelan de forma provisoria 2 o 3 habilidades visibles por jugador. Las demás quedan ocultas con guion.</p>
+        <p class="muted small">En cada nueva fecha se revelan de forma provisoria 2 o 3 habilidades visibles por jugador. Las demás quedan ocultas con guion.</p>
       </div>
     </div>
     <div class="card inner" style="margin-top:14px">

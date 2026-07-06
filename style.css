@@ -310,7 +310,7 @@ img.player-photo-placeholder.large{width:120px;height:120px;border-radius:22px}
 #revealScore{display:inline-block;min-width:90px;text-align:center;color:#dbeafe}
 @media (max-width:900px){.reveal-control-row{align-items:stretch}.reveal-progress{width:100%}}
 
-/* V1.08: lesiones por turnos y panel médico */
+/* V1.08: lesiones por días y panel médico */
 .injury-home-card{border-color:rgba(245,158,11,.22);background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(255,255,255,.025))}
 .injury-rules{margin-top:12px;color:var(--muted)}
 .injury-rules summary{cursor:pointer;font-weight:800;color:#fde68a;margin-bottom:10px}
@@ -1303,7 +1303,7 @@ tr.own-club-row.relegation-row td{box-shadow:inset 4px 0 0 rgba(239,68,68,.85)}
 .offer-choice-grid .plain p{margin:4px 0 0;color:#cbd5e1;font-weight:900}
 @media (max-width:760px){.subtabs button{flex:1}.offer-choice-grid{grid-template-columns:1fr}}
 
-/* V2.28: transición de turno y avisos siempre al frente */
+/* V2.28: transición de avance y avisos siempre al frente */
 .notice{
   position:fixed;
   top:18px;
@@ -1594,7 +1594,7 @@ select,input{border-radius:11px;padding:9px 10px;margin-bottom:9px;font-size:13p
 .academy-rules-card{font-size:12px}
 .small-btn{font-size:12px;padding:6px 9px;min-height:30px}
 
-/* V3.02: experiencia visual de oficina del manager, alertas y resumen de turno */
+/* V3.02: experiencia visual de oficina del manager, alertas y resumen de avance */
 .manager-office{
   display:grid;
   grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);
@@ -1727,7 +1727,43 @@ button.action-failure{
   font-family:inherit;
 }
 
-/* V3.09 · Ranking Online */
+
+
+/* V3.13 · filtros de mercado */
+.market-filters-card{
+  margin:0 0 14px;
+  border-color:rgba(59,130,246,.18);
+  background:linear-gradient(145deg,rgba(15,23,42,.86),rgba(30,41,59,.56));
+}
+.market-filters-head{margin-bottom:10px}
+.market-filter-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(110px,1fr));
+  gap:10px;
+  align-items:end;
+}
+.market-filter-grid label{
+  display:grid;
+  gap:6px;
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+}
+.market-filter-grid input,
+.market-filter-grid select{
+  width:100%;
+}
+.market-filter-grid button{
+  min-height:42px;
+}
+@media (max-width:1180px){
+  .market-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:700px){
+  .market-filter-grid{grid-template-columns:1fr;}
+}
+
+/* V3.13 · Ranking Online */
 .ranking-layout{
   display:grid;
   grid-template-columns:minmax(280px, 0.85fr) minmax(420px, 1.35fr);
@@ -1813,3 +1849,55 @@ button.action-failure{
     grid-template-columns:1fr;
   }
 }
+
+/* V3.13: calendario semanal de entrenamiento por días y casillas */
+.training-help-note{margin:12px 0 0;font-size:12px;line-height:1.45}
+.training-summary-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.training-calendar-card .row{align-items:center;margin-bottom:12px}
+.training-week-grid{display:grid;grid-template-columns:repeat(7,minmax(180px,1fr));gap:10px;align-items:stretch}
+.training-day-card{border:1px solid rgba(148,163,184,.16);background:rgba(15,23,42,.48);border-radius:18px;padding:12px;display:grid;gap:10px;min-width:0}
+.training-day-head{display:grid;gap:3px;border-bottom:1px solid rgba(148,163,184,.12);padding-bottom:8px}
+.training-day-head strong{font-size:14px;color:#f8fafc}
+.training-day-head span{font-size:11px;color:#94a3b8}
+.training-day-slots{display:grid;gap:8px}
+.training-slot{display:grid;gap:5px;padding:8px;border-radius:14px;border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.035)}
+.training-slot span{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#cbd5e1}
+.training-slot-select{width:100%;min-width:0!important;margin:0!important;border-color:rgba(148,163,184,.22)}
+.training-tone-regen{--training-accent:#38bdf8;--training-bg:rgba(56,189,248,.12);--training-border:rgba(56,189,248,.30)}
+.training-tone-massage{--training-accent:#22c55e;--training-bg:rgba(34,197,94,.12);--training-border:rgba(34,197,94,.30)}
+.training-tone-intense{--training-accent:#ef4444;--training-bg:rgba(239,68,68,.12);--training-border:rgba(239,68,68,.32)}
+.training-tone-tactical{--training-accent:#a78bfa;--training-bg:rgba(167,139,250,.12);--training-border:rgba(167,139,250,.30)}
+.training-tone-dayoff{--training-accent:#f59e0b;--training-bg:rgba(245,158,11,.12);--training-border:rgba(245,158,11,.30)}
+.training-slot.training-tone-regen,
+.training-slot.training-tone-massage,
+.training-slot.training-tone-intense,
+.training-slot.training-tone-tactical,
+.training-slot.training-tone-dayoff,
+.training-option-grid>.training-tone-regen,
+.training-option-grid>.training-tone-massage,
+.training-option-grid>.training-tone-intense,
+.training-option-grid>.training-tone-tactical,
+.training-option-grid>.training-tone-dayoff{background:linear-gradient(135deg,var(--training-bg),rgba(15,23,42,.58));border-color:var(--training-border)}
+.training-slot.training-tone-regen span,
+.training-slot.training-tone-massage span,
+.training-slot.training-tone-intense span,
+.training-slot.training-tone-tactical span,
+.training-slot.training-tone-dayoff span,
+.training-option-grid>.training-tone-regen strong,
+.training-option-grid>.training-tone-massage strong,
+.training-option-grid>.training-tone-intense strong,
+.training-option-grid>.training-tone-tactical strong,
+.training-option-grid>.training-tone-dayoff strong{color:var(--training-accent)}
+.training-slot-select.training-tone-regen,
+.training-slot-select.training-tone-massage,
+.training-slot-select.training-tone-intense,
+.training-slot-select.training-tone-tactical,
+.training-slot-select.training-tone-dayoff{background:linear-gradient(135deg,var(--training-bg),rgba(2,6,23,.86));box-shadow:inset 3px 0 0 var(--training-accent)}
+.training-pill.training-tone-regen,
+.training-pill.training-tone-massage,
+.training-pill.training-tone-intense,
+.training-pill.training-tone-tactical,
+.training-pill.training-tone-dayoff{background:var(--training-bg);border-color:var(--training-border);color:#e5e7eb}
+@media (max-width:1500px){.training-week-grid{grid-template-columns:repeat(4,minmax(180px,1fr))}}
+@media (max-width:980px){.training-week-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.training-week-grid{grid-template-columns:1fr}.training-day-card{padding:10px}}

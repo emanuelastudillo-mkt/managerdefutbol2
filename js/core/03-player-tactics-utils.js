@@ -1,4 +1,4 @@
-/* V3.08 · Estado de jugadores, disponibilidad, habilidades, generación, roles y utilidades tácticas. */
+/* V3.13 · Estado de jugadores, disponibilidad, calendario anual, habilidades y utilidades tácticas. */
 
 function playerById(id){ return seed.players.find(p => p.id === Number(id)); }
 function playersByClub(clubId){ return seed.players.filter(p => p.clubId === clubId); }
@@ -80,25 +80,129 @@ function advanceGlobalTurn(){
   if(!game) return;
   game.globalTurn = currentTurnIndex() + 1;
 }
-function totalSeasonTurnCount(){
-  return PRESEASON_TURNS + (game?.fixtures?.length || seed?.fixtures?.length || 0) + POSTSEASON_TURNS;
+function turnsToDays(value){
+  return Math.max(0, Math.round((Number(value) || 0) * DAYS_PER_ADVANCE));
 }
+function formatDays(value){
+  const days = Math.max(0, Math.round(Number(value) || 0));
+  return `${days} día${days === 1 ? '' : 's'}`;
+}
+function formatDaysFromTurns(value){
+  return formatDays(turnsToDays(value));
+}
+function pad2(value){ return String(Math.max(0, Math.round(Number(value) || 0))).padStart(2, '0'); }
+function makeUtcDate(year, month, day){ return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))); }
+function isoDateFromUtc(date){ return date.toISOString().slice(0, 10); }
+function validIsoDate(value){ return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')); }
+function addDaysToIsoDate(iso, days){
+  const base = validIsoDate(iso) ? new Date(`${iso}T00:00:00Z`) : makeUtcDate(currentSeasonYear(), SEASON_START_MONTH, SEASON_START_DAY);
+  base.setUTCDate(base.getUTCDate() + Math.round(Number(days) || 0));
+  return isoDateFromUtc(base);
+}
+function daysBetweenIsoDates(startIso, endIso){
+  if(!validIsoDate(startIso) || !validIsoDate(endIso)) return 0;
+  const start = new Date(`${startIso}T00:00:00Z`);
+  const end = new Date(`${endIso}T00:00:00Z`);
+  return Math.round((end - start) / 86400000);
+}
+function isLeapYear(year){
+  const y = Math.round(Number(year) || SEASON_START_YEAR);
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+function daysInSeasonYear(year){ return isLeapYear(year) ? 366 : 365; }
+function seasonYearForNumber(seasonNumber=1){
+  return Math.round(SEASON_START_YEAR + Math.max(0, (Number(seasonNumber) || 1) - 1));
+}
+function currentSeasonYear(){
+  return Math.round(Number(game?.seasonYear || 0)) || seasonYearForNumber(game?.seasonNumber || 1);
+}
+function seasonStartDateForYear(year=currentSeasonYear()){
+  const safeDay = Math.min(SEASON_START_DAY, new Date(Date.UTC(year, SEASON_START_MONTH, 0)).getUTCDate());
+  return isoDateFromUtc(makeUtcDate(year, SEASON_START_MONTH, safeDay));
+}
+function seasonEndDateForYear(year=currentSeasonYear()){
+  return addDaysToIsoDate(seasonStartDateForYear(year), daysInSeasonYear(year) - 1);
+}
+function firstSundayOnOrAfterIso(iso){
+  const date = new Date(`${iso}T00:00:00Z`);
+  const offset = (7 - date.getUTCDay()) % 7;
+  date.setUTCDate(date.getUTCDate() + offset);
+  return isoDateFromUtc(date);
+}
+function firstAdvanceDateForSeason(year=currentSeasonYear()){
+  return firstSundayOnOrAfterIso(seasonStartDateForYear(year));
+}
+function leagueStartDateForSeason(year=currentSeasonYear()){
+  return firstSundayOnOrAfterIso(addDaysToIsoDate(seasonStartDateForYear(year), PRESEASON_TURNS * DAYS_PER_ADVANCE));
+}
+function seasonDayFromDate(iso, year=currentSeasonYear()){
+  const start = seasonStartDateForYear(year);
+  const raw = daysBetweenIsoDates(start, validIsoDate(iso) ? iso : start) + 1;
+  return clamp(raw, 1, daysInSeasonYear(year));
+}
+function dateForSeasonState(state=game){
+  const year = Math.round(Number(state?.seasonYear || 0)) || seasonYearForNumber(state?.seasonNumber || 1);
+  if(!state) return firstAdvanceDateForSeason(year);
+  if(state.seasonFinalized || state.seasonPhase === 'finalized') return seasonEndDateForYear(year);
+  if(state.seasonPhase === 'regular') return state.fixtures?.[state.matchdayIndex || 0]?.date || leagueStartDateForSeason(year);
+  if(state.seasonPhase === 'postseason'){
+    const afterLastRound = state.fixtures?.length
+      ? addDaysToIsoDate(state.fixtures[state.fixtures.length - 1].date, DAYS_PER_ADVANCE)
+      : leagueStartDateForSeason(year);
+    return addDaysToIsoDate(afterLastRound, Math.max(0, Number(state.phaseTurn || 0)) * DAYS_PER_ADVANCE);
+  }
+  if(state.seasonPhase === 'preseason'){
+    return addDaysToIsoDate(firstAdvanceDateForSeason(year), Math.max(0, Number(state.phaseTurn || 0)) * DAYS_PER_ADVANCE);
+  }
+  return validIsoDate(state.currentDate) ? state.currentDate : firstAdvanceDateForSeason(year);
+}
+function daysUntilTurn(targetTurn){
+  return turnsToDays(Math.max(0, Number(targetTurn || 0) - currentTurnIndex()));
+}
+function currentGlobalDayNumber(){
+  return seasonDayFromDate(game?.currentDate || dateForSeasonState(game), currentSeasonYear());
+}
+function currentSeasonFixtureCount(){ return game?.fixtures?.length || seed?.fixtures?.length || 0; }
+function postseasonTurnsForSeason(seasonOrYear=null, fixtureCount=null){
+  const year = Number(seasonOrYear || 0) > 1900 ? Math.round(Number(seasonOrYear)) : seasonYearForNumber(seasonOrYear || game?.seasonNumber || 1);
+  if(POSTSEASON_TURNS_CONFIG > 0) return POSTSEASON_TURNS_CONFIG;
+  const fixtures = Number.isFinite(Number(fixtureCount)) ? Math.max(0, Number(fixtureCount)) : currentSeasonFixtureCount();
+  const usedDays = (PRESEASON_TURNS * DAYS_PER_ADVANCE) + (fixtures * DAYS_PER_ADVANCE);
+  const remainingDays = Math.max(0, daysInSeasonYear(year) - usedDays);
+  return Math.ceil(remainingDays / DAYS_PER_ADVANCE);
+}
+function postseasonTurnsForCurrentSeason(){ return postseasonTurnsForSeason(currentSeasonYear(), currentSeasonFixtureCount()); }
+function totalSeasonTurnCount(){
+  return PRESEASON_TURNS + currentSeasonFixtureCount() + postseasonTurnsForCurrentSeason();
+}
+function totalSeasonDayCount(){ return daysInSeasonYear(currentSeasonYear()); }
 function currentSeasonTurnNumber(){
   if(!game) return 0;
-  const regularCount = game.fixtures?.length || seed?.fixtures?.length || 0;
+  const regularCount = currentSeasonFixtureCount();
   if(game.seasonFinalized || seasonPhase() === 'finalized') return totalSeasonTurnCount();
   if(isPreseason()) return clamp((game.phaseTurn || 0) + 1, 1, totalSeasonTurnCount());
   if(isPostseason()) return clamp(PRESEASON_TURNS + regularCount + (game.phaseTurn || 0) + 1, 1, totalSeasonTurnCount());
   return clamp(PRESEASON_TURNS + (game.matchdayIndex || 0) + 1, 1, totalSeasonTurnCount());
 }
+function currentSeasonDayNumber(){ return currentGlobalDayNumber(); }
+function phaseDayRangeLabel(completedSteps, totalSteps){
+  const totalDays = turnsToDays(totalSteps);
+  const start = (Math.max(0, Number(completedSteps || 0)) * DAYS_PER_ADVANCE) + 1;
+  const end = Math.min(start + DAYS_PER_ADVANCE - 1, totalDays);
+  return `Días ${start}-${end} de ${totalDays}`;
+}
+function yearStatusLabel(year=currentSeasonYear()){
+  return `${year}${isLeapYear(year) ? ' · bisiesto' : ''}`;
+}
 function phaseLabel(){
   if(!game) return '—';
-  if(game.seasonFinalized || seasonPhase() === 'finalized') return `Jornada total: ${totalSeasonTurnCount()} / ${totalSeasonTurnCount()} · Temporada finalizada`;
-  const total = totalSeasonTurnCount();
-  const current = currentSeasonTurnNumber();
-  if(isPreseason()) return `Jornada total: ${current} / ${total} · Pretemporada ${Math.min((game.phaseTurn || 0) + 1, PRESEASON_TURNS)} / ${PRESEASON_TURNS}`;
-  if(isPostseason()) return `Jornada total: ${current} / ${total} · Postemporada ${Math.min((game.phaseTurn || 0) + 1, POSTSEASON_TURNS)} / ${POSTSEASON_TURNS}`;
-  return `Jornada total: ${current} / ${total} · Liga ${Math.min((game.matchdayIndex || 0) + 1, game.fixtures?.length || seed.fixtures.length)} / ${game.fixtures?.length || seed.fixtures.length}`;
+  const year = currentSeasonYear();
+  const totalDays = totalSeasonDayCount();
+  const currentDay = currentSeasonDayNumber();
+  if(game.seasonFinalized || seasonPhase() === 'finalized') return `Día ${totalDays} / ${totalDays} · ${yearStatusLabel(year)} · Temporada finalizada`;
+  if(isPreseason()) return `Día ${currentDay} / ${totalDays} · ${yearStatusLabel(year)} · Pretemporada ${phaseDayRangeLabel(game.phaseTurn || 0, PRESEASON_TURNS)}`;
+  if(isPostseason()) return `Día ${currentDay} / ${totalDays} · ${yearStatusLabel(year)} · Postemporada ${phaseDayRangeLabel(game.phaseTurn || 0, postseasonTurnsForCurrentSeason())}`;
+  return `Día ${currentDay} / ${totalDays} · ${yearStatusLabel(year)} · Liga ${Math.min((game.matchdayIndex || 0) + 1, game.fixtures?.length || seed.fixtures.length)} / ${game.fixtures?.length || seed.fixtures.length}`;
 }
 function preseasonFriendliesPlayed(){ return Number(game?.preseasonFriendliesPlayed || 0); }
 function canPlayPreseasonFriendly(){ return isPreseason() && preseasonFriendliesPlayed() < MAX_PRESEASON_FRIENDLIES; }
@@ -233,7 +337,7 @@ function injuredHomeCard(item){
     ${faceImg(p, 'injured-home-face')}
     <div class="injured-home-info">
       <button class="linklike" data-player-id="${p.id}">${availabilityIcons(p.id)}${escapeHtml(p.name)}</button>
-      <span>${escapeHtml(item.status.injuryLabel || 'Lesión')} · ${item.remaining} turno(s) · Fís. ${currentCondition(p.id)}/99${canUseInjuredAsSub(p.id) ? ' · Banco permitido' : ''}</span>
+      <span>${escapeHtml(item.status.injuryLabel || 'Lesión')} · ${formatDaysFromTurns(item.remaining)} · Fís. ${currentCondition(p.id)}/99${canUseInjuredAsSub(p.id) ? ' · Banco permitido' : ''}</span>
     </div>
   </div>`;
 }
@@ -286,7 +390,7 @@ function mainBannerMarkup(){
 }
 
 function injuryRulesTable(){
-  return INJURY_TABLE.map(item => `<tr><td>${escapeHtml(item.name)}</td><td>${item.probability}%</td><td>${item.minTurns} a ${item.maxTurns}</td></tr>`).join('');
+  return INJURY_TABLE.map(item => `<tr><td>${escapeHtml(item.name)}</td><td>${item.probability}%</td><td>${formatDaysFromTurns(item.minTurns)} a ${formatDaysFromTurns(item.maxTurns)}</td></tr>`).join('');
 }
 function conditionFactor(playerId){
   return 0.5 + 0.5 * (currentCondition(playerId) / 99);

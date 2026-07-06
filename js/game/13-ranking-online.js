@@ -1,4 +1,4 @@
-/* V3.09 · Ranking online con Apps Script + Google Sheets. */
+/* V3.13 · Ranking online. */
 
 function rankingStoredEndpoint(){
   try{ return localStorage.getItem('fmRankingEndpoint') || RANKING_APPS_SCRIPT_URL || ''; }
@@ -231,14 +231,7 @@ function rankingSeasonPreviewMarkup(payload){
   </div>`;
 }
 function rankingEndpointPanelMarkup(endpoint){
-  return `<div class="card ranking-config-card">
-    <div class="row"><div><p class="label">Conexión online</p><h3>Apps Script / Google Sheets</h3></div><span class="pill ${endpoint ? 'ok' : 'warn'}">${endpoint ? 'Configurado' : 'Sin URL'}</span></div>
-    <p class="muted">Pegá la URL del Web App publicado como Apps Script. Se guarda sólo en este navegador si no querés editar <code>config.js</code>.</p>
-    <div class="ranking-endpoint-row">
-      <input id="rankingEndpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" value="${escapeHtml(endpoint)}">
-      <button id="saveRankingEndpoint" class="ghost" type="button">Guardar URL</button>
-    </div>
-  </div>`;
+  return '';
 }
 function rankingSubmitPanelMarkup(payload, endpoint){
   const managerName = rankingStoredManagerName();
@@ -246,7 +239,7 @@ function rankingSubmitPanelMarkup(payload, endpoint){
   const alreadyUploaded = Boolean(game?.rankingUploads?.[payload?.submissionKey]);
   const disabledReason = !game ? 'Necesitás una partida para subir resultados.'
     : !game.seasonFinalized ? 'Disponible al finalizar la temporada.'
-    : !endpoint ? 'Primero configurá la URL de Apps Script.'
+    : !endpoint ? 'Ranking online no disponible por el momento.'
     : alreadyUploaded ? 'Esta temporada ya fue enviada desde este navegador.'
     : '';
   return `<div class="card ranking-submit-card">
@@ -263,21 +256,15 @@ function rankingSubmitPanelMarkup(payload, endpoint){
 function renderRankingOnline(){
   const endpoint = normalizeRankingEndpoint(rankingStoredEndpoint());
   const payload = game ? buildRankingPayload(rankingStoredManagerName() || 'Manager') : null;
-  view.innerHTML = `<div class="section-title"><h2>${escapeHtml(RANKING_NAME)}</h2><p class="tagline">Tabla comunitaria desde Google Sheets. Subí resultados al finalizar la temporada.</p></div>
+  view.innerHTML = `<div class="section-title"><h2>${escapeHtml(RANKING_NAME)}</h2><p class="tagline">Tabla comunitaria. Subí resultados al finalizar la temporada.</p></div>
     <div class="ranking-layout">
-      <div>${rankingSubmitPanelMarkup(payload, endpoint)}${rankingEndpointPanelMarkup(endpoint)}</div>
+      <div>${rankingSubmitPanelMarkup(payload, endpoint)}</div>
       <div class="card ranking-list-card">
         <div class="row"><div><p class="label">Lectura pública</p><h3>Tabla online</h3></div><button id="refreshRanking" class="ghost" type="button">Actualizar ranking</button></div>
-        <div id="rankingStatus" class="small muted">${endpoint ? 'Listo para cargar registros.' : 'Configurá la URL para leer el ranking.'}</div>
+        <div id="rankingStatus" class="small muted">${endpoint ? 'Listo para cargar registros.' : 'Ranking online no disponible por el momento.'}</div>
         <div id="rankingTableBox">${rankingRowsTable(rankingRowsCache)}</div>
       </div>
     </div>`;
-  $('saveRankingEndpoint')?.addEventListener('click', () => {
-    const value = normalizeRankingEndpoint($('rankingEndpointInput')?.value || '');
-    setRankingStoredEndpoint(value);
-    showNotice(value ? 'URL de ranking guardada.' : 'URL de ranking borrada.');
-    renderRankingOnline();
-  });
   $('rankingManagerName')?.addEventListener('input', event => {
     setRankingStoredManagerName(event.target.value || '');
   });
@@ -294,7 +281,7 @@ function renderRankingOnline(){
 function validateRankingSubmit(payload, managerName, endpoint){
   if(!game) return 'No hay partida activa.';
   if(!game.seasonFinalized) return 'Sólo se puede subir una temporada finalizada.';
-  if(!endpoint) return 'Falta configurar la URL de Apps Script.';
+  if(!endpoint) return 'Ranking online no disponible por el momento.';
   if(!managerName) return 'Ingresá un nombre de manager.';
   if(!payload?.position) return 'No se pudo calcular la posición final.';
   if(game.rankingUploads?.[payload.submissionKey]) return 'Esta temporada ya fue enviada desde este navegador.';
@@ -344,7 +331,7 @@ function postRankingViaHiddenForm(endpoint, body){
 function loadRankingOnline(silent=false){
   const endpoint = normalizeRankingEndpoint(rankingStoredEndpoint());
   const status = $('rankingStatus');
-  if(!endpoint){ if(status) status.textContent = 'Configurá la URL de Apps Script para leer el ranking.'; return; }
+  if(!endpoint){ if(status) status.textContent = 'Ranking online no disponible por el momento.'; return; }
   if(rankingLoading) return;
   rankingLoading = true;
   if(status) status.textContent = 'Cargando ranking online...';
@@ -353,7 +340,7 @@ function loadRankingOnline(silent=false){
   const sep = endpoint.includes('?') ? '&' : '?';
   const timer = setTimeout(() => {
     cleanup();
-    if(status) status.textContent = 'No se pudo leer el ranking. Revisá la URL o la publicación del Apps Script.';
+    if(status) status.textContent = 'No se pudo leer el ranking online. Probá de nuevo más tarde.';
     if(!silent) showNotice('No se pudo cargar el ranking online.');
   }, 10000);
   function cleanup(){
@@ -372,7 +359,7 @@ function loadRankingOnline(silent=false){
   };
   script.onerror = () => {
     cleanup();
-    if(status) status.textContent = 'Error al leer el ranking.';
+    if(status) status.textContent = 'Error al leer el ranking online.';
     if(!silent) showNotice('Error al leer el ranking online.');
   };
   script.src = `${endpoint}${sep}action=list&limit=${encodeURIComponent(RANKING_PAGE_SIZE)}&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;

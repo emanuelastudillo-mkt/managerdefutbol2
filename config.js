@@ -4,19 +4,28 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V3.09',
+  version: 'V3.13',
   data: {
     seedUrl: 'data/seed.json',
     playersUrl: 'data/jugadores.json',
     sponsorsUrl: 'data/sponsors.json'
   },
-  turnos: {
-    // Bloqueo entre turnos en milisegundos. 120000 = 2 minutos.
-    bloqueoEntreTurnosMs: 120000,
-    // Duración visual de la transición al avanzar turno.
+  calendario: {
+    // Cada avance equivale a 7 días. El juego sigue avanzando de domingo a domingo.
+    diasPorAvance: 7,
+    // Año inicial del calendario. Cada temporada usa un año calendario completo y respeta años bisiestos.
+    anioInicial: 2026,
+    mesInicioTemporada: 1,
+    diaInicioTemporada: 1,
+    // La liga ahora se juega ida y vuelta. Con 20 clubes por división son 38 fechas.
+    ligaIdaYVuelta: true,
+    // Bloqueo entre avances en milisegundos. 120000 = 2 minutos.
+    bloqueoEntreAvancesMs: 120000,
+    // Duración visual de la transición al avanzar días.
     transicionAvanceMs: 3400,
-    pretemporada: 10,
-    postemporada: 5,
+    diasPretemporada: 70,
+    // Si queda vacío o en 0, la postemporada ocupa automáticamente los días restantes del año.
+    diasPostemporada: 0,
     amistososMaximosPretemporada: 5
   },
   plantel: {
@@ -50,44 +59,55 @@ window.GAME_CONFIG = {
     partidosMaximosEntreTandas: 7,
     ofertasMinimasPorTanda: 2,
     ofertasMaximasPorTanda: 5,
-    ofertasInicialesJornada1: 2
+    ofertasInicialesFecha1: 2
   },
   estadio: {
     costoReplantarCesped: 2000000,
-    turnosReplantarCesped: 5,
+    diasReplantarCesped: 35,
     costoParchearCampo: 200000,
-    turnosParchearCampo: 3,
-    mejoraParchePorTurno: 5
+    diasParchearCampo: 21,
+    mejoraParchePorAvance: 5
   },
   empleados: {
     psicologoCosto: 500000,
     psicologoProbabilidadExito: 0.90,
-    psicologoCooldownTurnos: 5,
+    psicologoCooldownDias: 35,
     kinesiologoCosto: 1000000,
     kinesiologoProbabilidadFallo: 0.20,
     preparadorJuvenilesCosto: 1000000
   },
   academia: {
     costoCaptacion: 1000000,
-    turnosCaptacion: 5,
+    diasCaptacion: 35,
     jugadoresMinimosPorCaptacion: 5,
     jugadoresMaximosPorCaptacion: 10,
-    costoJugadorPorTurno: 10000,
+    costoJugadorPorAvance: 10000,
     compensacionDespido: 50000,
     multiplicadorEntrenamiento: 3
+  },
+  entrenamiento: {
+    // Cada avance semanal aplica 7 días. Cada casilla usa el 50% de una sesión diaria.
+    // Si se completan las 4 casillas de cada día, la carga semanal máxima equivale a 2x el sistema previo.
+    efectividadPorCasilla: 0.50,
+    planSemanalInicial: {
+      pre: 'regenerative',
+      morning: 'intense',
+      afternoon: 'tactical',
+      night: 'dayoff'
+    }
   },
   lesiones: {
     lesionBase: 0.05,
     fatigaPaso: 5,
     fatigaBonus: 0.01,
-    lesionadoSuplenteTurnosMax: 9,
+    lesionadoSuplenteDiasMax: 63,
     penalizacionLesionadoSuplente: 0.10
   },
 
   ranking: {
-    // URL del Web App de Apps Script para ranking online. También se puede pegar desde la pantalla Ranking Online.
+    // URL publicada para enviar y leer resultados del ranking online.
     appsScriptUrl: 'https://script.google.com/macros/s/AKfycbxNVzyk9F1Bj5qGZ-xeH5i1XCLF8Z1UdCV7ppSIGmh6haaM_JfjBaCqo7SzZCsoSLZh/exec',
-    // Token simple opcional. Si lo usás en Apps Script, debe coincidir con RANKING_TOKEN.
+    // Token simple opcional para restringir envíos.
     token: '',
     resultadosPorPagina: 100,
     nombreRanking: 'Ranking Online'

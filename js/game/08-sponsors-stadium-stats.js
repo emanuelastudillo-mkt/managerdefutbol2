@@ -1,4 +1,4 @@
-/* V3.04 · Sponsors, estadio, calendario, tabla, estadísticas y finanzas visuales. */
+/* V3.13 · Sponsors, estadio, calendario, tabla, estadísticas y finanzas visuales. */
 
 function randomInt(min,max){
   return Math.floor(rnd(min, max + 1));
@@ -42,11 +42,12 @@ function sponsorCohesionBonus(){
   return (cohesionValue(game.selectedClubId) / 100) * 0.10;
 }
 function sponsorOfferValue(baseSponsor, lugar){
-  const base = Number(baseSponsor?.valor_base_por_turno || 0);
+  const base = Number(baseSponsor?.valor_base_por_7_dias || 0);
   const place = Number(lugar?.multiplicador_lugar || 1);
   const totalMultiplier = sponsorDivisionMultiplier() * place * (1 + sponsorPositionBonus() + sponsorMoraleBonus() + sponsorCohesionBonus());
   const perTurn = Math.round(base * SPONSOR_BASE_VALUE_FACTOR * totalMultiplier);
-  const turns = clamp(Math.round(Number(baseSponsor?.turnos_duracion_oferta || randomInt(3,35))), 3, 35);
+  const durationDays = Number(baseSponsor?.dias_duracion_oferta || 0);
+  const turns = clamp(Math.round(durationDays > 0 ? durationDays / DAYS_PER_ADVANCE : randomInt(3,35)), 3, 35);
   return { perTurn, turns, total:perTurn * turns };
 }
 function occupiedSponsorPlaces(){
@@ -166,10 +167,10 @@ function sponsorOffersMarkup(){
   if(!offers.length){
     return `<p class="muted small">Sin ofertas disponibles. Intenta ganar partidos para tentar a las marcas a anunciarse con nosotros.</p>`;
   }
-  return `<div class="table-wrap"><table class="sponsor-table"><thead><tr><th>Marca</th><th>Lugar</th><th>Turnos</th><th>Por turno</th><th>Pago inmediato</th><th></th></tr></thead><tbody>${offers.map(offer => `<tr>
+  return `<div class="table-wrap"><table class="sponsor-table"><thead><tr><th>Marca</th><th>Lugar</th><th>Días</th><th>Por 7 días</th><th>Pago inmediato</th><th></th></tr></thead><tbody>${offers.map(offer => `<tr>
     <td><strong>${escapeHtml(offer.sponsorName)}</strong><span class="muted small">${escapeHtml(offer.category || '')}</span></td>
     <td>${escapeHtml(offer.placeName)}</td>
-    <td>${offer.turns}</td>
+    <td>${formatDaysFromTurns(offer.turns)}</td>
     <td>${formatMoney(offer.perTurn)}</td>
     <td><strong class="ok">${formatMoney(offer.total)}</strong></td>
     <td><button class="primary small-btn" data-accept-sponsor="${escapeHtml(offer.id)}">Aceptar</button><button class="ghost small-btn" data-reject-sponsor="${escapeHtml(offer.id)}">Rechazar</button></td>
@@ -179,7 +180,7 @@ function activeSponsorsMarkup(){
   ensureSponsorState();
   const active = game.sponsors.active || [];
   if(!active.length) return '<p class="muted small">Todavía no hay contratos activos.</p>';
-  return `<div class="table-wrap"><table class="sponsor-table"><thead><tr><th>Marca</th><th>Lugar</th><th>Turnos restantes</th><th>Pago recibido</th></tr></thead><tbody>${active.map(item => `<tr><td><strong>${escapeHtml(item.sponsorName)}</strong></td><td>${escapeHtml(item.placeName)}</td><td>${item.turnsRemaining}</td><td>${formatMoney(item.total || 0)}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="table-wrap"><table class="sponsor-table"><thead><tr><th>Marca</th><th>Lugar</th><th>Días restantes</th><th>Pago recibido</th></tr></thead><tbody>${active.map(item => `<tr><td><strong>${escapeHtml(item.sponsorName)}</strong></td><td>${escapeHtml(item.placeName)}</td><td>${formatDaysFromTurns(item.turnsRemaining)}</td><td>${formatMoney(item.total || 0)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 
@@ -214,18 +215,18 @@ function renderStadium(){
         <h3>Mantenimiento</h3>
         <div class="stack">
           <div class="maintenance-option">
-            <div><strong>Replantar todo</strong><p class="muted small">Costo ${formatMoney(REPLANT_COST)}. Durante 5 turnos el campo queda muy malo; al finalizar sube a 99.</p></div>
+            <div><strong>Replantar todo</strong><p class="muted small">Costo ${formatMoney(REPLANT_COST)}. Durante 35 días el campo queda muy malo; al finalizar sube a 99.</p></div>
             <button id="btnReplant" class="primary" ${replantActive || patchActive || (game.budget || 0) < REPLANT_COST ? 'disabled' : ''}>Replantar</button>
           </div>
           <div class="maintenance-option">
-            <div><strong>Regar y parchar campo de juego</strong><p class="muted small">Costo ${formatMoney(PATCH_COST)}. Mejora el campo durante los próximos 3 turnos.</p></div>
+            <div><strong>Regar y parchar campo de juego</strong><p class="muted small">Costo ${formatMoney(PATCH_COST)}. Mejora el campo durante los próximos 21 días.</p></div>
             <button id="btnPatch" class="ghost" ${replantActive || patchActive || (game.budget || 0) < PATCH_COST ? 'disabled' : ''}>Regar y parchar</button>
           </div>
         </div>
       </div>
     </div>
-    ${replantActive ? `<div class="card stadium-progress-card" style="margin-top:14px"><div class="row"><h3>Replantando</h3><span class="pill">${project.replantingTurnsLeft} turno(s) restante(s)</span></div><div class="project-progress"><span style="width:${replantProgress}%"></span></div><p class="muted small">Durante el replante el campo se mantiene en estado muy malo. Al finalizar pasará a 99.</p></div>` : ''}
-    ${patchActive ? `<div class="card stadium-progress-card" style="margin-top:14px"><div class="row"><h3>Regando y parchando campo de juego</h3><span class="pill">${project.patchingTurnsLeft} turno(s) restante(s)</span></div><div class="project-progress"><span style="width:${patchProgress}%"></span></div><p class="muted small">El campo mejora progresivamente mientras dura el mantenimiento.</p></div>` : ''}
+    ${replantActive ? `<div class="card stadium-progress-card" style="margin-top:14px"><div class="row"><h3>Replantando</h3><span class="pill">${formatDaysFromTurns(project.replantingTurnsLeft)} restante(s)</span></div><div class="project-progress"><span style="width:${replantProgress}%"></span></div><p class="muted small">Durante el replante el campo se mantiene en estado muy malo. Al finalizar pasará a 99.</p></div>` : ''}
+    ${patchActive ? `<div class="card stadium-progress-card" style="margin-top:14px"><div class="row"><h3>Regando y parchando campo de juego</h3><span class="pill">${formatDaysFromTurns(project.patchingTurnsLeft)} restante(s)</span></div><div class="project-progress"><span style="width:${patchProgress}%"></span></div><p class="muted small">El campo mejora progresivamente mientras dura el mantenimiento.</p></div>` : ''}
     <div class="card sponsors-card" style="margin-top:14px">
       <div class="row"><div><h3>Sponsors</h3><p class="muted small">Cada algunos partidos tendras ofertas publicitarias. El pago se recibe completo al aceptar.</p></div></div>
       <h4>Ofertas disponibles</h4>
@@ -249,7 +250,7 @@ function renderFixture(){
       if(!matches.length) return '';
       return `<div class="fixture-division-block"><h4>${escapeHtml(division.name)}</h4><div class="grid cols-2">${matches.map(matchCard).join('')}</div></div>`;
     }).join('');
-    return `<div class="card"><div class="row"><h3>Jornada ${round.matchday}</h3><span class="pill">${round.date}</span></div>${groups || '<p class="muted">Sin partidos para esta división.</p>'}</div>`;
+    return `<div class="card"><div class="row"><h3>Fecha ${round.matchday}</h3><span class="pill">${round.date}</span></div>${groups || '<p class="muted">Sin partidos para esta división.</p>'}</div>`;
   }).join('');
   view.innerHTML = `
     <div class="row section-title">

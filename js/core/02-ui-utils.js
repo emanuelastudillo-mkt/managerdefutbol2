@@ -1,4 +1,4 @@
-/* V3.04 · Utilidades DOM, formato, avisos y helpers básicos de club. */
+/* V3.13 · Utilidades DOM, formato, avisos, transición de avance y helpers básicos de club. */
 
 function escapeHtml(value){
   return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
@@ -58,7 +58,7 @@ function runActionFeedback(button, action, options={}){
   }, ACTION_FEEDBACK_LOADING_MS);
   return null;
 }
-function showTurnTransition(label='Avanzando turno'){
+function showTurnTransition(label='Avanzando días'){
   let root = $('turnTransition');
   if(root) root.remove();
   root = document.createElement('div');

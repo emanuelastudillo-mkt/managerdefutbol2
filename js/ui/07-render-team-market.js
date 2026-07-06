@@ -1,4 +1,4 @@
-/* V3.08 · Primer equipo, mercado, plantel, táctica y validación de alineación. */
+/* V3.13 · Primer equipo, mercado, plantel, táctica y validación de alineación. */
 
 function firstTeamTabsMarkup(current){
   const tabs = [
@@ -45,12 +45,97 @@ function contractedMarketPlayers(){
     .slice()
     .sort((a,b)=>visibleOverall(b)-visibleOverall(a) || a.name.localeCompare(b.name,'es'));
 }
+
+function marketPositionOptions(){
+  const options = [
+    ['all','Todas'],
+    ['POR','POR'],
+    ['DEF','DEF'],
+    ['LD','LD'],
+    ['LI','LI'],
+    ['DFC','DFC'],
+    ['MED','MED'],
+    ['MCD','MCD'],
+    ['MC','MC'],
+    ['MI','MI'],
+    ['MD','MD'],
+    ['MCO','MCO'],
+    ['DEL','DEL'],
+    ['ED','ED'],
+    ['EI','EI'],
+    ['DC','DC']
+  ];
+  return options.map(([value, label]) => `<option value="${value}" ${marketFilters.position===value?'selected':''}>${label}</option>`).join('');
+}
+function marketNumberFilterValue(key){
+  const value = marketFilters?.[key];
+  return value === undefined || value === null ? '' : String(value);
+}
+function marketPlayerPrice(player){
+  return Number(player?.clause || player?.value || 0);
+}
+function marketPlayerMatchesPosition(player){
+  const filter = String(marketFilters.position || 'all').toUpperCase();
+  if(filter === 'ALL') return true;
+  const pos = normalizePlayerPosition(player.position, player.id);
+  const group = playerRoleGroup(pos);
+  if(filter === 'DEF') return group === 'DEF';
+  if(filter === 'MED') return group === 'MID';
+  if(filter === 'DEL') return group === 'ATT';
+  return pos === filter;
+}
+function marketPlayerMatchesFilters(player){
+  const media = visibleOverall(player);
+  const age = Number(player.age || 0);
+  const price = marketPlayerPrice(player);
+  const minMedia = Number(marketFilters.mediaMin || 0);
+  const maxMedia = Number(marketFilters.mediaMax || 0);
+  const minAge = Number(marketFilters.ageMin || 0);
+  const maxAge = Number(marketFilters.ageMax || 0);
+  const maxPrice = Number(marketFilters.priceMax || 0);
+  if(minMedia && media < minMedia) return false;
+  if(maxMedia && media > maxMedia) return false;
+  if(minAge && age < minAge) return false;
+  if(maxAge && age > maxAge) return false;
+  if(maxPrice && price > maxPrice) return false;
+  if(!marketPlayerMatchesPosition(player)) return false;
+  return true;
+}
+function marketFiltersMarkup(total, shown){
+  return `<div class="card market-filters-card">
+    <div class="row market-filters-head"><div><p class="label">Buscar coincidencias</p><h3>Filtros de mercado</h3></div><span class="pill">${shown}/${total} jugador(es)</span></div>
+    <div class="market-filter-grid">
+      <label>Media desde<input data-market-filter="mediaMin" type="number" min="1" max="99" placeholder="Min." value="${escapeHtml(marketNumberFilterValue('mediaMin'))}"></label>
+      <label>Media hasta<input data-market-filter="mediaMax" type="number" min="1" max="99" placeholder="Max." value="${escapeHtml(marketNumberFilterValue('mediaMax'))}"></label>
+      <label>Edad desde<input data-market-filter="ageMin" type="number" min="15" max="45" placeholder="Min." value="${escapeHtml(marketNumberFilterValue('ageMin'))}"></label>
+      <label>Edad hasta<input data-market-filter="ageMax" type="number" min="15" max="45" placeholder="Max." value="${escapeHtml(marketNumberFilterValue('ageMax'))}"></label>
+      <label>Precio hasta<input data-market-filter="priceMax" type="number" min="0" step="100000" placeholder="Máximo" value="${escapeHtml(marketNumberFilterValue('priceMax'))}"></label>
+      <label>Posición<select data-market-filter="position">${marketPositionOptions()}</select></label>
+      <button id="clearMarketFilters" class="ghost" type="button">Limpiar filtros</button>
+    </div>
+  </div>`;
+}
+function bindMarketFilters(){
+  document.querySelectorAll('[data-market-filter]').forEach(input => {
+    input.addEventListener('change', () => {
+      const key = input.dataset.marketFilter;
+      if(!key) return;
+      marketFilters[key] = input.value || (key === 'position' ? 'all' : '');
+      renderMarket();
+    });
+  });
+  $('clearMarketFilters')?.addEventListener('click', () => {
+    marketFilters = { mediaMin:'', mediaMax:'', ageMin:'', ageMax:'', priceMax:'', position:'all' };
+    renderMarket();
+  });
+}
 function renderMarket(){
   mergeMarketPlayersIntoSeed(game.marketPlayers || []);
   ensurePlayerStateForAll();
   if(marketSubTab !== 'contracted') marketSubTab = 'free';
   if(marketSubTab === 'contracted') return renderContractedMarket();
-  const free = (game.marketPlayers || []).filter(p => Number(p.clubId || 0) === 0 && !p.sold).slice().sort((a,b)=>visibleOverall(b)-visibleOverall(a));
+  const freeBase = (game.marketPlayers || []).filter(p => Number(p.clubId || 0) === 0 && !p.sold).slice().sort((a,b)=>visibleOverall(b)-visibleOverall(a));
+  const free = freeBase.filter(marketPlayerMatchesFilters);
   const rows = free.map(p => `<tr>
     <td>${faceImg(p, 'photo-thumb')}</td>
     <td><button class="linklike" data-player-id="${p.id}"><strong>${escapeHtml(p.name)}</strong></button></td>
@@ -60,18 +145,22 @@ function renderMarket(){
     <td>${visibleOverall(p)}</td>
     <td>${conditionBar(p.id)}</td>
     <td>${moraleBar(p.id)}</td>
+    <td>${formatMoney(marketPlayerPrice(p))}</td>
     <td>${formatMoney(p.salary || 0)}</td>
     <td><button class="primary small-btn" data-hire-free-agent="${p.id}">Contratar</button></td>
   </tr>`).join('');
   view.innerHTML = `
     <div class="section-title"><h2>Mercado</h2><p class="tagline">Jugadores libres y jugadores contratados disponibles para negociar.</p></div>
     ${marketTabsMarkup()}
-    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>Jugador</th><th>Rol</th><th>Edad</th><th>Nac.</th><th>Media</th><th>Físico</th><th>Moral</th><th>Sueldo</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="10" class="muted">No quedan jugadores libres.</td></tr>'}</tbody></table></div>`;
+    ${marketFiltersMarkup(freeBase.length, free.length)}
+    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>Jugador</th><th>Rol</th><th>Edad</th><th>Nac.</th><th>Media</th><th>Físico</th><th>Moral</th><th>Valor</th><th>Sueldo</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="11" class="muted">No hay jugadores libres que coincidan con los filtros.</td></tr>'}</tbody></table></div>`;
   bindMarketTabs();
+  bindMarketFilters();
   document.querySelectorAll('[data-hire-free-agent]').forEach(btn => btn.addEventListener('click', () => hireFreeAgent(Number(btn.dataset.hireFreeAgent))));
 }
 function renderContractedMarket(){
-  const players = contractedMarketPlayers();
+  const basePlayers = contractedMarketPlayers();
+  const players = basePlayers.filter(marketPlayerMatchesFilters);
   const rows = players.map(p => {
     const blocked = typeof isPurchaseOfferBlockedThisSeason === 'function' && isPurchaseOfferBlockedThisSeason(p.id);
     const label = blocked ? 'Rechazada hasta próxima temp.' : 'Hacer oferta';
@@ -91,8 +180,10 @@ function renderContractedMarket(){
   view.innerHTML = `
     <div class="section-title"><h2>Mercado</h2><p class="tagline">Jugadores de otros clubes. Podés iniciar una negociación desde esta pestaña.</p></div>
     ${marketTabsMarkup()}
-    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>Jugador</th><th>Rol</th><th>Edad</th><th>Nac.</th><th>Equipo</th><th>Media</th><th>Cláusula</th><th>Sueldo</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="10" class="muted">No hay jugadores contratados para mostrar.</td></tr>'}</tbody></table></div>`;
+    ${marketFiltersMarkup(basePlayers.length, players.length)}
+    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>Jugador</th><th>Rol</th><th>Edad</th><th>Nac.</th><th>Equipo</th><th>Media</th><th>Cláusula</th><th>Sueldo</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="10" class="muted">No hay jugadores contratados que coincidan con los filtros.</td></tr>'}</tbody></table></div>`;
   bindMarketTabs();
+  bindMarketFilters();
   document.querySelectorAll('[data-make-player-offer]').forEach(btn => btn.addEventListener('click', () => openPurchaseOfferModal(Number(btn.dataset.makePlayerOffer))));
 }
 
@@ -257,7 +348,7 @@ function renderWorldPlayers(){
   view.innerHTML = `
     <div class="section-title">
       <h2>Jugadores</h2>
-      <p class="tagline">Listado mundial. La mayor parte de las habilidades se oculta y vuelve a sortearse en cada turno.</p>
+      <p class="tagline">Listado mundial. La mayor parte de las habilidades se oculta y vuelve a sortearse en cada semana.</p>
     </div>
     <div class="card world-player-filters">
       <label>Posición<select id="worldPositionFilter">${worldPlayersPositionOptions()}</select></label>
@@ -585,7 +676,7 @@ function validateTactic(tactic){
   const unavailableStarters = [...uniqueStarters].filter(id => !canBeStarter(id));
   if(unavailableStarters.length) errors.push('Hay lesionados o suspendidos entre los titulares.');
   const unavailableBench = [...uniqueBench].filter(id => !canBeBench(id));
-  if(unavailableBench.length) errors.push('En el banco sólo se permiten disponibles o lesionados con menos de 10 turnos de recuperación.');
+  if(unavailableBench.length) errors.push('En el banco sólo se permiten disponibles o lesionados con recuperación menor a 70 días.');
   const slots = FORMATIONS[tactic.formation] || FORMATIONS['4-4-2'];
   slots.forEach((slot, index) => {
     const player = playerById(starters[index]);

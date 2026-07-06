@@ -116,7 +116,7 @@ function startAcademyScouting(){
   game.academy.scoutingJobs.push(job);
   saveLocal(true);
   renderAcademy();
-  showNotice('Captación iniciada. El informe llegará en algunos turnos.');
+  showNotice('Captación iniciada. El informe llegará en 35 días.');
 }
 function createAcademyBatch(count){
   const players = [];
@@ -220,7 +220,7 @@ function academyLockedStatTargets(){
 function consultAcademyPlayers(){
   if(!academyYouthPreparerActive()){ showNotice('Necesitás contratar al preparador de juveniles para consultar informes.'); return; }
   const turn = currentTurnIndex();
-  if(Number(game.academy.lastConsultTurn) === turn){ showNotice('El preparador ya entregó un informe en este turno.'); return; }
+  if(Number(game.academy.lastConsultTurn) === turn){ showNotice('El preparador ya entregó un informe esta semana.'); return; }
   const targets = academyLockedStatTargets();
   if(!targets.length){ showNotice('No quedan habilidades ocultas por desbloquear en la academia.'); return; }
   const amount = Math.min(targets.length, 1 + Math.floor(Math.random() * 2));
@@ -318,7 +318,7 @@ function applyAcademyAgingIfNeeded(){
 function academyPendingJobsMarkup(){
   const jobs = (game.academy?.scoutingJobs || []).filter(j => j.status === 'pending');
   if(!jobs.length) return '<p class="muted">No hay captaciones en curso.</p>';
-  return `<div class="academy-jobs">${jobs.map(job => `<div class="stat-rank"><span>Captación en curso</span><strong>${Math.max(0, Number(job.dueTurn || 0) - currentTurnIndex())} turno(s)</strong></div>`).join('')}</div>`;
+  return `<div class="academy-jobs">${jobs.map(job => `<div class="stat-rank"><span>Captación en curso</span><strong>${formatDays(daysUntilTurn(job.dueTurn || 0))}</strong></div>`).join('')}</div>`;
 }
 function academyPlayerStatsMarkup(player){
   const stats = academyVisibleStats(player);
@@ -346,7 +346,7 @@ function renderAcademy(){
   view.innerHTML = `
     <div class="row section-title">
       <div><h2>Academia</h2><p class="tagline">Captación, seguimiento y entrenamiento de juveniles antes de firmar contrato profesional.</p></div>
-      <div class="pill">Costo por turno: ${formatMoney(salaryTurn)}</div>
+      <div class="pill">Costo por semana: ${formatMoney(salaryTurn)}</div>
     </div>
     <div class="grid cols-3 academy-summary">
       <div class="card"><p class="label">Juveniles</p><div class="metric">${active.length}</div><p class="small muted">Stats ocultas hasta consultar informes.</p></div>
@@ -354,7 +354,7 @@ function renderAcademy(){
       <div class="card"><p class="label">Preparador de juveniles</p><div class="metric small">${formatMoney(YOUTH_PREPARER_COST)}</div>${activePreparer ? '<span class="pill ok">Contratado</span>' : '<button class="primary" id="btnHireYouthPreparer">Contratar</button>'}<button class="ghost" id="btnConsultAcademy" ${activePreparer ? '' : 'disabled'}>Consultar juveniles</button></div>
     </div>
     <div class="card" style="margin-top:14px"><h3>Captaciones pendientes</h3>${academyPendingJobsMarkup()}</div>
-    <div class="card academy-rules-card" style="margin-top:14px"><p class="muted">Cada captación tarda 5 turnos y puede sumar entre 5 y 10 juveniles. Los juveniles cobran ${formatMoney(ACADEMY_PLAYER_TURN_COST)} por turno. Despedir uno cuesta ${formatMoney(ACADEMY_DISMISS_COMPENSATION)}.</p></div>
+    <div class="card academy-rules-card" style="margin-top:14px"><p class="muted">Cada captación tarda 35 días y puede sumar entre 5 y 10 juveniles. Los juveniles cobran ${formatMoney(ACADEMY_PLAYER_TURN_COST)} por semana. Despedir uno cuesta ${formatMoney(ACADEMY_DISMISS_COMPENSATION)}.</p></div>
     <div class="academy-grid" style="margin-top:14px">${active.length ? active.map(academyPlayerCard).join('') : '<div class="card"><p class="muted">Todavía no hay juveniles en la academia.</p></div>'}</div>
   `;
   $('btnAcademyScouting')?.addEventListener('click', startAcademyScouting);
@@ -373,7 +373,7 @@ function renderEmployees(){
   const last = game.staffActions?.motivationalTalk || null;
   const cooldownLeft = turnCooldownLeft(last, PSYCHOLOGIST_COOLDOWN_TURNS);
   const canCallPsychologist = cooldownLeft <= 0 && (game.budget || 0) >= PSYCHOLOGIST_COST;
-  const cooldownText = cooldownLeft > 0 ? `<p class="small warn">Disponible nuevamente en ${cooldownLeft} turno(s).</p>` : '';
+  const cooldownText = cooldownLeft > 0 ? `<p class="small warn">Disponible nuevamente en ${formatDaysFromTurns(cooldownLeft)}.</p>` : '';
   const kinesio = game.staffActions?.kinesiologist || null;
   const kinesioActive = Boolean(kinesio?.active);
   const injuredList = injuredPlayersByClub(game.selectedClubId);
@@ -402,7 +402,7 @@ function renderEmployees(){
       </div>
       <div class="card staff-card">
         <h3>Kinesiólogo</h3>
-        <p class="muted">Contratación por temporada completa. Permite tratar lesionados una vez por turno para intentar reducir 1 turno de lesión.</p>
+        <p class="muted">Contratación por temporada completa. Permite tratar lesionados una vez por semana para intentar reducir 7 días de lesión.</p>
         <p class="label">Costo</p>
         <div class="metric small">${formatMoney(KINESIOLOGIST_COST)}</div>
         ${kinesioActive ? '<span class="pill ok">Contratado</span>' : `<button id="btnHireKinesiologist" class="primary" ${(game.budget || 0) >= KINESIOLOGIST_COST ? '' : 'disabled'}>Contratar kinesiólogo</button>`}
@@ -425,8 +425,8 @@ function injuredTreatmentList(injuredList){
     const treated = wasKinesioTreatedThisTurn(item.player.id);
     return `<div class="injured-treatment-row">
       ${faceImg(item.player, 'injured-home-face')}
-      <div><button class="linklike" data-player-id="${item.player.id}">${availabilityIcons(item.player.id)}${escapeHtml(item.player.name)}</button><span>${escapeHtml(item.status.injuryLabel || 'Lesión')} · ${item.remaining} turno(s)</span></div>
-      <button class="ghost" data-kinesio-treat="${item.player.id}" ${treated ? 'disabled' : ''}>${treated ? 'Tratado este turno' : 'Tratar'}</button>
+      <div><button class="linklike" data-player-id="${item.player.id}">${availabilityIcons(item.player.id)}${escapeHtml(item.player.name)}</button><span>${escapeHtml(item.status.injuryLabel || 'Lesión')} · ${formatDaysFromTurns(item.remaining)}</span></div>
+      <button class="ghost" data-kinesio-treat="${item.player.id}" ${treated ? 'disabled' : ''}>${treated ? 'Tratado esta semana' : 'Tratar'}</button>
     </div>`;
   }).join('')}</div>`;
 }
@@ -451,7 +451,7 @@ function treatInjuredPlayer(playerId, button=null){
     if(!isInjured(playerId)){ return { success:false, message:'El jugador no está lesionado.', after:renderEmployees }; }
     game.staffActions.kinesiologyTreatments = game.staffActions.kinesiologyTreatments || {};
     const key = `${currentTurnIndex()}:${playerId}`;
-    if(game.staffActions.kinesiologyTreatments[key]){ return { success:false, message:'Este jugador ya recibió tratamiento en este turno.' }; }
+    if(game.staffActions.kinesiologyTreatments[key]){ return { success:false, message:'Este jugador ya recibió tratamiento esta semana.' }; }
     const success = Math.random() >= KINESIOLOGIST_FAILURE_CHANCE;
     game.staffActions.kinesiologyTreatments[key] = { success, ...turnStamp({ playerId }) };
     if(success){
@@ -468,7 +468,7 @@ function treatInjuredPlayer(playerId, button=null){
     return {
       success,
       buttonLabel: success ? 'Tratamiento realizado' : 'Tratamiento fallido',
-      message: success ? 'Tratamiento exitoso. La recuperación se acortó 1 turno.' : 'El tratamiento falló. La lesión no se redujo.',
+      message: success ? 'Tratamiento exitoso. La recuperación se acortó 7 días.' : 'El tratamiento falló. La lesión no se redujo.',
       after:renderEmployees
     };
   };
@@ -488,7 +488,7 @@ function callMotivationalPsychologist(button=null){
     if(!game) return { success:false, message:'No hay partida activa.' };
     const last = game.staffActions?.motivationalTalk || null;
     const cooldownLeft = turnCooldownLeft(last, PSYCHOLOGIST_COOLDOWN_TURNS);
-    if(cooldownLeft > 0){ return { success:false, message:`La charla motivacional estará disponible en ${cooldownLeft} turno(s).` }; }
+    if(cooldownLeft > 0){ return { success:false, message:`La charla motivacional estará disponible en ${formatDaysFromTurns(cooldownLeft)}.` }; }
     if((game.budget || 0) < PSYCHOLOGIST_COST){ return { success:false, message:'Presupuesto insuficiente para llamar al psicólogo motivacional.' }; }
     recordBudgetChange(-PSYCHOLOGIST_COST, 'Psicólogo motivacional', { type:'staff_psychologist' });
     const success = Math.random() < PSYCHOLOGIST_SUCCESS_CHANCE;

@@ -1,54 +1,57 @@
-# Versión V3.09
+# Versión V3.13
 
 ## Tipo de versión
 
-Nueva función online sobre V3.08.
+Actualización funcional de entrenamiento sobre V3.12.
 
 ## Cambios
 
-- Se agrega la pantalla **Ranking Online**.
-- Se permite subir una temporada finalizada a Google Sheets mediante Apps Script.
-- Se agrega campo de **Nombre del manager**.
-- Se calcula un **Puntaje manager** para ordenar resultados.
-- Se agregan al envío:
-  - club usado,
-  - temporada,
-  - división,
-  - posición final,
-  - puntos,
-  - ganados / empatados / perdidos,
-  - goles a favor / goles en contra / diferencia de gol,
-  - presupuesto inicial,
-  - presupuesto final,
-  - variación de presupuesto,
-  - títulos,
-  - fecha de envío,
-  - código de partida.
-- Se permite leer el ranking público desde el juego.
-- La tabla online puede ordenarse por puntaje, división, club, puntos y presupuesto final.
-- Se agrega `apps-script-ranking.gs` como plantilla de backend simple.
+- Nueva pantalla de entrenamiento semanal por días.
+- Cada semana muestra 7 días, de domingo a sábado.
+- Cada día tiene 4 casillas:
+  - Pre turno
+  - Turno mañana
+  - Turno tarde
+  - Turno noche
+- Cada casilla permite elegir un tipo de entrenamiento.
+- Los tipos conservados son:
+  - Regenerativo
+  - Masajista
+  - Entrenamiento intenso
+  - Entrenamiento táctico
+  - Día libre
+- Cada tipo tiene tono visual propio para leer rápido la carga semanal.
+- La efectividad de cada casilla baja al 50% de una sesión diaria.
+- Como el avance actual sigue siendo semanal, el sistema convierte la planificación a 7 días.
+- Si se usan las 4 casillas diarias, la carga máxima semanal puede llegar a 2x respecto del sistema anterior.
+- El entrenamiento ahora afecta globalmente al primer equipo según el plan semanal.
+- La tabla inferior de entrenamiento queda como estado del plantel, sin selector individual por jugador.
 
-## Archivos modificados
+## Compatibilidad
 
-- `config.js`
-- `index.html`
-- `app.js`
-- `style.css`
-- `js/core/01-config-constants.js`
-- `js/game/05-state-season.js`
-- `js/ui/06-render-home-messages.js`
-- `README.md`
-- `VERSION.md`
-- `CARACTERISTICAS_VERSION.md`
+- Las partidas anteriores cargan con un plan semanal inicial automático.
+- Se conserva `trainingPlan` interno para no romper guardados antiguos, aunque la nueva pantalla usa `trainingSchedule`.
+- El avance sigue siendo de domingo a domingo.
 
-## Archivos agregados
+## Configuración nueva
 
-- `js/game/13-ranking-online.js`
-- `apps-script-ranking.gs`
+En `config.js`:
 
+```js
+entrenamiento: {
+  efectividadPorCasilla: 0.50,
+  planSemanalInicial: {
+    pre: 'regenerative',
+    morning: 'intense',
+    afternoon: 'tactical',
+    night: 'dayoff'
+  }
+}
+```
 
-## Ajuste de configuración ranking online
+## Validación
 
-- Google Sheet configurada: `1ADONE8c3AOAhmrF0MKKRC9oJsGOJJG-pZaqm-NM5OeI`.
-- Web App Apps Script configurada en `config.js` para lectura y envío del ranking online.
-- `apps-script-ranking.gs` queda con el ID de hoja ya cargado.
+- `node --check` correcto en todos los `.js`.
+- `apps-script-ranking.gs` validado como JavaScript.
+- JSON válidos.
+- ZIP verificado.

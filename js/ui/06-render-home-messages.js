@@ -1,4 +1,4 @@
-/* V3.09 · Render general, inicio, avance de turno, mensajes y ofertas de venta recibidas. */
+/* V3.13 · Render general, inicio, calendario anual, mensajes y ofertas de venta recibidas. */
 
 function renderAll(){
   document.querySelectorAll('.tabs button').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab === activeTab));
@@ -53,16 +53,16 @@ function turnModePanelMarkup(){
       .map(c => `<option value="${c.id}" ${Number(game.pendingFriendlyOpponentId || 0)===c.id?'selected':''}>${escapeHtml(c.name)} · ${escapeHtml(clubDivision(c.id).name)}</option>`)
       .join('');
     return `<div class="card preseason-card">
-      <div class="row"><div><p class="label">Pretemporada</p><h3>Turno ${(game.phaseTurn || 0) + 1} de ${PRESEASON_TURNS}</h3></div><span class="pill">Amistosos restantes: ${remaining}</span></div>
-      <p class="muted">Usá estos turnos para entrenar, recuperar forma física y preparar el plantel antes del inicio oficial.</p>
+      <div class="row"><div><p class="label">Pretemporada</p><h3>${phaseDayRangeLabel(game.phaseTurn || 0, PRESEASON_TURNS)}</h3></div><span class="pill">Amistosos restantes: ${remaining}</span></div>
+      <p class="muted">Usá estos días para entrenar, recuperar forma física y preparar el plantel antes del inicio oficial.</p>
       <div class="grid cols-2" style="margin-top:10px">
-        <div><label for="friendlyOpponentSelect">Amistoso opcional de este turno</label><select id="friendlyOpponentSelect" ${remaining <= 0 ? 'disabled' : ''}><option value="0">Sin amistoso</option>${options}</select></div>
+        <div><label for="friendlyOpponentSelect">Amistoso opcional de esta semana</label><select id="friendlyOpponentSelect" ${remaining <= 0 ? 'disabled' : ''}><option value="0">Sin amistoso</option>${options}</select></div>
         <div class="row" style="align-items:end"><button id="btnClearFriendly" class="ghost" ${Number(game.pendingFriendlyOpponentId || 0) ? '' : 'disabled'}>Quitar amistoso</button></div>
       </div>
     </div>`;
   }
   if(isPostseason()){
-    return `<div class="card preseason-card"><div class="row"><div><p class="label">Postemporada</p><h3>Turno ${(game.phaseTurn || 0) + 1} de ${POSTSEASON_TURNS}</h3></div><span class="pill">Sin partidos oficiales</span></div><p class="muted">Últimos turnos de entrenamiento y recuperación antes del cierre formal de temporada.</p></div>`;
+    return `<div class="card preseason-card"><div class="row"><div><p class="label">Postemporada</p><h3>${phaseDayRangeLabel(game.phaseTurn || 0, postseasonTurnsForCurrentSeason())}</h3></div><span class="pill">Sin partidos oficiales</span></div><p class="muted">Últimos días del año para entrenamiento y recuperación antes del cierre formal de temporada.</p></div>`;
   }
   return '';
 }
@@ -144,8 +144,8 @@ function visualAlertItems(){
   }
   if(scoutingJobs.length){
     const nextDue = Math.min(...scoutingJobs.map(j => Number(j.dueTurn || 0)));
-    const left = Math.max(0, nextDue - currentTurnIndex());
-    items.push({ tone:'info', icon:'A', title:'Captación en curso', text:`Informe de academia en ${left} turno(s).`, tab:'academy' });
+    const left = daysUntilTurn(nextDue);
+    items.push({ tone:'info', icon:'A', title:'Captación en curso', text:`Informe de academia en ${formatDays(left)}.`, tab:'academy' });
   }
   if(squadCount >= MAX_PLAYERS_PER_CLUB){
     items.push({ tone:'warn', icon:'42', title:'Plantel completo', text:`Tenés ${squadCount}/${MAX_PLAYERS_PER_CLUB} jugadores. No podés fichar ni subir juveniles.`, tab:'firstTeam' });
@@ -156,7 +156,7 @@ function visualAlertItems(){
     items.push({ tone:'bad', icon:'$', title:'Presupuesto presionado', text:'El presupuesto actual está bajo contra la masa salarial anual.', tab:'finance' });
   }
   if(!items.length){
-    items.push({ tone:'ok', icon:'✓', title:'Sin urgencias', text:'No hay bloqueos críticos para el próximo turno.', tab:null });
+    items.push({ tone:'ok', icon:'✓', title:'Sin urgencias', text:'No hay bloqueos críticos para el próximo avance.', tab:null });
   }
   return items.slice(0,6);
 }
@@ -174,7 +174,7 @@ function managerOfficeMarkup({ next, position, clubPlayers, avgOverall, avgFitne
     <div class="office-main-card">
       <div class="office-club-head">
         ${clubBadge(game.selectedClubId)}
-        <div><p class="label">Oficina del manager</p><h2>${escapeHtml(clubName(game.selectedClubId))}</h2><p class="tagline">${escapeHtml(phase)} · Jornada ${Number(game.matchdayIndex || 0) + 1}</p></div>
+        <div><p class="label">Oficina del manager</p><h2>${escapeHtml(clubName(game.selectedClubId))}</h2><p class="tagline">${escapeHtml(phase)} · Fecha de liga ${Math.min(Number(game.matchdayIndex || 0) + 1, game.fixtures?.length || 0)}</p></div>
       </div>
       <div class="office-mini-grid">
         <div><span>Posición</span><strong>${position || '—'}°</strong></div>
@@ -191,7 +191,7 @@ function managerOfficeMarkup({ next, position, clubPlayers, avgOverall, avgFitne
     </div>
     <div class="office-side-card">
       ${nextBox}
-      <div class="advance-control office-advance"><button id="advanceBtn" class="primary">Avanzar fecha</button><div id="advanceProgressBox">${advanceProgressMarkup()}</div></div>
+      <div class="advance-control office-advance"><button id="advanceBtn" class="primary">Avanzar 7 días</button><div id="advanceProgressBox">${advanceProgressMarkup()}</div></div>
     </div>
   </div>`;
 }
@@ -200,7 +200,7 @@ function lastTurnSummaryMarkup(){
   if(!summary) return '';
   const items = Array.isArray(summary.items) ? summary.items.slice(0,5) : [];
   return `<div class="card turn-summary-card ${escapeHtml(summary.tone || 'info')}">
-    <div class="row"><div><p class="label">Resumen del último turno</p><h3>${escapeHtml(summary.title || 'Último avance')}</h3></div><span class="pill">${escapeHtml(summary.phase || '')}</span></div>
+    <div class="row"><div><p class="label">Resumen del último avance</p><h3>${escapeHtml(summary.title || 'Último avance')}</h3></div><span class="pill">${escapeHtml(summary.phase || '')}</span></div>
     ${summary.result ? `<div class="turn-result-line">${escapeHtml(summary.result)}</div>` : ''}
     <div class="turn-summary-list">${items.map(item => `<div class="turn-summary-item ${escapeHtml(item.tone || 'info')}"><strong>${escapeHtml(item.label || 'Evento')}</strong><span>${escapeHtml(item.text || '')}</span></div>`).join('')}</div>
   </div>`;
@@ -288,10 +288,10 @@ function updateAdvanceButtonState(){
   const lockLeft = Math.max(0, (game.advanceLockedUntil || 0) - Date.now());
   const seasonEnded = game.seasonFinalized || seasonPhase() === 'finalized';
   const invalid = validateCurrentTactic(false);
-  let text = isPreseason() ? 'Avanzar pretemporada' : isPostseason() ? 'Avanzar postemporada' : 'Domingo · jugar partido';
+  let text = isPreseason() ? 'Avanzar 7 días de pretemporada' : isPostseason() ? 'Avanzar 7 días de postemporada' : 'Domingo · jugar partido';
   let disabled = false;
   if(seasonEnded){ text = 'Temporada finalizada'; disabled = true; }
-  else if(lockLeft > 0){ text = `${currentWeekdayLabel()} · preparando jornada`; disabled = true; }
+  else if(lockLeft > 0){ text = `${currentWeekdayLabel()} · semana en curso`; disabled = true; }
   else if(isRegularSeason() && game.mustReviewTactics){ text = 'Reemplazar lesionados/suspendidos'; disabled = true; }
   else if(isRegularSeason() && invalid.length){ text = 'Táctica incompleta'; disabled = true; }
   btn.textContent = text;
@@ -309,7 +309,7 @@ function advanceProgressMarkup(){
   if(!game) return '';
   const lockLeft = Math.max(0, (game.advanceLockedUntil || 0) - Date.now());
   const pct = advanceProgressPercent();
-  const ready = isPreseason() ? 'Domingo · turno de pretemporada disponible' : isPostseason() ? 'Domingo · turno de postemporada disponible' : 'Domingo · partido disponible';
+  const ready = isPreseason() ? 'Domingo · pretemporada disponible' : isPostseason() ? 'Domingo · postemporada disponible' : 'Domingo · partido disponible';
   const label = lockLeft > 0 ? `${currentWeekdayLabel()} · semana en curso` : ready;
   return `<div class="advance-progress"><div class="project-progress"><span style="width:${pct}%"></span></div><p class="small muted">${label}</p></div>`;
 }
@@ -332,7 +332,7 @@ function refreshSidebarDate(){
   if(!game){
     $('currentSeason') && ($('currentSeason').textContent = 'Temporada: —');
     $('currentDate').textContent = 'Fecha: —';
-    $('currentRound').textContent = 'Jornada: —';
+    $('currentRound').textContent = 'Calendario: —';
     return;
   }
   $('currentSeason') && ($('currentSeason').textContent = `Temporada: ${game.seasonNumber || 1}`);
@@ -415,7 +415,7 @@ function messageCard(m){
     ? `<div class="row message-actions"><button class="primary" data-accept-offer="${escapeHtml(m.id)}">Aceptar oferta</button><button class="ghost" data-reject-offer="${escapeHtml(m.id)}">Rechazar</button></div>`
     : (m.action?.status ? `<span class="pill">${m.action.status === 'accepted' ? 'Aceptada' : 'Rechazada'}</span>` : '');
   return `<div class="card message-card ${m.read ? '' : 'unread'}">
-    <div class="row"><div><p class="label">Temporada ${m.season || 1} · Jornada ${Number(m.turn || 0)+1}</p><h3>${escapeHtml(m.title)}</h3></div><span class="pill ${m.priority === 'high' ? 'warn' : ''}">${escapeHtml(m.type || 'info')}</span></div>
+    <div class="row"><div><p class="label">Temporada ${m.season || 1} · Día ${((Number(m.turn || 0)) * DAYS_PER_ADVANCE) + 1}</p><h3>${escapeHtml(m.title)}</h3></div><span class="pill ${m.priority === 'high' ? 'warn' : ''}">${escapeHtml(m.type || 'info')}</span></div>
     <p>${escapeHtml(m.body)}</p>
     ${action}
   </div>`;
