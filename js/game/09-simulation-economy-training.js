@@ -713,13 +713,20 @@ function trainableSkillsForPlayer(player){
   if(['MCD','MC','MCO'].includes(player.position)) return ['paseCorto','paseLargo','vision','tecnica','trabajoEquipo','marca','entradas','posicionamiento','regate','remate','resistencia','serenidad'];
   return ['remate','regate','posicionamiento','serenidad','cabezazo','fuerza','resistencia','tecnica'];
 }
+function trainingSkillFinalChance(player, skill){
+  if(!TRAINING_SKILL_CURVE_ENABLED) return 1;
+  const current = clamp(Math.round(baseSkill(player, skill)), 1, 99);
+  return clamp((100 - current) / 100, TRAINING_SKILL_MIN_FINAL_CHANCE, 1);
+}
 function improveRandomSkill(player, chanceScale=1){
   if(!game.playerSkillBoosts) game.playerSkillBoosts = {};
   if(!game.playerSkillBoosts[player.id]) game.playerSkillBoosts[player.id] = {};
   const skills = trainableSkillsForPlayer(player);
   const skill = skills[hashNumber(`${player.id}-${game.matchdayIndex}-${Math.random()}`, skills.length)];
-  const chance = clamp(0.50 * Number(chanceScale || 0), 0, 1);
-  const gain = Math.random() < chance ? 1 : 0;
+  const baseChance = clamp(0.50 * Number(chanceScale || 0), 0, 1);
+  if(Math.random() >= baseChance) return 0;
+  const finalChance = trainingSkillFinalChance(player, skill);
+  const gain = Math.random() < finalChance ? 1 : 0;
   if(gain > 0){
     game.playerSkillBoosts[player.id][skill] = clamp(Number(game.playerSkillBoosts[player.id][skill] || 0) + gain, 0, 30);
   }

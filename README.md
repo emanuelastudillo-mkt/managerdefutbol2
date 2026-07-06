@@ -44,3 +44,14 @@ Formato recomendado: `.webp`, 512x512 px.
 La pantalla **Nueva partida** incluye nombre del manager, país, liga y equipo. El nombre se guarda para el ranking online.
 
 El ranking permite subir resultados durante la temporada, con un cooldown de 77 días de juego entre envíos.
+
+## Ajuste V3.16 · Curva de dificultad de habilidades
+
+- El entrenamiento intenso conserva la lógica previa de intento de mejora.
+- Si el entrenamiento define que una habilidad debe subir +1, ahora pasa por una comprobación final.
+- La probabilidad final depende del valor actual de la habilidad:
+  - habilidad 20: 80% de probabilidad final.
+  - habilidad 50: 50% de probabilidad final.
+  - habilidad 80: 20% de probabilidad final.
+- Los sueldos, medias base y tipos de entrenamiento no se modifican.
+- El ajuste vuelve más difícil mejorar jugadores que ya tienen habilidades altas.

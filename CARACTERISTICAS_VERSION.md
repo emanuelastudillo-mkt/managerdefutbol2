@@ -61,3 +61,30 @@ Mejora visual de empleados contratados.
 - El ranking permite subir el estado actual de la temporada en cualquier momento.
 - Se bloquean nuevos envíos durante 77 días de juego desde el último envío.
 - El cooldown queda configurable en `config.js` mediante `ranking.cooldownCargaDias`.
+
+## Ajuste interno V3.16 · Curva de dificultad de habilidades
+
+Se agregó una segunda comprobación en `improveRandomSkill()`.
+
+Flujo actual:
+
+1. El entrenamiento intenso realiza la tirada base de mejora.
+2. Si esa tirada sale positiva, se calcula la dificultad por habilidad actual.
+3. La mejora +1 sólo se aplica si supera la comprobación final.
+
+Regla:
+
+```txt
+probabilidad_final = (100 - habilidad_actual) / 100
+```
+
+Ejemplos:
+
+```txt
+Habilidad 40 => 60% final
+Habilidad 70 => 30% final
+Habilidad 80 => 20% final
+Habilidad 90 => 10% final
+```
+
+Esto no toca sueldos, cláusulas ni medias base. Sólo afecta la probabilidad de que una mejora de entrenamiento se concrete.

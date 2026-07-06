@@ -90,6 +90,10 @@ window.GAME_CONFIG = {
   entrenamiento: {
     // Cada avance semanal aplica el plan de 7 días con 4 turnos por día.
     efectividadPorCasilla: 0.50,
+    // Curva de dificultad: una habilidad alta reduce la probabilidad final de subir +1.
+    // Ejemplo: habilidad 80 => 20% de probabilidad final si ya superó la tirada base.
+    curvaHabilidadActual: true,
+    probabilidadMinimaSubidaHabilidad: 0,
     planSemanalInicial: {
       pre: 'regenerative',
       morning: 'intense',
