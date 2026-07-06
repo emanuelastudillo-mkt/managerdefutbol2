@@ -1,4 +1,4 @@
-# Características internas de versión · V3.17
+# Características internas de versión · V3.18
 
 ## Enfoque
 
@@ -73,3 +73,12 @@ jovenesLibresEdadMax: 18
 - Validación sintáctica de JavaScript.
 - Validación de JSON.
 - Verificación de ZIP.
+
+
+## Ajuste V3.18 · Ranking online
+
+- El envío al ranking ahora espera confirmación real del servicio online antes de guardar el cooldown local.
+- Si el envío falla, no se bloquea el siguiente intento.
+- El ranking online ahora usa lectura/escritura confirmada por callback.
+- El Apps Script acepta lectura y envío desde `doGet`, además de mantener compatibilidad con `doPost`.
+- Se corrige el caso donde el juego mostraba un registro local aunque la hoja no hubiera recibido datos.

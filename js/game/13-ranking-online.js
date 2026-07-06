@@ -1,4 +1,4 @@
-/* V3.17 · Ranking online con carga durante la temporada y cooldown. */
+/* V3.18 · Ranking online con confirmación real de lectura/escritura. */
 
 function rankingStoredEndpoint(){
   try{ return localStorage.getItem('fmRankingEndpoint') || RANKING_APPS_SCRIPT_URL || ''; }
@@ -318,15 +318,21 @@ function submitCurrentSeasonToRanking(){
   if(error){ showNotice(error); return; }
   const button = $('submitRankingSeason');
   if(button){ button.disabled = true; button.textContent = 'Enviando...'; }
-  const body = { action:'submit', token:RANKING_TOKEN || '', payload };
-  postRankingViaHiddenForm(endpoint, body);
-  game.rankingUploads = game.rankingUploads || {};
-  game.rankingUploads[payload.submissionKey] = { submittedAt:payload.submittedAt, gameDate:payload.gameDate, managerName, managerScore:payload.managerScore };
-  game.rankingLastUploadGameDate = payload.gameDate || rankingCurrentGameDate();
-  saveLocal(true);
-  rankingRowsCache = [normalizeRankingRow(payload)].concat(rankingRowsCache.filter(row => row.saveCode !== payload.saveCode || Number(row.season) !== Number(payload.season)));
-  showNotice('Resultado enviado al ranking. Puede tardar unos segundos en aparecer online.');
-  setTimeout(()=>{ renderRankingOnline(); loadRankingOnline(true); }, 900);
+  submitRankingViaJsonp(endpoint, { action:'submit', token:RANKING_TOKEN || '', payload }, {
+    onSuccess: () => {
+      game.rankingUploads = game.rankingUploads || {};
+      game.rankingUploads[payload.submissionKey] = { submittedAt:payload.submittedAt, gameDate:payload.gameDate, managerName, managerScore:payload.managerScore };
+      game.rankingLastUploadGameDate = payload.gameDate || rankingCurrentGameDate();
+      saveLocal(true);
+      rankingRowsCache = [normalizeRankingRow(payload)].concat(rankingRowsCache.filter(row => row.saveCode !== payload.saveCode || Number(row.season) !== Number(payload.season)));
+      showNotice('Resultado enviado al ranking.');
+      setTimeout(()=>{ renderRankingOnline(); loadRankingOnline(true); }, 900);
+    },
+    onError: (message) => {
+      showNotice(message || 'No se pudo enviar el resultado al ranking.');
+      renderRankingOnline();
+    }
+  });
 }
 function postRankingViaHiddenForm(endpoint, body){
   const iframeName = `fmRankingSubmit_${Date.now()}`;
@@ -352,6 +358,36 @@ function postRankingViaHiddenForm(endpoint, body){
     setTimeout(()=>{ form.remove(); iframe.remove(); }, 6000);
   }
 }
+
+function submitRankingViaJsonp(endpoint, body, handlers={}){
+  const callbackName = `fmRankingSubmitCallback_${Date.now()}_${hashNumber(Math.random(), 100000)}`.replace(/\W/g,'_');
+  const script = document.createElement('script');
+  const sep = endpoint.includes('?') ? '&' : '?';
+  const payloadText = JSON.stringify(body.payload || {});
+  const timer = setTimeout(() => {
+    cleanup();
+    handlers.onError?.('No se pudo confirmar el envío del ranking. Revisá la publicación del ranking online.');
+  }, 15000);
+  function cleanup(){
+    clearTimeout(timer);
+    try{ delete window[callbackName]; }catch(_){ window[callbackName] = undefined; }
+    script.remove();
+  }
+  window[callbackName] = (response) => {
+    cleanup();
+    if(response && response.ok){
+      handlers.onSuccess?.(response);
+      return;
+    }
+    handlers.onError?.(response?.error || 'El ranking rechazó el envío.');
+  };
+  script.onerror = () => {
+    cleanup();
+    handlers.onError?.('Error al conectar con el ranking online.');
+  };
+  script.src = `${endpoint}${sep}action=${encodeURIComponent(body.action || 'submit')}&token=${encodeURIComponent(body.token || '')}&payload=${encodeURIComponent(payloadText)}&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
+  document.body.appendChild(script);
+}
 function loadRankingOnline(silent=false){
   const endpoint = normalizeRankingEndpoint(rankingStoredEndpoint());
   const status = $('rankingStatus');
@@ -374,6 +410,12 @@ function loadRankingOnline(silent=false){
     script.remove();
   }
   window[callbackName] = (response) => {
+    if(!response || response.ok === false){
+      cleanup();
+      if(status) status.textContent = 'No se pudo leer el ranking online.';
+      if(!silent) showNotice(response?.error || 'No se pudo cargar el ranking online.');
+      return;
+    }
     const rows = Array.isArray(response?.rows) ? response.rows : Array.isArray(response) ? response : [];
     rankingRowsCache = rows.map(normalizeRankingRow).filter(row => row.managerName || row.club || row.saveCode);
     const box = $('rankingTableBox');

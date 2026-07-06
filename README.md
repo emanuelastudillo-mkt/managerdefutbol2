@@ -1,6 +1,6 @@
-# Fútbol Manager MVP · V3.17
+# Fútbol Manager MVP · V3.18
 
-## Cambios V3.17
+## Cambios V3.18
 
 - Mercado libre inicial ajustado a 300 jugadores.
 - Libres regulares con media 40 a 62 y edad 19 a 30.
@@ -15,7 +15,7 @@
 ---
 
 
-## Cambios V3.17
+## Cambios V3.18
 
 - Cards visuales para empleados contratados.
 - Integración de fotos por puesto y calidad desde `data/empleados.json`.
@@ -54,13 +54,13 @@ Formato recomendado: `.webp`, 512x512 px.
 - JSON validado.
 - ZIP verificado.
 
-## Ajuste V3.17 antes de implementación
+## Ajuste V3.18 antes de implementación
 
 La pantalla **Nueva partida** incluye nombre del manager, país, liga y equipo. El nombre se guarda para el ranking online.
 
 El ranking permite subir resultados durante la temporada, con un cooldown de 77 días de juego entre envíos.
 
-## Ajuste V3.17 · Curva de dificultad de habilidades
+## Ajuste V3.18 · Curva de dificultad de habilidades
 
 - El entrenamiento intenso conserva la lógica previa de intento de mejora.
 - Si el entrenamiento define que una habilidad debe subir +1, ahora pasa por una comprobación final.
@@ -71,7 +71,7 @@ El ranking permite subir resultados durante la temporada, con un cooldown de 77 
 - Los sueldos, medias base y tipos de entrenamiento no se modifican.
 - El ajuste vuelve más difícil mejorar jugadores que ya tienen habilidades altas.
 
-## Cambios V3.17 · Mercado libre inicial y renovaciones
+## Cambios V3.18 · Mercado libre inicial y renovaciones
 
 - La nueva partida genera 300 jugadores libres iniciales.
 - Los jugadores libres regulares se generan con medias equilibradas entre 40 y 62.
@@ -81,3 +81,12 @@ El ranking permite subir resultados durante la temporada, con un cooldown de 77 
 - Los jóvenes libres de temporada usan las reglas generales de calidad de jugadores, por lo que allí puede aparecer una probabilidad baja de jugadores de nivel muy alto.
 - Si después de agregar jóvenes quedan menos de 200 libres, el juego completa el mercado con jugadores regulares de media 40 a 62.
 - La distribución por posición mantiene la regla general: 10% porteros, 30% defensores, 30% mediocampistas y 30% delanteros.
+
+
+## Ajuste V3.18 · Ranking online
+
+- El envío al ranking ahora espera confirmación real del servicio online antes de guardar el cooldown local.
+- Si el envío falla, no se bloquea el siguiente intento.
+- El ranking online ahora usa lectura/escritura confirmada por callback.
+- El Apps Script acepta lectura y envío desde `doGet`, además de mantener compatibilidad con `doPost`.
+- Se corrige el caso donde el juego mostraba un registro local aunque la hoja no hubiera recibido datos.

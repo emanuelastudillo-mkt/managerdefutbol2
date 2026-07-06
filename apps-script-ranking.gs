@@ -1,5 +1,5 @@
 /*
-  Fútbol Manager · Ranking Online V3.17
+  Fútbol Manager · Ranking Online V3.18
   Apps Script para pegar en https://script.google.com/
 
   Pasos:
@@ -47,6 +47,18 @@ function doGet(e){
     const limit = Math.max(1, Math.min(Number(params.limit || 100), 500));
     const rows = readRankingRows_(limit);
     return output_(params, { ok:true, rows });
+  }
+  if(action === 'submit'){
+    if(RANKING_TOKEN && params.token !== RANKING_TOKEN){
+      return output_(params, { ok:false, error:'Token inválido.' });
+    }
+    const payload = parsePayload_(params.payload);
+    const validation = validatePayload_(payload);
+    if(validation){
+      return output_(params, { ok:false, error:validation });
+    }
+    appendRankingRow_(payload);
+    return output_(params, { ok:true });
   }
   return output_(params, { ok:false, error:'Acción GET no reconocida.' });
 }

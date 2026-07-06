@@ -1,4 +1,4 @@
-# Versión V3.17
+# Versión V3.18
 
 ## Tipo de actualización
 
@@ -35,3 +35,12 @@ Balance y generación de mercado libre.
 - Nueva partida con nombre de manager, país, liga y equipo.
 - Ranking con cooldown de 77 días.
 - Curva de dificultad para subidas de habilidad por entrenamiento.
+
+
+## Ajuste V3.18 · Ranking online
+
+- El envío al ranking ahora espera confirmación real del servicio online antes de guardar el cooldown local.
+- Si el envío falla, no se bloquea el siguiente intento.
+- El ranking online ahora usa lectura/escritura confirmada por callback.
+- El Apps Script acepta lectura y envío desde `doGet`, además de mantener compatibilidad con `doPost`.
+- Se corrige el caso donde el juego mostraba un registro local aunque la hoja no hubiera recibido datos.
