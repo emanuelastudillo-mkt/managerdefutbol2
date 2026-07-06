@@ -1,4 +1,4 @@
-/* V3.15 · Render general, inicio, calendario anual, mensajes y ofertas de venta recibidas. */
+/* V3.16 · Render general, inicio, calendario anual, mensajes y ofertas de venta recibidas. */
 
 function renderAll(){
   document.querySelectorAll('.tabs button').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab === activeTab));
@@ -240,6 +240,7 @@ function renderHome(){
         ${featuredPlayerCard('promise', featured.promise, 'Promesa', featured.promiseText)}
       </div>
     </div>
+    ${typeof staffContractsPanelMarkup === 'function' ? staffContractsPanelMarkup() : ''}
     <div class="grid cols-3" style="margin-top:14px">
       <div class="card"><p class="label">Posición</p><div class="metric">${position || '—'}°</div></div>
       <div class="card"><p class="label">Jugadores</p><div class="metric">${clubPlayers.length}</div></div>
@@ -296,8 +297,26 @@ function updateAdvanceButtonState(){
   else if(isRegularSeason() && invalid.length){ text = 'Táctica incompleta'; disabled = true; }
   btn.textContent = text;
   btn.disabled = disabled;
+  updateAdvanceProgressBox();
+}
+function updateAdvanceProgressBox(){
   const progressBox = $('advanceProgressBox');
-  if(progressBox) progressBox.innerHTML = advanceProgressMarkup();
+  if(!progressBox) return;
+  if(!progressBox.querySelector('[data-advance-progress-fill]')){
+    progressBox.innerHTML = advanceProgressMarkup();
+  }
+  const fill = progressBox.querySelector('[data-advance-progress-fill]');
+  if(fill) fill.style.width = `${advanceProgressPercent()}%`;
+  const phraseEl = progressBox.querySelector('[data-advance-phrase]');
+  if(phraseEl){
+    const phrase = advanceStatusPhrase();
+    if(phraseEl.textContent !== phrase){
+      phraseEl.textContent = phrase;
+      phraseEl.classList.remove('is-changing');
+      void phraseEl.offsetWidth;
+      phraseEl.classList.add('is-changing');
+    }
+  }
 }
 function advanceProgressPercent(){
   if(!game) return 0;
@@ -307,11 +326,21 @@ function advanceProgressPercent(){
 }
 function advanceProgressMarkup(){
   if(!game) return '';
-  const lockLeft = Math.max(0, (game.advanceLockedUntil || 0) - Date.now());
   const pct = advanceProgressPercent();
-  const ready = isPreseason() ? 'Domingo · pretemporada disponible' : isPostseason() ? 'Domingo · postemporada disponible' : 'Domingo · partido disponible';
-  const label = lockLeft > 0 ? `${currentWeekdayLabel()} · semana en curso` : ready;
-  return `<div class="advance-progress"><div class="project-progress"><span style="width:${pct}%"></span></div><p class="small muted">${label}</p></div>`;
+  return `<div class="advance-progress"><div class="project-progress"><span data-advance-progress-fill style="width:${pct}%"></span></div><p class="small muted advance-phrase" data-advance-phrase>${escapeHtml(advanceStatusPhrase())}</p></div>`;
+}
+function advanceStatusPhrase(){
+  const fallback = ['Revisando planillas de entrenamiento'];
+  const phrases = (Array.isArray(ADVANCE_STATUS_PHRASES) && ADVANCE_STATUS_PHRASES.length) ? ADVANCE_STATUS_PHRASES : fallback;
+  const now = Date.now();
+  const currentSlot = Math.floor(now / ADVANCE_STATUS_PHRASE_INTERVAL_MS);
+  if(!window.__fmAdvancePhraseState || window.__fmAdvancePhraseState.slot !== currentSlot){
+    const previous = window.__fmAdvancePhraseState?.index;
+    let index = Math.floor(Math.random() * phrases.length);
+    if(phrases.length > 1 && index === previous) index = (index + 1) % phrases.length;
+    window.__fmAdvancePhraseState = { slot: currentSlot, index };
+  }
+  return phrases[window.__fmAdvancePhraseState.index] || fallback[0];
 }
 function formatClock(ms){
   const total = Math.ceil(ms/1000);

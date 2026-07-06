@@ -1,5 +1,5 @@
 /*
-  Fútbol Manager · Ranking Online V3.15
+  Fútbol Manager · Ranking Online V3.16
   Apps Script para pegar en https://script.google.com/
 
   Pasos:

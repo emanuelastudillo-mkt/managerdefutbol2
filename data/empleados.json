@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "version": "V3.15",
-    "descripcion": "Catálogo de empleados por categoría para Fútbol Manager. El valor regular conserva los costos anteriores; bueno cuesta 4x y elite 50x."
+    "version": "V3.16",
+    "descripcion": "Catálogo de empleados por categoría para Fútbol Manager. Incluye rutas de imagen por puesto y calidad."
   },
   "categorias": [
     {
@@ -34,7 +34,12 @@
       "costoBase": 500000,
       "duracion": "temporada",
       "descripcion": "Permite realizar charlas motivacionales para mejorar la moral del plantel.",
-      "accion": "charla_motivacional"
+      "accion": "charla_motivacional",
+      "imagenes": {
+        "regular": "img/empleados/psicologo-regular.webp",
+        "bueno": "img/empleados/psicologo-bueno.webp",
+        "elite": "img/empleados/psicologo-elite.webp"
+      }
     },
     {
       "id": "kinesiologist",
@@ -43,7 +48,12 @@
       "costoBase": 1000000,
       "duracion": "temporada",
       "descripcion": "Permite tratar lesionados una vez por semana para reducir días de recuperación.",
-      "accion": "tratamiento_lesion"
+      "accion": "tratamiento_lesion",
+      "imagenes": {
+        "regular": "img/empleados/kinesiologo-regular.webp",
+        "bueno": "img/empleados/kinesiologo-bueno.webp",
+        "elite": "img/empleados/kinesiologo-elite.webp"
+      }
     },
     {
       "id": "youth_preparer",
@@ -52,7 +62,12 @@
       "costoBase": 1000000,
       "duracion": "temporada",
       "descripcion": "Permite consultar informes de juveniles y descubrir más habilidades ocultas.",
-      "accion": "informe_juveniles"
+      "accion": "informe_juveniles",
+      "imagenes": {
+        "regular": "img/empleados/preparador-juveniles-regular.webp",
+        "bueno": "img/empleados/preparador-juveniles-bueno.webp",
+        "elite": "img/empleados/preparador-juveniles-elite.webp"
+      }
     }
   ]
 }

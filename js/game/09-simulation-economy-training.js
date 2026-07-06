@@ -1,4 +1,4 @@
-/* V3.15 · Selección automática, calendario anual, economía, estadio, moral y entrenamiento. */
+/* V3.16 · Selección automática, calendario anual, economía, estadio, moral y entrenamiento. */
 
 function selectLineup(clubId, tactic){
   if(clubId === game?.selectedClubId && tactic?.starters?.length === 11){

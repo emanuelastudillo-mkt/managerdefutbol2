@@ -1,4 +1,4 @@
-/* V3.15 · Eventos principales, normalización de partida, calendario anual, temporadas y ascensos/descensos. */
+/* V3.16 · Eventos principales, normalización de partida, calendario anual, temporadas y ascensos/descensos. */
 
 function clubSelectOptionsMarkup(){
   const divisions = seed.divisions || [{ id:'default', name:'Liga única' }];
@@ -8,13 +8,64 @@ function clubSelectOptionsMarkup(){
     return `<optgroup label="${escapeHtml(division.name)}">${clubs.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</optgroup>`;
   }).join('');
 }
+
+function clubCountry(club){
+  return String(club?.country || club?.pais || club?.countryName || 'Argentina').trim() || 'Argentina';
+}
+function availableCountries(){
+  const names = Array.from(new Set((seed?.clubs || []).map(clubCountry).filter(Boolean)));
+  return names.length ? names.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'})) : ['Argentina'];
+}
+function countryOptionsMarkup(selected='Argentina'){
+  const countries = availableCountries();
+  const current = countries.includes(selected) ? selected : countries[0];
+  return countries.map(name => `<option value="${escapeHtml(name)}" ${name===current?'selected':''}>${escapeHtml(name)}</option>`).join('');
+}
+function divisionsByCountry(country='Argentina'){
+  const cleanCountry = String(country || '').trim() || availableCountries()[0] || 'Argentina';
+  const countryClubDivisionIds = new Set((seed?.clubs || [])
+    .filter(club => clubCountry(club) === cleanCountry)
+    .map(club => club.divisionId || 'default'));
+  const divisions = (seed?.divisions || [{ id:'default', name:'Liga única' }])
+    .filter(division => countryClubDivisionIds.has(division.id || 'default'));
+  return divisions.length ? divisions : (seed?.divisions || [{ id:'default', name:'Liga única' }]);
+}
+function leagueOptionsMarkup(country='Argentina', selected=''){
+  const divisions = divisionsByCountry(country);
+  const current = divisions.some(d => d.id === selected) ? selected : divisions[0]?.id;
+  return divisions.map(division => `<option value="${escapeHtml(division.id)}" ${division.id===current?'selected':''}>${escapeHtml(division.name)}</option>`).join('');
+}
+function clubsByCountryLeague(country='Argentina', leagueId=''){
+  const cleanCountry = String(country || '').trim() || availableCountries()[0] || 'Argentina';
+  const divisions = divisionsByCountry(cleanCountry);
+  const currentLeague = divisions.some(d => d.id === leagueId) ? leagueId : divisions[0]?.id;
+  return (seed?.clubs || [])
+    .filter(club => clubCountry(club) === cleanCountry && (club.divisionId || 'default') === currentLeague)
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{sensitivity:'base'}));
+}
+function teamOptionsMarkup(country='Argentina', leagueId='', selectedClubId=0){
+  const clubs = clubsByCountryLeague(country, leagueId);
+  const selected = clubs.some(club => Number(club.id) === Number(selectedClubId)) ? Number(selectedClubId) : Number(clubs[0]?.id || 0);
+  return clubs.map(club => `<option value="${club.id}" ${Number(club.id)===selected?'selected':''}>${escapeHtml(club.name)}</option>`).join('');
+}
+function storedManagerName(){
+  try{ return String(game?.rankingManagerName || localStorage.getItem('fmRankingManagerName') || '').trim(); }
+  catch(_){ return String(game?.rankingManagerName || '').trim(); }
+}
+function persistManagerName(name){
+  const clean = String(name || '').trim().slice(0, 40);
+  try{ localStorage.setItem('fmRankingManagerName', clean); }catch(_){ /* sin almacenamiento */ }
+  if(game) game.rankingManagerName = clean;
+  return clean;
+}
+
 function fillClubSelect(){
   const select = $('clubSelect');
   if(select) select.innerHTML = clubSelectOptionsMarkup();
 }
 function bindEvents(){
   $('btnOpenNewGame')?.addEventListener('click', openNewGameModal);
-  $('btnNewGame')?.addEventListener('click', ()=> newGame(Number($('clubSelect')?.value || 0)));
+  $('btnNewGame')?.addEventListener('click', ()=> newGame(Number($('clubSelect')?.value || 0), { managerName:storedManagerName() }));
   $('btnSave').addEventListener('click', saveLocal);
   $('btnLoad').addEventListener('click', ()=>loadLocal(false));
   $('btnReset').addEventListener('click', resetLocal);
@@ -89,7 +140,10 @@ function normalizeGame(saved){
   normalized.calendarVersion = normalized.calendarVersion || '';
   normalized.saveCode = normalized.saveCode || generateSaveCode();
   normalized.rankingUploads = (normalized.rankingUploads && typeof normalized.rankingUploads === 'object' && !Array.isArray(normalized.rankingUploads)) ? normalized.rankingUploads : {};
-  normalized.rankingManagerName = normalized.rankingManagerName || '';
+  normalized.rankingManagerName = normalized.rankingManagerName || storedManagerName() || '';
+  normalized.rankingLastUploadGameDate = validIsoDate(normalized.rankingLastUploadGameDate) ? normalized.rankingLastUploadGameDate : '';
+  normalized.selectedCountry = normalized.selectedCountry || clubCountry(seed?.clubs?.find(c => Number(c.id) === Number(normalized.selectedClubId))) || 'Argentina';
+  normalized.selectedLeagueId = normalized.selectedLeagueId || (seed?.clubs?.find(c => Number(c.id) === Number(normalized.selectedClubId))?.divisionId || 'default');
   normalized.seasonBudgetStartBySeason = (normalized.seasonBudgetStartBySeason && typeof normalized.seasonBudgetStartBySeason === 'object' && !Array.isArray(normalized.seasonBudgetStartBySeason)) ? normalized.seasonBudgetStartBySeason : {};
   if(!Number.isFinite(Number(normalized.seasonBudgetStartBySeason[normalized.seasonNumber]))){
     normalized.seasonBudgetStartBySeason[normalized.seasonNumber] = deriveSeasonInitialBudgetFromHistory(normalized, normalized.seasonNumber);
@@ -372,15 +426,20 @@ function normalizeTactic(clubId, tactic){
   return applyStarterMentalities(normalized);
 }
 
-function newGame(selectedClubId){
+function newGame(selectedClubId, options={}){
+  const selectedClub = seed.clubs.find(c => Number(c.id) === Number(selectedClubId)) || {};
+  const managerName = persistManagerName(options.managerName || storedManagerName());
   const tactic = normalizeTactic(selectedClubId, DEFAULT_TACTIC);
   game = {
     version:APP_VERSION,
     seedSignature:seed?.meta?.signature || '',
     selectedClubId,
+    selectedCountry: options.country || clubCountry(selectedClub),
+    selectedLeagueId: options.leagueId || selectedClub.divisionId || 'default',
     saveCode: generateSaveCode(),
     rankingUploads: {},
-    rankingManagerName: '',
+    rankingManagerName: managerName,
+    rankingLastUploadGameDate: '',
     seasonNumber: 1,
     seasonYear: seasonYearForNumber(1),
     calendarVersion: SEASON_CALENDAR_VERSION,

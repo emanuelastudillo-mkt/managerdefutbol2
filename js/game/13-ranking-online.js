@@ -1,4 +1,4 @@
-/* V3.15 · Ranking online. */
+/* V3.16 · Ranking online con carga durante la temporada y cooldown. */
 
 function rankingStoredEndpoint(){
   try{ return localStorage.getItem('fmRankingEndpoint') || RANKING_APPS_SCRIPT_URL || ''; }
@@ -17,6 +17,27 @@ function setRankingStoredManagerName(value){
   if(game) game.rankingManagerName = clean;
   return clean;
 }
+
+function rankingCurrentGameDate(){
+  if(!game) return '';
+  if(validIsoDate(game.currentDate)) return game.currentDate;
+  const fallback = dateForSeasonState(game);
+  return validIsoDate(fallback) ? fallback : '';
+}
+function rankingUploadCooldownInfo(){
+  const last = validIsoDate(game?.rankingLastUploadGameDate) ? game.rankingLastUploadGameDate : '';
+  const current = rankingCurrentGameDate();
+  if(!last || !current || RANKING_UPLOAD_COOLDOWN_DAYS <= 0) return { canUpload:true, elapsed:null, remaining:0, last, current };
+  const elapsed = Math.max(0, daysBetweenIsoDates(last, current));
+  const remaining = Math.max(0, Math.ceil(RANKING_UPLOAD_COOLDOWN_DAYS - elapsed));
+  return { canUpload:remaining <= 0, elapsed, remaining, last, current };
+}
+function rankingCooldownText(info=rankingUploadCooldownInfo()){
+  if(!info?.last) return 'Primer envío disponible.';
+  if(info.canUpload) return 'Envío disponible.';
+  return `Próximo envío disponible en ${info.remaining} día(s).`;
+}
+
 function normalizeRankingEndpoint(url){
   const clean = String(url || '').trim();
   if(!clean) return '';
@@ -125,6 +146,8 @@ function buildRankingPayload(managerName){
     titles: Number(game.managerStats?.titles || 0),
     title: Boolean(record.title),
     submittedAt: new Date().toISOString(),
+    gameDate: rankingCurrentGameDate(),
+    seasonDay: seasonDayFromDate(rankingCurrentGameDate(), game.seasonYear || seasonYearForNumber(game.seasonNumber || 1)),
     saveCode: game.saveCode || generateSaveCode(),
     version: APP_VERSION
   };
@@ -235,28 +258,28 @@ function rankingEndpointPanelMarkup(endpoint){
 }
 function rankingSubmitPanelMarkup(payload, endpoint){
   const managerName = rankingStoredManagerName();
-  const canSubmit = Boolean(game && game.seasonFinalized && endpoint && payload);
-  const alreadyUploaded = Boolean(game?.rankingUploads?.[payload?.submissionKey]);
+  const cooldown = rankingUploadCooldownInfo();
+  const canSubmit = Boolean(game && endpoint && payload && cooldown.canUpload);
   const disabledReason = !game ? 'Necesitás una partida para subir resultados.'
-    : !game.seasonFinalized ? 'Disponible al finalizar la temporada.'
     : !endpoint ? 'Ranking online no disponible por el momento.'
-    : alreadyUploaded ? 'Esta temporada ya fue enviada desde este navegador.'
+    : !cooldown.canUpload ? rankingCooldownText(cooldown)
     : '';
   return `<div class="card ranking-submit-card">
-    <div class="row"><div><p class="label">Subir temporada</p><h3>Resultado para el ranking</h3></div><span class="pill">${game ? `Temp. ${game.seasonNumber || 1}` : 'Sin partida'}</span></div>
+    <div class="row"><div><p class="label">Subir resultado</p><h3>Resultado para el ranking</h3></div><span class="pill">${game ? `Temp. ${game.seasonNumber || 1}` : 'Sin partida'}</span></div>
     <label for="rankingManagerName">Nombre del manager</label>
     <div class="ranking-manager-row">
       <input id="rankingManagerName" maxlength="40" placeholder="Ej: Emanuel" value="${escapeHtml(managerName)}">
-      <button id="submitRankingSeason" class="primary" type="button" ${canSubmit && !alreadyUploaded ? '' : 'disabled'}>Subir temporada al ranking</button>
+      <button id="submitRankingSeason" class="primary" type="button" ${canSubmit ? '' : 'disabled'}>Subir temporada al ranking</button>
     </div>
-    ${disabledReason ? `<p class="small muted">${escapeHtml(disabledReason)}</p>` : '<p class="small muted">Se enviará una copia resumida de la temporada. No se sube la partida completa.</p>'}
+    ${disabledReason ? `<p class="small muted">${escapeHtml(disabledReason)}</p>` : '<p class="small muted">Se enviará una copia resumida del estado actual de la temporada. No se sube la partida completa.</p>'}
+    ${game ? `<p class="small muted">${escapeHtml(rankingCooldownText(cooldown))}</p>` : ''}
     ${rankingSeasonPreviewMarkup(payload)}
   </div>`;
 }
 function renderRankingOnline(){
   const endpoint = normalizeRankingEndpoint(rankingStoredEndpoint());
   const payload = game ? buildRankingPayload(rankingStoredManagerName() || 'Manager') : null;
-  view.innerHTML = `<div class="section-title"><h2>${escapeHtml(RANKING_NAME)}</h2><p class="tagline">Tabla comunitaria. Subí resultados al finalizar la temporada.</p></div>
+  view.innerHTML = `<div class="section-title"><h2>${escapeHtml(RANKING_NAME)}</h2><p class="tagline">Tabla comunitaria. Podés subir resultados durante la temporada con cooldown entre envíos.</p></div>
     <div class="ranking-layout">
       <div>${rankingSubmitPanelMarkup(payload, endpoint)}</div>
       <div class="card ranking-list-card">
@@ -280,11 +303,11 @@ function renderRankingOnline(){
 }
 function validateRankingSubmit(payload, managerName, endpoint){
   if(!game) return 'No hay partida activa.';
-  if(!game.seasonFinalized) return 'Sólo se puede subir una temporada finalizada.';
   if(!endpoint) return 'Ranking online no disponible por el momento.';
   if(!managerName) return 'Ingresá un nombre de manager.';
-  if(!payload?.position) return 'No se pudo calcular la posición final.';
-  if(game.rankingUploads?.[payload.submissionKey]) return 'Esta temporada ya fue enviada desde este navegador.';
+  if(!payload?.position) return 'No se pudo calcular la posición actual.';
+  const cooldown = rankingUploadCooldownInfo();
+  if(!cooldown.canUpload) return rankingCooldownText(cooldown);
   return '';
 }
 function submitCurrentSeasonToRanking(){
@@ -298,10 +321,11 @@ function submitCurrentSeasonToRanking(){
   const body = { action:'submit', token:RANKING_TOKEN || '', payload };
   postRankingViaHiddenForm(endpoint, body);
   game.rankingUploads = game.rankingUploads || {};
-  game.rankingUploads[payload.submissionKey] = { submittedAt:payload.submittedAt, managerName, managerScore:payload.managerScore };
+  game.rankingUploads[payload.submissionKey] = { submittedAt:payload.submittedAt, gameDate:payload.gameDate, managerName, managerScore:payload.managerScore };
+  game.rankingLastUploadGameDate = payload.gameDate || rankingCurrentGameDate();
   saveLocal(true);
   rankingRowsCache = [normalizeRankingRow(payload)].concat(rankingRowsCache.filter(row => row.saveCode !== payload.saveCode || Number(row.season) !== Number(payload.season)));
-  showNotice('Temporada enviada al ranking. Puede tardar unos segundos en aparecer online.');
+  showNotice('Resultado enviado al ranking. Puede tardar unos segundos en aparecer online.');
   setTimeout(()=>{ renderRankingOnline(); loadRankingOnline(true); }, 900);
 }
 function postRankingViaHiddenForm(endpoint, body){

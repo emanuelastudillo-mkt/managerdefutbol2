@@ -1,47 +1,46 @@
-# Fútbol Manager MVP V3.15
+# Fútbol Manager MVP V3.16
 
-## Cambios V3.15
+## Cambios V3.16
 
-- Nuevo archivo editable: `data/empleados.json`.
-- El sistema de empleados ahora tiene tres categorías:
-  - Regular
-  - Bueno
-  - Elite
-- Al contratar un empleado se muestran las tres opciones disponibles.
-- El costo Regular conserva el valor anterior.
-- Bueno cuesta 4 veces más.
-- Elite cuesta 50 veces más.
-- Regular mantiene el rendimiento estándar.
-- Bueno duplica el rendimiento.
-- Elite triplica el rendimiento.
+- Cards visuales para empleados contratados.
+- Integración de fotos por puesto y calidad desde `data/empleados.json`.
+- Nueva sección de empleados contratados en Inicio.
+- Cards visuales en Empleados y Academia cuando un empleado está activo.
+- No se muestran multiplicadores ni efectos internos.
+- Barra de progreso de avance centrada, con frases rotativas cada 10 segundos.
 
-## Empleados incluidos
+## Imágenes de empleados
 
-- Psicólogo motivacional.
-- Kinesiólogo.
-- Preparador de juveniles.
+Colocar las imágenes en:
 
-## Efectos por empleado
+```txt
+img/empleados/
+```
 
-- Psicólogo motivacional: mejora la moral del plantel.
-- Kinesiólogo: reduce días de lesión si el tratamiento funciona.
-- Preparador de juveniles: revela habilidades ocultas de la academia.
+Nombres esperados:
 
-## Base funcional
+```txt
+psicologo-regular.webp
+psicologo-bueno.webp
+psicologo-elite.webp
+kinesiologo-regular.webp
+kinesiologo-bueno.webp
+kinesiologo-elite.webp
+preparador-juveniles-regular.webp
+preparador-juveniles-bueno.webp
+preparador-juveniles-elite.webp
+```
 
-- Temporada anual de 365/366 días.
-- Liga ida y vuelta.
-- Avance semanal de domingo a domingo.
-- Entrenamiento semanal con 4 casillas por día.
-- Ranking online configurado.
+Formato recomendado: `.webp`, 512x512 px.
 
-## Archivos principales
+## Validación
 
-- `index.html`
-- `config.js`
-- `style.css`
-- `data/Liga Argentina.json`
-- `data/jugadores.json`
-- `data/sponsors.json`
-- `data/empleados.json`
-- `js/`
+- JavaScript validado con `node --check`.
+- JSON validado.
+- ZIP verificado.
+
+## Ajuste V3.16 antes de implementación
+
+La pantalla **Nueva partida** incluye nombre del manager, país, liga y equipo. El nombre se guarda para el ranking online.
+
+El ranking permite subir resultados durante la temporada, con un cooldown de 77 días de juego entre envíos.

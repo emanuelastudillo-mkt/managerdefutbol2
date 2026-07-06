@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V3.15',
+  version: 'V3.16',
   data: {
     seedUrl: 'data/seed.json',
     playersUrl: 'data/jugadores.json',
@@ -111,6 +111,7 @@ window.GAME_CONFIG = {
     // Token simple opcional para restringir envíos.
     token: '',
     resultadosPorPagina: 100,
+    cooldownCargaDias: 77,
     nombreRanking: 'Ranking Online'
   },
   ui: {
@@ -119,6 +120,69 @@ window.GAME_CONFIG = {
     duracionSimulacionPartidoMs: 30000,
     // Animación para acciones que pueden salir bien o fallar: tratar lesionados, charla motivacional, etc.
     accionesFeedbackCargaMs: 750,
-    accionesFeedbackResultadoMs: 900
+    accionesFeedbackResultadoMs: 900,
+    frasesProgresoAvanceIntervaloMs: 10000,
+    frasesProgresoAvance: [
+      'Recogiendo pelotas detrás del arco',
+      'Regando el césped por sectores',
+      'Midiendo la humedad del campo',
+      'Marcando las líneas laterales',
+      'Revisando redes de los arcos',
+      'Ajustando los banderines del córner',
+      'Ordenando conos de entrenamiento',
+      'Contando pecheras disponibles',
+      'Lavando botines embarrados',
+      'Secando guantes de arquero',
+      'Pesando pelotas oficiales',
+      'Inflando pelotas a presión reglamentaria',
+      'Verificando tapones de botines',
+      'Revisando vendas y tobilleras',
+      'Controlando hielo en la enfermería',
+      'Preparando bebidas isotónicas',
+      'Cortando cinta deportiva',
+      'Limpiando pizarras tácticas',
+      'Acomodando bancos de suplentes',
+      'Revisando planillas de cambios',
+      'Calculando desgaste del césped',
+      'Separando camisetas por talle',
+      'Chequeando números de dorsales',
+      'Probando silbatos del árbitro',
+      'Revisando iluminación del estadio',
+      'Calibrando GPS de entrenamiento',
+      'Registrando cargas musculares',
+      'Controlando peso post-entrenamiento',
+      'Analizando pisadas en el barro',
+      'Ordenando pelotas por estado útil',
+      'Aceitando bicicletas del gimnasio',
+      'Recogiendo basura del estadio',
+      'Visitando a padres de los talentos',
+      'Filtrando rumores a la prensa',
+      'Revisando cerraduras del vestuario',
+      'Cambiando focos del túnel',
+      'Contando bidones de agua',
+      'Limpiando bancos de suplentes',
+      'Ordenando medias por talle',
+      'Revisando contratos vencidos',
+      'Llamando representantes insistentes',
+      'Separando pelotas pinchadas',
+      'Desinfectando colchonetas del gimnasio',
+      'Ajustando cintas de correr',
+      'Imprimiendo planillas de entrenamiento',
+      'Revisando permisos de juveniles',
+      'Actualizando fichas médicas',
+      'Controlando botiquines del estadio',
+      'Pintando números en los conos',
+      'Reparando redes de entrenamiento',
+      'Barriendo tierra de los accesos',
+      'Acomodando vallas publicitarias',
+      'Verificando micrófonos de conferencia',
+      'Revisando cámaras del estadio',
+      'Cargando videos del último partido',
+      'Buscando camisetas extraviadas',
+      'Probando parlantes de la cancha',
+      'Revisando carnets de socios',
+      'Coordinando traslado de juveniles',
+      'Archivando quejas de hinchas'
+    ]
   }
 };

@@ -1,4 +1,4 @@
-/* V3.15 · Academia, captación, juveniles, empleados y tratamientos. */
+/* V3.16 · Academia, captación, juveniles, empleados y tratamientos. */
 
 function createInitialAcademyState(){
   return { players:[], scoutingJobs:[], unlockedStats:{}, trainingPlan:{}, youthPreparer:null, lastConsultTurn:null, lastArrivalTurn:null };
@@ -24,9 +24,9 @@ function defaultStaffCategories(){
 }
 function defaultStaffDefinitions(){
   return [
-    { id:'psychologist', nombre:'Psicólogo motivacional', rol:'Motivación', costoBase:PSYCHOLOGIST_COST, duracion:'temporada', descripcion:'Permite realizar charlas motivacionales para mejorar la moral del plantel.', accion:'charla_motivacional' },
-    { id:'kinesiologist', nombre:'Kinesiólogo', rol:'Recuperación', costoBase:KINESIOLOGIST_COST, duracion:'temporada', descripcion:'Permite tratar lesionados una vez por semana para reducir días de recuperación.', accion:'tratamiento_lesion' },
-    { id:'youth_preparer', nombre:'Preparador de juveniles', rol:'Academia', costoBase:YOUTH_PREPARER_COST, duracion:'temporada', descripcion:'Permite consultar informes de juveniles y descubrir más habilidades ocultas.', accion:'informe_juveniles' }
+    { id:'psychologist', nombre:'Psicólogo motivacional', rol:'Motivación', costoBase:PSYCHOLOGIST_COST, duracion:'temporada', descripcion:'Permite realizar charlas motivacionales para mejorar la moral del plantel.', accion:'charla_motivacional', imagenes:{ regular:'img/empleados/psicologo-regular.webp', bueno:'img/empleados/psicologo-bueno.webp', elite:'img/empleados/psicologo-elite.webp' } },
+    { id:'kinesiologist', nombre:'Kinesiólogo', rol:'Recuperación', costoBase:KINESIOLOGIST_COST, duracion:'temporada', descripcion:'Permite tratar lesionados una vez por semana para reducir días de recuperación.', accion:'tratamiento_lesion', imagenes:{ regular:'img/empleados/kinesiologo-regular.webp', bueno:'img/empleados/kinesiologo-bueno.webp', elite:'img/empleados/kinesiologo-elite.webp' } },
+    { id:'youth_preparer', nombre:'Preparador de juveniles', rol:'Academia', costoBase:YOUTH_PREPARER_COST, duracion:'temporada', descripcion:'Permite consultar informes de juveniles y descubrir más habilidades ocultas.', accion:'informe_juveniles', imagenes:{ regular:'img/empleados/preparador-juveniles-regular.webp', bueno:'img/empleados/preparador-juveniles-bueno.webp', elite:'img/empleados/preparador-juveniles-elite.webp' } }
   ];
 }
 function staffCategories(){
@@ -48,7 +48,8 @@ function staffDefinitions(){
     costoBase:Math.max(0, Number(item.costoBase ?? item.baseCost ?? 0) || 0),
     duracion:item.duracion || item.duration || 'temporada',
     descripcion:item.descripcion || item.description || '',
-    accion:item.accion || item.action || ''
+    accion:item.accion || item.action || '',
+    imagenes:(item.imagenes && typeof item.imagenes === 'object') ? { ...item.imagenes } : {}
   })).filter(item => item.id);
 }
 function staffDefinition(staffId){
@@ -107,10 +108,49 @@ function staffContract(staffId){
 function staffActive(staffId){ return Boolean(staffContract(staffId)); }
 function staffPerformanceMultiplier(staffId){ return Math.max(1, Number(staffContract(staffId)?.performanceMultiplier || 1)); }
 function staffCategoryName(staffId){ return staffCategory(staffContract(staffId)?.category || 'regular').nombre; }
+function staffImagePath(staffId, categoryId='regular'){
+  const def = staffDefinition(staffId);
+  const category = staffCategory(categoryId).id;
+  const fromJson = def?.imagenes?.[category] || def?.imagenes?.regular || '';
+  if(fromJson) return String(fromJson);
+  const base = staffId === 'psychologist' ? 'psicologo' : staffId === 'kinesiologist' ? 'kinesiologo' : staffId === 'youth_preparer' ? 'preparador-juveniles' : 'empleado';
+  return `img/empleados/${base}-${category}.webp`;
+}
+function staffImageMarkup(staffId, categoryId='regular', className='staff-employee-photo'){
+  const def = staffDefinition(staffId);
+  const alt = `${def?.nombre || 'Empleado'} ${staffCategory(categoryId).nombre}`;
+  return `<img class="${escapeHtml(className)}" src="${escapeHtml(staffImagePath(staffId, categoryId))}" alt="${escapeHtml(alt)}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='grid');"><span class="staff-photo-fallback" style="display:none">${escapeHtml((def?.nombre || 'E').slice(0,1).toUpperCase())}</span>`;
+}
 function staffActivePill(staffId){
   const contract = staffContract(staffId);
   if(!contract) return '';
   return `<span class="pill ok">${escapeHtml(staffCategoryName(staffId))} · contratado</span>`;
+}
+function staffContractCardMarkup(staffId, mode='compact'){
+  const contract = staffContract(staffId);
+  const def = staffDefinition(staffId);
+  if(!contract || !def) return '';
+  const category = staffCategory(contract.category || 'regular');
+  const cls = mode === 'mini' ? 'staff-contract-card mini' : 'staff-contract-card';
+  return `<div class="${cls}">
+    <div class="staff-photo-wrap">${staffImageMarkup(staffId, category.id)}</div>
+    <div class="staff-contract-info">
+      <p class="label">${escapeHtml(def.rol || 'Empleado')}</p>
+      <h3>${escapeHtml(def.nombre)}</h3>
+      <div class="staff-contract-tags"><span class="pill ok">${escapeHtml(category.nombre)}</span><span class="pill">${formatMoney(contract.cost || staffHireCost(staffId, category.id))}</span></div>
+    </div>
+  </div>`;
+}
+function contractedStaffList(){
+  return staffDefinitions().filter(def => staffActive(def.id));
+}
+function staffContractsPanelMarkup({ empty=false }={}){
+  const active = contractedStaffList();
+  if(!active.length && !empty) return '';
+  return `<div class="card featured-staff-panel" style="margin-top:14px">
+    <div class="row"><h3>Empleados contratados</h3><span class="pill">Temporada actual</span></div>
+    ${active.length ? `<div class="grid cols-3 featured-staff-grid">${active.map(def => staffContractCardMarkup(def.id)).join('')}</div>` : '<p class="muted">Todavía no hay empleados contratados.</p>'}
+  </div>`;
 }
 function openStaffHireModal(staffId, after=null){
   if(!game) return;
@@ -120,13 +160,10 @@ function openStaffHireModal(staffId, after=null){
   const cards = staffCategories().map(cat => {
     const cost = staffHireCost(staffId, cat.id);
     const disabled = (game.budget || 0) < cost;
-    const mult = Number(cat.multiplicadorRendimiento || 1);
-    const effect = mult <= 1 ? 'Rendimiento estándar' : mult === 2 ? 'Rendimiento x2' : mult === 3 ? 'Rendimiento x3' : `Rendimiento x${mult}`;
     return `<button class="staff-tier-card ${disabled ? 'disabled' : ''}" data-hire-staff-tier="${escapeHtml(staffId)}:${escapeHtml(cat.id)}" ${disabled ? 'disabled' : ''}>
       <span class="pill">${escapeHtml(cat.nombre)}</span>
       <strong>${formatMoney(cost)}</strong>
-      <em>${escapeHtml(effect)}</em>
-      <small>${escapeHtml(cat.descripcion || '')}</small>
+      <small>Contrato por temporada</small>
     </button>`;
   }).join('');
   openModal(`<div class="staff-hire-modal">
@@ -502,7 +539,7 @@ function renderAcademy(){
     <div class="grid cols-3 academy-summary">
       <div class="card"><p class="label">Juveniles</p><div class="metric">${active.length}</div><p class="small muted">Stats ocultas hasta consultar informes.</p></div>
       <div class="card"><p class="label">Captación</p><div class="metric small">${formatMoney(ACADEMY_SCOUTING_COST)}</div><button class="primary" id="btnAcademyScouting">Hacer captación de talentos</button></div>
-      <div class="card"><p class="label">Preparador de juveniles</p><div class="metric small">${staffCostLabel('youth_preparer')}</div>${activePreparer ? staffActivePill('youth_preparer') : '<button class="primary" id="btnHireYouthPreparer">Contratar</button>'}<button class="ghost" id="btnConsultAcademy" ${activePreparer ? '' : 'disabled'}>Consultar juveniles</button></div>
+      <div class="card"><p class="label">Preparador de juveniles</p>${activePreparer ? staffContractCardMarkup('youth_preparer', 'mini') : `<div class="metric small">${staffCostLabel('youth_preparer')}</div><button class="primary" id="btnHireYouthPreparer">Contratar</button>`}<button class="ghost" id="btnConsultAcademy" ${activePreparer ? '' : 'disabled'}>Consultar juveniles</button></div>
     </div>
     <div class="card" style="margin-top:14px"><h3>Captaciones pendientes</h3>${academyPendingJobsMarkup()}</div>
     <div class="card academy-rules-card" style="margin-top:14px"><p class="muted">Cada captación tarda 35 días y puede sumar entre 5 y 10 juveniles. Los juveniles cobran ${formatMoney(ACADEMY_PLAYER_TURN_COST)} por semana. Despedir uno cuesta ${formatMoney(ACADEMY_DISMISS_COMPENSATION)}.</p></div>
@@ -536,13 +573,14 @@ function renderEmployees(){
       </div>
       <div class="pill">Presupuesto: ${formatMoney(game.budget || 0)}</div>
     </div>
-    <div class="grid cols-2">
+    ${staffContractsPanelMarkup({ empty:true })}
+    <div class="grid cols-2" style="margin-top:14px">
       <div class="card staff-card">
         <h3>Psicólogo motivacional</h3>
         <p class="muted">Convoca una charla para intentar mejorar la moral del plantel.</p>
         <p class="label">Costo</p>
         <div class="metric small">${staffCostLabel('psychologist')}</div>
-        ${psychologistActive ? staffActivePill('psychologist') : `<button id="btnHirePsychologist" class="primary">Contratar</button>`}
+        ${psychologistActive ? staffContractCardMarkup('psychologist', 'mini') : `<button id="btnHirePsychologist" class="primary">Contratar</button>`}
         ${cooldownText}
         <button id="btnMotivationalTalk" class="primary" ${canCallPsychologist ? '' : 'disabled'}>Charla motivacional</button>
       </div>
@@ -557,7 +595,7 @@ function renderEmployees(){
         <p class="muted">Contratación por temporada completa. Permite tratar lesionados una vez por semana.</p>
         <p class="label">Costo</p>
         <div class="metric small">${staffCostLabel('kinesiologist')}</div>
-        ${kinesioActive ? staffActivePill('kinesiologist') : `<button id="btnHireKinesiologist" class="primary">Contratar</button>`}
+        ${kinesioActive ? staffContractCardMarkup('kinesiologist', 'mini') : `<button id="btnHireKinesiologist" class="primary">Contratar</button>`}
       </div>
       <div class="card staff-card">
         <h3>Tratamientos</h3>

@@ -1,4 +1,4 @@
-/* V3.15 · Carga de JSON, calendario anual, normalización inicial, persistencia local e inicialización. */
+/* V3.16 · Carga de JSON, calendario anual, normalización inicial, persistencia local e inicialización. */
 
 async function fetchJsonIfExists(url){
   try{
@@ -614,6 +614,6 @@ async function init(){
     }
   }catch(error){
     console.error(error);
-    view.innerHTML = `<div class="empty"><h2>Error de carga</h2><p>${escapeHtml(error.message)}. Subí <code>data/Liga argentina.json</code> o un <code>data/seed.json</code> válido y ejecutá el proyecto con GitHub Pages o servidor local.</p></div>`;
+    view.innerHTML = `<div class="empty"><h2>Error de carga</h2><p>No se pudo iniciar el juego. Revisá que la publicación esté completa y volvé a intentar.</p></div>`;
   }
 }

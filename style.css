@@ -784,7 +784,7 @@ img.player-photo-placeholder.large{width:120px;height:120px;border-radius:22px}
 .advance-control{
   display:grid;
   gap:8px;
-  justify-items:end;
+  justify-items:center;
   min-width:260px;
 }
 .advance-control .primary{
@@ -797,11 +797,24 @@ img.player-photo-placeholder.large{width:120px;height:120px;border-radius:22px}
 }
 .advance-progress .project-progress{
   height:10px;
-  margin:0 0 5px;
+  margin:0 0 6px;
 }
 .advance-progress p{
   margin:0;
-  text-align:right;
+  text-align:center;
+}
+.advance-phrase{
+  min-height:18px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.advance-phrase.is-changing{
+  animation:advancePhraseSlide .55s ease both;
+}
+@keyframes advancePhraseSlide{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
 }
 .pitch-board.centered{
   max-width:690px!important;
@@ -1627,7 +1640,7 @@ select,input{border-radius:11px;padding:9px 10px;margin-bottom:9px;font-size:13p
 .mini-status-row>div{display:flex;justify-content:space-between;align-items:center;gap:12px}.mini-status-row span{font-size:12px;color:var(--muted);font-weight:800}.mini-status-row strong{font-size:18px}
 .mini-status-row i{display:block;height:8px;border-radius:999px;background:rgba(15,23,42,.88);overflow:hidden}.mini-status-row b{display:block;height:100%;border-radius:inherit;background:var(--accent)}
 .mini-status-row.ok b{background:linear-gradient(90deg,#84cc16,#22c55e)}.mini-status-row.warn b{background:linear-gradient(90deg,#f97316,#facc15)}.mini-status-row.bad b{background:linear-gradient(90deg,#991b1b,#ef4444)}
-.office-side-card{display:grid;gap:14px;align-content:start}.office-next-match .next-match{margin-top:8px}.office-advance{display:grid;gap:8px}.office-advance button{width:100%}
+.office-side-card{display:grid;gap:14px;align-content:start}.office-next-match .next-match{margin-top:8px}.office-advance{display:grid;gap:8px;justify-self:end;width:min(100%,260px)}.office-advance button{width:100%}
 .empty-office-box{display:grid;gap:5px;border:1px dashed rgba(148,163,184,.22);border-radius:18px;padding:16px;background:rgba(255,255,255,.035)}.empty-office-box span{color:var(--muted);font-size:13px}
 .manager-alert-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
 .manager-alert{width:100%;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;text-align:left;padding:12px;border-radius:18px;border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.04)}
@@ -1729,7 +1742,7 @@ button.action-failure{
 
 
 
-/* V3.15 · filtros de mercado */
+/* V3.16 · filtros de mercado */
 .market-filters-card{
   margin:0 0 14px;
   border-color:rgba(59,130,246,.18);
@@ -1763,7 +1776,7 @@ button.action-failure{
   .market-filter-grid{grid-template-columns:1fr;}
 }
 
-/* V3.15 · Ranking Online */
+/* V3.16 · Ranking Online */
 .ranking-layout{
   display:grid;
   grid-template-columns:minmax(280px, 0.85fr) minmax(420px, 1.35fr);
@@ -1850,7 +1863,7 @@ button.action-failure{
   }
 }
 
-/* V3.15: plan semanal de entrenamiento compacto */
+/* V3.16: plan semanal de entrenamiento compacto */
 .training-summary-row{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 10px}
 .training-calendar-card .row{align-items:center;margin-bottom:10px}
 .training-week-grid{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:6px;align-items:stretch}
@@ -1891,7 +1904,7 @@ button.action-failure{
 @media (max-width:620px){.training-week-grid{grid-template-columns:1fr}.training-day-card{padding:7px}.training-picker-modal{min-width:0}}
 
 
-/* V3.15: contratación de empleados por categoría */
+/* V3.16: contratación de empleados por categoría */
 .staff-hire-modal{display:grid;gap:14px;min-width:min(720px,calc(100vw - 48px))}
 .staff-hire-modal h2{margin:0}
 .staff-tier-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -1903,3 +1916,82 @@ button.action-failure{
 .staff-tier-card small{color:#cbd5e1;line-height:1.35}
 .staff-card .pill.ok{margin:4px 0 8px}
 @media (max-width:820px){.staff-tier-grid{grid-template-columns:1fr}.staff-hire-modal{min-width:0}}
+
+/* V3.16: cards visuales de empleados contratados */
+.featured-staff-panel .featured-staff-grid{margin-top:12px;}
+.staff-contract-card{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:118px;
+  padding:12px;
+  border:1px solid rgba(148,163,184,.22);
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(15,23,42,.86),rgba(30,41,59,.72));
+  box-shadow:0 10px 24px rgba(2,6,23,.22);
+}
+.staff-contract-card.mini{
+  min-height:86px;
+  padding:10px;
+  margin:10px 0;
+  border-radius:16px;
+  background:rgba(15,23,42,.72);
+}
+.staff-photo-wrap{
+  width:76px;
+  height:76px;
+  flex:0 0 76px;
+  position:relative;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(15,23,42,.9);
+}
+.staff-contract-card.mini .staff-photo-wrap{
+  width:58px;
+  height:58px;
+  flex-basis:58px;
+  border-radius:14px;
+}
+.staff-employee-photo{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.staff-photo-fallback{
+  width:100%;
+  height:100%;
+  place-items:center;
+  font-weight:900;
+  font-size:1.35rem;
+  color:#dbeafe;
+  background:linear-gradient(135deg,rgba(14,165,233,.35),rgba(22,163,74,.24));
+}
+.staff-contract-info{min-width:0;}
+.staff-contract-info h3{
+  margin:2px 0 8px;
+  font-size:1rem;
+  line-height:1.15;
+}
+.staff-contract-card.mini .staff-contract-info h3{font-size:.95rem;}
+.staff-contract-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.staff-tier-card em{display:none;}
+@media(max-width:760px){
+  .staff-contract-card{min-height:96px;}
+  .staff-photo-wrap{width:64px;height:64px;flex-basis:64px;}
+}
+
+/* V3.16 ajuste: nueva partida con manager, país, liga y equipo */
+.new-game-form-grid{
+  display:grid;
+  gap:8px;
+}
+.new-game-form-grid input,
+.new-game-form-grid select{
+  width:100%;
+}

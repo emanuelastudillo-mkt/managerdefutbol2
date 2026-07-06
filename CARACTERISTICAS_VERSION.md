@@ -1,46 +1,63 @@
-# Características internas de versión · V3.15
+# Características internas de versión · V3.16
 
-## Objetivo
+## Enfoque
 
-Pasar el sistema de empleados a una base JSON editable y agregar categorías de contratación con impacto real en costos y rendimiento.
+Mejora visual de empleados contratados.
 
-## Nuevo archivo
+## Cambios principales
 
-### `data/empleados.json`
+- Se agregó una sección visual de **Empleados contratados** similar a **Tus jugadores destacados**.
+- Los empleados contratados muestran:
+  - foto,
+  - nombre,
+  - puesto,
+  - calidad,
+  - costo de temporada.
+- No se muestran efectos internos ni multiplicadores de rendimiento.
+- La pantalla **Empleados** muestra cards visuales para Psicólogo motivacional y Kinesiólogo si están contratados.
+- La pantalla **Academia** muestra card visual para Preparador de juveniles si está contratado.
+- El inicio muestra un panel de empleados contratados si existe al menos uno activo.
+- `data/empleados.json` ahora contiene rutas de imagen por puesto y calidad.
+- Se creó `img/empleados/README_IMAGENES.txt` con la lista de nombres esperados.
+- Se centró la barra de progreso de avance y se ajustó al ancho del botón.
+- El texto fijo debajo del avance fue reemplazado por frases rotativas configurables cada 10 segundos.
 
-Contiene:
+## Imágenes esperadas
 
-- categorías de empleados,
-- multiplicadores de costo,
-- multiplicadores de rendimiento,
-- empleados disponibles,
-- costo base regular,
-- descripción funcional de cada empleado.
+- `img/empleados/psicologo-regular.webp`
+- `img/empleados/psicologo-bueno.webp`
+- `img/empleados/psicologo-elite.webp`
+- `img/empleados/kinesiologo-regular.webp`
+- `img/empleados/kinesiologo-bueno.webp`
+- `img/empleados/kinesiologo-elite.webp`
+- `img/empleados/preparador-juveniles-regular.webp`
+- `img/empleados/preparador-juveniles-bueno.webp`
+- `img/empleados/preparador-juveniles-elite.webp`
 
-## Categorías
+## Archivos modificados
 
-| Categoría | Costo | Rendimiento |
-|---|---:|---:|
-| Regular | x1 | x1 |
-| Bueno | x4 | x2 |
-| Elite | x50 | x3 |
+- `config.js`
+- `index.html`
+- `app.js`
+- `style.css`
+- `data/empleados.json`
+- `js/game/10-academy-employees.js`
+- `js/ui/06-render-home-messages.js`
+- `README.md`
+- `VERSION.md`
+- `CARACTERISTICAS_VERSION.md`
 
-## Empleados incluidos
+## Compatibilidad
 
-- Psicólogo motivacional.
-- Kinesiólogo.
-- Preparador de juveniles.
+- No cambia reglas de juego.
+- No cambia costos ni rendimiento real de empleados.
+- No afecta partidas guardadas existentes.
 
-## Cambios de lógica
+## Ajuste adicional antes de implementación
 
-- El botón de contratación abre una ventana con las tres categorías.
-- La categoría elegida se guarda en `game.staffContracts`.
-- Los empleados se contratan por temporada.
-- Al cambiar de temporada, los contratos se desactivan.
-- Se mantiene compatibilidad con datos viejos de `staffActions` y `academy.youthPreparer`.
-
-## Efectos
-
-- Psicólogo motivacional: multiplica la mejora de moral.
-- Kinesiólogo: multiplica los días reducidos por tratamiento exitoso.
-- Preparador de juveniles: multiplica la cantidad de habilidades reveladas por informe.
+- La creación de partida se reorganizó con campos de manager, país, liga y equipo.
+- El nombre del manager se guarda localmente y se copia a la partida nueva para el ranking.
+- Los desplegables de Liga y Equipo se actualizan según la selección anterior.
+- El ranking permite subir el estado actual de la temporada en cualquier momento.
+- Se bloquean nuevos envíos durante 77 días de juego desde el último envío.
+- El cooldown queda configurable en `config.js` mediante `ranking.cooldownCargaDias`.
