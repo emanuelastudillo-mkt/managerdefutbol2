@@ -1,5 +1,5 @@
 /*
-  Fútbol Manager · Ranking Online V3.18
+  Fútbol Manager · Ranking Online V3.19
   Apps Script para pegar en https://script.google.com/
 
   Pasos:
@@ -42,29 +42,30 @@ const HEADERS = [
 
 function doGet(e){
   const params = e && e.parameter ? e.parameter : {};
-  const action = params.action || 'list';
-  if(action === 'list'){
+  const action = String(params.action || '').trim().toLowerCase();
+  const hasPayload = Boolean(params.payload);
+
+  if(!action || ['list', 'read', 'get', 'ranking', 'rows'].indexOf(action) >= 0){
     const limit = Math.max(1, Math.min(Number(params.limit || 100), 500));
     const rows = readRankingRows_(limit);
     return output_(params, { ok:true, rows });
   }
-  if(action === 'submit'){
-    if(RANKING_TOKEN && params.token !== RANKING_TOKEN){
-      return output_(params, { ok:false, error:'Token inválido.' });
-    }
-    const payload = parsePayload_(params.payload);
-    const validation = validatePayload_(payload);
-    if(validation){
-      return output_(params, { ok:false, error:validation });
-    }
-    appendRankingRow_(payload);
-    return output_(params, { ok:true });
+
+  if(['submit', 'save', 'add', 'post'].indexOf(action) >= 0 || hasPayload){
+    return submitRanking_(params);
   }
-  return output_(params, { ok:false, error:'Acción GET no reconocida.' });
+
+  const limit = Math.max(1, Math.min(Number(params.limit || 100), 500));
+  const rows = readRankingRows_(limit);
+  return output_(params, { ok:true, rows });
 }
 
 function doPost(e){
   const params = e && e.parameter ? e.parameter : {};
+  return submitRanking_(params);
+}
+
+function submitRanking_(params){
   if(RANKING_TOKEN && params.token !== RANKING_TOKEN){
     return output_(params, { ok:false, error:'Token inválido.' });
   }

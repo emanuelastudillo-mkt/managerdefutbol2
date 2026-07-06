@@ -1,8 +1,10 @@
-/* V3.18 · Ranking online con confirmación real de lectura/escritura. */
+/* V3.19 · Ranking online robusto contra endpoints guardados y acciones GET antiguas. */
 
 function rankingStoredEndpoint(){
-  try{ return localStorage.getItem('fmRankingEndpoint') || RANKING_APPS_SCRIPT_URL || ''; }
-  catch(_){ return RANKING_APPS_SCRIPT_URL || ''; }
+  const configured = String(RANKING_APPS_SCRIPT_URL || '').trim();
+  if(configured) return configured;
+  try{ return localStorage.getItem('fmRankingEndpoint') || ''; }
+  catch(_){ return ''; }
 }
 function rankingStoredManagerName(){
   try{ return (game?.rankingManagerName || localStorage.getItem('fmRankingManagerName') || '').trim(); }

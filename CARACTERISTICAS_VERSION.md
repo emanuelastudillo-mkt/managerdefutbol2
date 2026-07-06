@@ -1,4 +1,4 @@
-# Características internas de versión · V3.18
+# Características internas de versión · V3.19
 
 ## Enfoque
 
@@ -75,10 +75,17 @@ jovenesLibresEdadMax: 18
 - Verificación de ZIP.
 
 
-## Ajuste V3.18 · Ranking online
+## Ajuste V3.19 · Ranking online
 
 - El envío al ranking ahora espera confirmación real del servicio online antes de guardar el cooldown local.
 - Si el envío falla, no se bloquea el siguiente intento.
 - El ranking online ahora usa lectura/escritura confirmada por callback.
 - El Apps Script acepta lectura y envío desde `doGet`, además de mantener compatibilidad con `doPost`.
 - Se corrige el caso donde el juego mostraba un registro local aunque la hoja no hubiera recibido datos.
+
+
+## Ajuste V3.19
+
+- El ranking usa primero la URL configurada en `config.js` y evita que una URL vieja guardada en el navegador la pise.
+- El Apps Script acepta lectura y envío con acciones GET más tolerantes para evitar el error `Acción GET no reconocida`.
+- Si llega una acción desconocida sin payload, responde con la lectura del ranking en vez de bloquear la tabla.
