@@ -1,90 +1,75 @@
-# Características internas de versión · V3.16
+# Características internas de versión · V3.17
 
 ## Enfoque
 
-Mejora visual de empleados contratados.
+Ajuste de mercado libre inicial y renovación anual de jugadores libres.
 
-## Cambios principales
+## Reglas nuevas de jugadores libres
 
-- Se agregó una sección visual de **Empleados contratados** similar a **Tus jugadores destacados**.
-- Los empleados contratados muestran:
-  - foto,
-  - nombre,
-  - puesto,
-  - calidad,
-  - costo de temporada.
-- No se muestran efectos internos ni multiplicadores de rendimiento.
-- La pantalla **Empleados** muestra cards visuales para Psicólogo motivacional y Kinesiólogo si están contratados.
-- La pantalla **Academia** muestra card visual para Preparador de juveniles si está contratado.
-- El inicio muestra un panel de empleados contratados si existe al menos uno activo.
-- `data/empleados.json` ahora contiene rutas de imagen por puesto y calidad.
-- Se creó `img/empleados/README_IMAGENES.txt` con la lista de nombres esperados.
-- Se centró la barra de progreso de avance y se ajustó al ancho del botón.
-- El texto fijo debajo del avance fue reemplazado por frases rotativas configurables cada 10 segundos.
+### Mercado libre inicial
 
-## Imágenes esperadas
+- Se generan **300 jugadores libres** al crear una partida.
+- Media visible objetivo: **40 a 62**.
+- Edad inicial: **19 a 30 años**.
+- Distribución por línea:
+  - `POR`: 10%
+  - `DEF`: 35%
+  - `MED`: 35%
+  - `DEL`: 20%
 
-- `img/empleados/psicologo-regular.webp`
-- `img/empleados/psicologo-bueno.webp`
-- `img/empleados/psicologo-elite.webp`
-- `img/empleados/kinesiologo-regular.webp`
-- `img/empleados/kinesiologo-bueno.webp`
-- `img/empleados/kinesiologo-elite.webp`
-- `img/empleados/preparador-juveniles-regular.webp`
-- `img/empleados/preparador-juveniles-bueno.webp`
-- `img/empleados/preparador-juveniles-elite.webp`
+### Renovación por temporada
+
+- Al iniciar cada temporada se crean **3 jóvenes libres por club**.
+- Edad de jóvenes libres: **17 o 18 años**.
+- Estos juveniles usan las reglas normales de generación de media, sin forzar el rango 40-62.
+- Esto conserva la probabilidad mínima de aparición de jugadores de media muy alta.
+
+### Mercado libre regular anual
+
+- Luego de retiros y limpieza, el mercado regular puede rellenarse hasta **200 jugadores libres**.
+- Los nuevos libres regulares de temporada usan el mismo rango que los iniciales: media 40 a 62.
+- Los jugadores liberados por clubes pueden acumularse en el mercado.
+
+### Limpieza de libres
+
+- Si el mercado supera los 200 libres, se eliminan primero jugadores libres de **32 años o más**.
+- Se conservan los libres menores de 32 años aunque el mercado supere temporalmente los 200.
+- Los libres también pasan por la edad de retiro al finalizar temporada.
+
+## Configuración agregada o ajustada
+
+En `config.js`, bloque `plantel`:
+
+```js
+agentesLibresIniciales: 300,
+agentesLibresMediaMin: 40,
+agentesLibresMediaMax: 62,
+agentesLibresEdadMin: 19,
+agentesLibresEdadMax: 30,
+agentesLibresMaximosPorTemporada: 200,
+agentesLibresPosiciones: {
+  POR: 0.10,
+  DEF: 0.35,
+  MED: 0.35,
+  DEL: 0.20
+},
+jovenesLibresNuevosPorEquipoTemporada: 3,
+jovenesLibresEdadMin: 17,
+jovenesLibresEdadMax: 18
+```
 
 ## Archivos modificados
 
 - `config.js`
-- `index.html`
-- `app.js`
-- `style.css`
-- `data/empleados.json`
-- `js/game/10-academy-employees.js`
+- `js/core/01-config-constants.js`
 - `js/ui/06-render-home-messages.js`
+- `js/game/05-state-season.js`
 - `README.md`
 - `VERSION.md`
 - `CARACTERISTICAS_VERSION.md`
 
-## Compatibilidad
+## Validación esperada
 
-- No cambia reglas de juego.
-- No cambia costos ni rendimiento real de empleados.
-- No afecta partidas guardadas existentes.
-
-## Ajuste adicional antes de implementación
-
-- La creación de partida se reorganizó con campos de manager, país, liga y equipo.
-- El nombre del manager se guarda localmente y se copia a la partida nueva para el ranking.
-- Los desplegables de Liga y Equipo se actualizan según la selección anterior.
-- El ranking permite subir el estado actual de la temporada en cualquier momento.
-- Se bloquean nuevos envíos durante 77 días de juego desde el último envío.
-- El cooldown queda configurable en `config.js` mediante `ranking.cooldownCargaDias`.
-
-## Ajuste interno V3.16 · Curva de dificultad de habilidades
-
-Se agregó una segunda comprobación en `improveRandomSkill()`.
-
-Flujo actual:
-
-1. El entrenamiento intenso realiza la tirada base de mejora.
-2. Si esa tirada sale positiva, se calcula la dificultad por habilidad actual.
-3. La mejora +1 sólo se aplica si supera la comprobación final.
-
-Regla:
-
-```txt
-probabilidad_final = (100 - habilidad_actual) / 100
-```
-
-Ejemplos:
-
-```txt
-Habilidad 40 => 60% final
-Habilidad 70 => 30% final
-Habilidad 80 => 20% final
-Habilidad 90 => 10% final
-```
-
-Esto no toca sueldos, cláusulas ni medias base. Sólo afecta la probabilidad de que una mejora de entrenamiento se concrete.
+- Validación sintáctica de JavaScript.
+- Validación de JSON.
+- Verificación de ZIP.

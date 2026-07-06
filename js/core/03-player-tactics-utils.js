@@ -1,4 +1,4 @@
-/* V3.16 · Estado de jugadores, disponibilidad, calendario anual, habilidades y utilidades tácticas. */
+/* V3.17 · Estado de jugadores, disponibilidad, calendario anual, habilidades y utilidades tácticas. */
 
 function playerById(id){ return seed.players.find(p => p.id === Number(id)); }
 function playersByClub(clubId){ return seed.players.filter(p => p.clubId === clubId); }
@@ -670,11 +670,18 @@ function ensurePlayerEconomics(player, salaryFactor=1){
   refreshPlayerClause(player);
   return player;
 }
-function generatedPlayerFactory({ id, position, clubId=0, age=18, prestige=50, nameContext='Jugador', divisionName='', divisionOrder=null, generationContext=null, salaryFactor=1, freeAgent=false, youthFreeAgent=false }){
+function generatedPlayerFactory({ id, position, clubId=0, age=18, prestige=50, nameContext='Jugador', divisionName='', divisionOrder=null, generationContext=null, salaryFactor=1, freeAgent=false, youthFreeAgent=false, mediaMin=null, mediaMax=null }){
   const cleanPosition = normalizePlayerPosition(position, id);
   const group = playerRoleGroup(cleanPosition);
   const generationDivision = Number.isFinite(Number(divisionOrder)) ? Number(divisionOrder) : generationDivisionOrder(clubId, divisionName);
-  const media = mediaFromGenerationRules(prestige, id, group, generationContext, nameContext, { clubId, divisionOrder:generationDivision });
+  let media;
+  if(Number.isFinite(Number(mediaMin)) && Number.isFinite(Number(mediaMax))){
+    const min = clamp(Math.round(Number(mediaMin)), 1, 99);
+    const max = Math.max(min, clamp(Math.round(Number(mediaMax)), 1, 99));
+    media = min + hashNumber(`${nameContext}-${id}-${group}-fixed-media`, Math.max(1, max - min + 1));
+  } else {
+    media = mediaFromGenerationRules(prestige, id, group, generationContext, nameContext, { clubId, divisionOrder:generationDivision });
+  }
   const skills = skillsForPosition(cleanPosition, media, id);
   const visible = averageGeneratedVisible(cleanPosition, skills);
   const player = {

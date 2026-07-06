@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "version": "V3.16",
+    "version": "V3.17",
     "descripcion": "Catálogo de empleados por categoría para Fútbol Manager. Incluye rutas de imagen por puesto y calidad."
   },
   "categorias": [

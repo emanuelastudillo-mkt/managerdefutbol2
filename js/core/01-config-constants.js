@@ -1,4 +1,4 @@
-/* V3.16 · Configuración, calendario anual, constantes generales y estado global. */
+/* V3.17 · Configuración, calendario anual, constantes generales y estado global. */
 
 const GAME_CONFIG = window.GAME_CONFIG || {};
 function configValue(path, fallback){
@@ -43,7 +43,7 @@ const ADVANCE_STATUS_PHRASES = Array.isArray(configValue('ui.frasesProgresoAvanc
 const PRESEASON_TURNS = Math.ceil(configNumber('calendario.diasPretemporada', 70, 0) / DAYS_PER_ADVANCE);
 const POSTSEASON_TURNS_CONFIG = Math.ceil(configNumber('calendario.diasPostemporada', 0, 0) / DAYS_PER_ADVANCE);
 const MAX_PRESEASON_FRIENDLIES = configNumber('calendario.amistososMaximosPretemporada', 5, 0);
-const APP_VERSION = configValue('version', 'V3.16');
+const APP_VERSION = configValue('version', 'V3.17');
 
 const RANKING_APPS_SCRIPT_URL = configValue('ranking.appsScriptUrl', '');
 const RANKING_TOKEN = configValue('ranking.token', '');
@@ -136,8 +136,24 @@ const REPLANT_TURNS = Math.ceil(configNumber('estadio.diasReplantarCesped', 35, 
 const PATCH_COST = configNumber('estadio.costoParchearCampo', 200000, 0);
 const PATCH_TURNS = Math.ceil(configNumber('estadio.diasParchearCampo', 21, 0) / DAYS_PER_ADVANCE);
 const PATCH_GAIN_PER_TURN = configNumber('estadio.mejoraParchePorAvance', 5, 0, 100);
-const MARKET_FREE_AGENT_COUNT = configNumber('plantel.agentesLibresIniciales', 50, 0);
-const SEASON_YOUTH_FREE_AGENT_COUNT = configNumber('plantel.jovenesLibresPorTemporada', 20, 0);
+const MARKET_FREE_AGENT_COUNT = configNumber('plantel.agentesLibresIniciales', 300, 0);
+const MARKET_FREE_AGENT_MEDIA_MIN = configNumber('plantel.agentesLibresMediaMin', 40, 1, 99);
+const MARKET_FREE_AGENT_MEDIA_MAX = Math.max(MARKET_FREE_AGENT_MEDIA_MIN, configNumber('plantel.agentesLibresMediaMax', 62, 1, 99));
+const MARKET_FREE_AGENT_AGE_MIN = configNumber('plantel.agentesLibresEdadMin', 19, 15, 45);
+const MARKET_FREE_AGENT_AGE_MAX = Math.max(MARKET_FREE_AGENT_AGE_MIN, configNumber('plantel.agentesLibresEdadMax', 30, 15, 55));
+const MARKET_FREE_AGENT_POSITION_GROUPS = [
+  { id:'POR', probability:configNumber('plantel.agentesLibresPosiciones.POR', 0.10, 0), positions:['POR'] },
+  { id:'DEF', probability:configNumber('plantel.agentesLibresPosiciones.DEF', 0.35, 0), positions:['LD','LI','DFC'] },
+  { id:'MID', probability:configNumber('plantel.agentesLibresPosiciones.MED', 0.35, 0), positions:['MCD','MC','MCO'] },
+  { id:'ATT', probability:configNumber('plantel.agentesLibresPosiciones.DEL', 0.20, 0), positions:['ED','EI','DC'] }
+];
+const SEASON_FREE_AGENT_MARKET_MAX = configNumber('plantel.agentesLibresMaximosPorTemporada', 200, 0);
+const SEASON_FREE_AGENT_TOP_UP_ENABLED = configBoolean('plantel.rellenarLibresHastaMaximoPorTemporada', true);
+const SEASON_FREE_AGENT_CLEANUP_ENABLED = configBoolean('plantel.limpiarLibresViejosAlCambiarTemporada', true);
+const SEASON_YOUTH_FREE_AGENTS_PER_CLUB = configNumber('plantel.jovenesLibresNuevosPorEquipoTemporada', 3, 0);
+const SEASON_YOUTH_FREE_AGENT_AGE_MIN = configNumber('plantel.jovenesLibresEdadMin', 17, 15, 30);
+const SEASON_YOUTH_FREE_AGENT_AGE_MAX = Math.max(SEASON_YOUTH_FREE_AGENT_AGE_MIN, configNumber('plantel.jovenesLibresEdadMax', 18, 15, 35));
+const SEASON_YOUTH_FREE_AGENT_COUNT = configNumber('plantel.jovenesLibresPorTemporada', 0, 0);
 const RETIREMENT_MIN_AGE = 32;
 const RETIREMENT_MAX_AGE = 38;
 const SEASON_SALARY_BASE_REDUCTION = configNumber('economia.reduccionBaseSueldoFinTemporada', 0.05, 0, 1);

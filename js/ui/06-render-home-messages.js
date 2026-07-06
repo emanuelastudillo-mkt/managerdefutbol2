@@ -1,4 +1,4 @@
-/* V3.16 · Render general, inicio, calendario anual, mensajes y ofertas de venta recibidas. */
+/* V3.17 · Render general, inicio, calendario anual, mensajes y ofertas de venta recibidas. */
 
 function renderAll(){
   document.querySelectorAll('.tabs button').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab === activeTab));
@@ -553,26 +553,63 @@ function removePlayerFromCurrentTactic(playerId){
   const autoSubs = (game.tactic.autoSubs || []).map(rule => ({...rule, outId:Number(rule.outId)===id?0:rule.outId, inId:Number(rule.inId)===id?0:rule.inId}));
   game.tactic = applyStarterMentalities({ ...game.tactic, starters, bench, autoSubs });
 }
-function generateMarketPlayers(count=50){
-  const startId = Math.max(0, ...(seed?.players || []).map(p => Number(p.id) || 0)) + 1000;
+
+function buildBalancedFreeAgentPositionGroups(count, label='market'){
+  const total = Math.max(0, Math.round(Number(count) || 0));
+  if(total <= 0) return [];
+  const rules = (Array.isArray(MARKET_FREE_AGENT_POSITION_GROUPS) && MARKET_FREE_AGENT_POSITION_GROUPS.length)
+    ? MARKET_FREE_AGENT_POSITION_GROUPS
+    : PLAYER_GENERATION_POSITION_GROUPS;
+  const weighted = rules.map(rule => ({ ...rule, probability:Math.max(0, Number(rule.probability || 0)) }));
+  const weightTotal = weighted.reduce((acc, rule) => acc + rule.probability, 0) || 1;
+  const quotas = weighted.map(rule => {
+    const exact = total * (rule.probability || 0) / weightTotal;
+    return { rule, exact, count:Math.floor(exact), rest:exact - Math.floor(exact) };
+  });
+  let assigned = quotas.reduce((acc, item) => acc + item.count, 0);
+  quotas.slice().sort((a,b) => b.rest - a.rest || String(a.rule.id).localeCompare(String(b.rule.id))).forEach(item => {
+    if(assigned < total){ item.count += 1; assigned += 1; }
+  });
+  const groups = [];
+  quotas.forEach(item => { for(let i=0;i<item.count;i++) groups.push(item.rule.id); });
+  return groups.sort((a,b) => hashNumber(`${label}-${a}-pos-order`, 100000) - hashNumber(`${label}-${b}-pos-order`, 100000));
+}
+function pickFreeAgentPositionFromGroup(groupId, id, label){
+  const rules = (Array.isArray(MARKET_FREE_AGENT_POSITION_GROUPS) && MARKET_FREE_AGENT_POSITION_GROUPS.length)
+    ? MARKET_FREE_AGENT_POSITION_GROUPS
+    : PLAYER_GENERATION_POSITION_GROUPS;
+  const group = rules.find(item => item.id === groupId) || PLAYER_GENERATION_POSITION_GROUPS.find(item => item.id === groupId) || PLAYER_GENERATION_POSITION_GROUPS[2];
+  const pool = group.positions || ['MC'];
+  return pool[hashNumber(`${label}-${id}-free-pos`, pool.length)];
+}
+
+function generateMarketPlayers(count=50, options={}){
+  const startId = Number.isFinite(Number(options.startId))
+    ? Math.max(1, Math.round(Number(options.startId)))
+    : Math.max(0, ...(seed?.players || []).map(p => Number(p.id) || 0)) + 1000;
+  const label = options.label || 'market';
+  const nameContext = options.nameContext || 'Mercado Libre';
   const activePlayers = (seed?.players || []).filter(player => player && !player.retired && !player.sold && Number(player.clubId || 0) >= 0);
   const generationContext = createPlayerGenerationContext(activePlayers.length + count, activePlayers);
+  const balancedGroups = buildBalancedFreeAgentPositionGroups(count, label);
   const players = [];
   for(let i=0;i<count;i++){
     const id = startId + i;
-    const group = pickPositionGroupForGeneration(id, 'market', generationContext);
-    const position = pickPositionFromGroup(group, id, 'market');
+    const group = balancedGroups[i] || pickPositionGroupForGeneration(id, label, generationContext);
+    const position = pickFreeAgentPositionFromGroup(group, id, label);
     const player = generatedPlayerFactory({
       id,
       position,
       clubId:0,
-      age:18 + hashNumber(`market-age-${id}`, 18),
+      age:MARKET_FREE_AGENT_AGE_MIN + hashNumber(`${label}-age-${id}`, Math.max(1, MARKET_FREE_AGENT_AGE_MAX - MARKET_FREE_AGENT_AGE_MIN + 1)),
       prestige:52,
-      nameContext:'Mercado Libre',
+      nameContext,
       divisionName:'Mercado',
       generationContext,
       salaryFactor:MARKET_FREE_AGENT_SALARY_FACTOR,
-      freeAgent:true
+      freeAgent:true,
+      mediaMin:MARKET_FREE_AGENT_MEDIA_MIN,
+      mediaMax:MARKET_FREE_AGENT_MEDIA_MAX
     });
     players.push(player);
   }

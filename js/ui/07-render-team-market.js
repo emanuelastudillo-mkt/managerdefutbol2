@@ -1,4 +1,4 @@
-/* V3.16 · Primer equipo, mercado, plantel, táctica y validación de alineación. */
+/* V3.17 · Primer equipo, mercado, plantel, táctica y validación de alineación. */
 
 function firstTeamTabsMarkup(current){
   const tabs = [

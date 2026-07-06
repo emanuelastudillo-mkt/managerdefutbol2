@@ -1,4 +1,4 @@
-/* V3.16 · Eventos principales, normalización de partida, calendario anual, temporadas y ascensos/descensos. */
+/* V3.17 · Eventos principales, normalización de partida, calendario anual, temporadas y ascensos/descensos. */
 
 function clubSelectOptionsMarkup(){
   const divisions = seed.divisions || [{ id:'default', name:'Liga única' }];
@@ -647,12 +647,16 @@ function retireSeasonVeterans(){
   if(!game || !seed?.players) return [];
   const clubId = Number(game.selectedClubId);
   const retirees = seed.players
-    .filter(player => Number(player.clubId) === clubId && !player.freeAgent && !player.sold)
+    .filter(player => !player.sold)
     .filter(player => {
       const age = Math.round(Number(player.age || 0));
-      return age >= RETIREMENT_MIN_AGE && age <= RETIREMENT_MAX_AGE;
+      const retirementAge = age >= RETIREMENT_MIN_AGE && age <= RETIREMENT_MAX_AGE;
+      if(!retirementAge) return false;
+      const ownPlayer = Number(player.clubId) === clubId && !player.freeAgent;
+      const freePlayer = Number(player.clubId || 0) === 0 || Boolean(player.freeAgent) || Boolean(player.youthFreeAgent);
+      return ownPlayer || freePlayer;
     })
-    .map(player => ({ id:player.id, name:player.name, age:player.age, position:player.position, salary:player.salary || 0 }));
+    .map(player => ({ id:player.id, name:player.name, age:player.age, position:player.position, salary:player.salary || 0, freeAgent:Number(player.clubId || 0) === 0 || Boolean(player.freeAgent) || Boolean(player.youthFreeAgent) }));
   if(!retirees.length) return [];
   const retiredIds = new Set(retirees.map(p => Number(p.id)));
   seed.players = seed.players.filter(player => !retiredIds.has(Number(player.id)));
@@ -666,13 +670,25 @@ function retireSeasonVeterans(){
     delete game.playerStats?.[player.id];
     delete game.playerStatus?.[player.id];
   });
-  const names = retirees.slice(0,5).map(p => `${p.name} (${p.age})`).join(', ');
-  pushGameMessage({
-    type:'plantel',
-    priority:'normal',
-    title:'Retiros al finalizar la temporada',
-    body:`${retirees.length === 1 ? 'Un jugador informó' : `${retirees.length} jugadores informaron`} su retiro del fútbol: ${names}${retirees.length > 5 ? '...' : ''}`
-  });
+  const ownRetirees = retirees.filter(player => !player.freeAgent);
+  const freeRetirees = retirees.filter(player => player.freeAgent);
+  if(ownRetirees.length){
+    const names = ownRetirees.slice(0,5).map(p => `${p.name} (${p.age})`).join(', ');
+    pushGameMessage({
+      type:'plantel',
+      priority:'normal',
+      title:'Retiros al finalizar la temporada',
+      body:`${ownRetirees.length === 1 ? 'Un jugador informó' : `${ownRetirees.length} jugadores informaron`} su retiro del fútbol: ${names}${ownRetirees.length > 5 ? '...' : ''}`
+    });
+  }
+  if(freeRetirees.length){
+    pushGameMessage({
+      type:'mercado',
+      priority:'normal',
+      title:'Retiros en el mercado libre',
+      body:`${freeRetirees.length} jugadores libres se retiraron al finalizar la temporada.`
+    });
+  }
   return retirees;
 }
 function nextPlayerId(){
@@ -681,46 +697,146 @@ function nextPlayerId(){
     .concat((game?.marketPlayers || []).map(p => Number(p.id) || 0));
   return Math.max(...ids) + 1;
 }
+function currentFreeMarketPlayers(){
+  return (game?.marketPlayers || []).filter(player => player && Number(player.clubId || 0) === 0 && !player.sold);
+}
+function removeFreeMarketPlayersById(ids=[]){
+  const remove = new Set((ids || []).map(Number));
+  if(!remove.size) return [];
+  const removed = currentFreeMarketPlayers().filter(player => remove.has(Number(player.id)));
+  game.marketPlayers = (game.marketPlayers || []).filter(player => !remove.has(Number(player.id)));
+  if(seed?.players){
+    seed.players = seed.players.filter(player => {
+      if(!remove.has(Number(player.id))) return true;
+      return !(Number(player.clubId || 0) === 0 && player.freeAgent);
+    });
+  }
+  removed.forEach(player => {
+    delete game.playerCondition?.[player.id];
+    delete game.playerMorale?.[player.id];
+    delete game.playerSkillBoosts?.[player.id];
+    delete game.trainingPlan?.[player.id];
+    delete game.playerStats?.[player.id];
+    delete game.playerStatus?.[player.id];
+  });
+  return removed;
+}
+function pruneFreeAgentMarketToMax(maxCount=SEASON_FREE_AGENT_MARKET_MAX){
+  if(!game || !SEASON_FREE_AGENT_CLEANUP_ENABLED || !Number.isFinite(Number(maxCount)) || Number(maxCount) <= 0) return [];
+  const freePlayers = currentFreeMarketPlayers();
+  const excess = freePlayers.length - Number(maxCount);
+  if(excess <= 0) return [];
+  const candidates = freePlayers
+    .filter(player => Math.round(Number(player.age || 0)) >= RETIREMENT_MIN_AGE)
+    .sort((a,b) => {
+      const ageDiff = Number(b.age || 0) - Number(a.age || 0);
+      if(ageDiff !== 0) return ageDiff;
+      const youthWeight = Number(Boolean(a.youthFreeAgent)) - Number(Boolean(b.youthFreeAgent));
+      if(youthWeight !== 0) return youthWeight;
+      const mediaDiff = visibleOverall(a) - visibleOverall(b);
+      if(mediaDiff !== 0) return mediaDiff;
+      return Number(a.id || 0) - Number(b.id || 0);
+    });
+  if(!candidates.length) return [];
+  return removeFreeMarketPlayersById(candidates.slice(0, excess).map(player => player.id));
+}
+function initializeFreePlayerState(players=[]){
+  if(!game) return;
+  game.playerCondition = game.playerCondition || {};
+  game.playerMorale = game.playerMorale || {};
+  game.playerSkillBoosts = game.playerSkillBoosts || {};
+  game.trainingPlan = game.trainingPlan || {};
+  game.playerStats = game.playerStats || {};
+  players.forEach(p => {
+    game.playerCondition[p.id] = clamp(15 + hashNumber(`free-cond-${p.id}`, 15), 1, 29);
+    game.playerMorale[p.id] = clamp(35 + hashNumber(`free-morale-${p.id}`, 55), 1, 99);
+    game.playerSkillBoosts[p.id] = game.playerSkillBoosts[p.id] || {};
+    game.trainingPlan[p.id] = game.trainingPlan[p.id] || DEFAULT_TRAINING_TYPE;
+    game.playerStats[p.id] = game.playerStats[p.id] || { playerId:p.id, clubId:p.clubId, goals:0, assists:0, yellow:0, red:0, played:0, injuries:0 };
+  });
+}
 function generateSeasonYouthFreeAgents(count=SEASON_YOUTH_FREE_AGENT_COUNT){
+  const totalCount = Math.max(0, Math.round(Number(count) || 0));
   const activePlayers = (seed?.players || []).filter(player => player && !player.retired && !player.sold && Number(player.clubId || 0) >= 0);
-  const generationContext = createPlayerGenerationContext(activePlayers.length + count, activePlayers);
+  const generationContext = createPlayerGenerationContext(activePlayers.length + totalCount, activePlayers);
   const players = [];
   let id = nextPlayerId();
   const season = Number(game?.seasonNumber || 1);
-  for(let i=0;i<count;i++, id++){
+  for(let i=0;i<totalCount;i++, id++){
     const group = pickPositionGroupForGeneration(id, `season-youth-${season}`, generationContext);
     const position = pickPositionFromGroup(group, id, `season-youth-${season}`);
+    const club = seed?.clubs?.length ? seed.clubs[i % seed.clubs.length] : null;
+    const division = club ? clubDivision(club.id) : null;
+    const ageSpan = Math.max(1, SEASON_YOUTH_FREE_AGENT_AGE_MAX - SEASON_YOUTH_FREE_AGENT_AGE_MIN + 1);
     const player = generatedPlayerFactory({
       id,
       position,
       clubId:0,
-      age:17 + hashNumber(`season-youth-age-${season}-${id}`, 7),
-      prestige:48,
+      age:SEASON_YOUTH_FREE_AGENT_AGE_MIN + hashNumber(`season-youth-age-${season}-${id}`, ageSpan),
+      prestige:50,
       nameContext:`Juveniles libres ${season}`,
-      divisionName:'Juveniles libres',
+      divisionName:division?.name || 'Juveniles libres',
+      divisionOrder:division?.order || null,
       generationContext,
       salaryFactor:FREE_YOUTH_SALARY_FACTOR,
       freeAgent:true,
       youthFreeAgent:true
     });
+    player.originClubId = club?.id || 0;
     players.push(player);
   }
   return players;
+}
+function generateSeasonYouthFreeAgentsByClub(perClub=SEASON_YOUTH_FREE_AGENTS_PER_CLUB){
+  const clubs = (seed?.clubs || []).filter(club => Number(club.id || 0) > 0);
+  const total = Math.max(0, Math.round(Number(perClub || 0))) * clubs.length;
+  if(total <= 0) return [];
+  return generateSeasonYouthFreeAgents(total);
 }
 function addSeasonYouthFreeAgents(count=SEASON_YOUTH_FREE_AGENT_COUNT){
   if(!game) return [];
   const newPlayers = generateSeasonYouthFreeAgents(count);
   game.marketPlayers = (game.marketPlayers || []).concat(newPlayers);
   mergeMarketPlayersIntoSeed(newPlayers);
-  newPlayers.forEach(p => {
-    game.playerCondition[p.id] = clamp(15 + hashNumber(`season-youth-cond-${p.id}`, 15), 1, 29);
-    game.playerMorale[p.id] = clamp(35 + hashNumber(`season-youth-morale-${p.id}`, 55), 1, 99);
-    game.playerSkillBoosts[p.id] = {};
-    game.trainingPlan[p.id] = DEFAULT_TRAINING_TYPE;
-    game.playerStats[p.id] = { playerId:p.id, clubId:p.clubId, goals:0, assists:0, yellow:0, red:0, played:0, injuries:0 };
-  });
-  pushGameMessage({ type:'mercado', title:'Nuevos juveniles libres', body:`Aparecieron ${newPlayers.length} jóvenes libres de 17 a 23 años en el mercado, con sueldos más bajos de lo normal.`, priority:'normal' });
+  initializeFreePlayerState(newPlayers);
+  if(newPlayers.length){
+    pushGameMessage({ type:'mercado', title:'Nuevos juveniles libres', body:`Aparecieron ${newPlayers.length} jóvenes libres de ${SEASON_YOUTH_FREE_AGENT_AGE_MIN} a ${SEASON_YOUTH_FREE_AGENT_AGE_MAX} años en el mercado.`, priority:'normal' });
+  }
   return newPlayers;
+}
+function topUpSeasonFreeAgentsToMax(maxCount=SEASON_FREE_AGENT_MARKET_MAX){
+  if(!game || !SEASON_FREE_AGENT_TOP_UP_ENABLED || !Number.isFinite(Number(maxCount)) || Number(maxCount) <= 0) return [];
+  const needed = Math.max(0, Math.round(Number(maxCount)) - currentFreeMarketPlayers().length);
+  if(needed <= 0) return [];
+  const newPlayers = generateMarketPlayers(needed, { startId:nextPlayerId(), label:`season-market-${game.seasonNumber || 1}`, nameContext:'Mercado Libre' });
+  game.marketPlayers = (game.marketPlayers || []).concat(newPlayers);
+  mergeMarketPlayersIntoSeed(newPlayers);
+  initializeFreePlayerState(newPlayers);
+  return newPlayers;
+}
+function renewFreeAgentMarketForSeason(retiredCount=0){
+  if(!game) return { removed:[], youth:[], regular:[] };
+  pruneFreeAgentMarketToMax(SEASON_FREE_AGENT_MARKET_MAX);
+  const youth = generateSeasonYouthFreeAgentsByClub(SEASON_YOUTH_FREE_AGENTS_PER_CLUB);
+  game.marketPlayers = (game.marketPlayers || []).concat(youth);
+  mergeMarketPlayersIntoSeed(youth);
+  initializeFreePlayerState(youth);
+  pruneFreeAgentMarketToMax(SEASON_FREE_AGENT_MARKET_MAX);
+  const regular = topUpSeasonFreeAgentsToMax(SEASON_FREE_AGENT_MARKET_MAX);
+  const finalPruned = pruneFreeAgentMarketToMax(SEASON_FREE_AGENT_MARKET_MAX);
+  const legacyExtra = retiredCount > 0 && SEASON_YOUTH_FREE_AGENT_COUNT > 0 ? addSeasonYouthFreeAgents(Math.max(SEASON_YOUTH_FREE_AGENT_COUNT, retiredCount)) : [];
+  if(legacyExtra.length) pruneFreeAgentMarketToMax(SEASON_FREE_AGENT_MARKET_MAX);
+  const totalYouth = youth.length + legacyExtra.length;
+  const totalRegular = regular.length;
+  if(totalYouth || totalRegular || finalPruned.length){
+    pushGameMessage({
+      type:'mercado',
+      title:'Mercado libre renovado',
+      body:`Se incorporaron ${totalYouth} jóvenes y ${totalRegular} jugadores libres al mercado.`,
+      priority:'normal'
+    });
+  }
+  return { removed:finalPruned, youth:youth.concat(legacyExtra), regular };
 }
 function finalizeSeasonIfNeeded(){
   if(!game || game.seasonFinalized || game.matchdayIndex < game.fixtures.length) return;
@@ -826,7 +942,7 @@ function startNextSeason(selectedClubId){
   game.lastBudgetDelta = 0;
   game.tactic = normalizeTactic(nextClubId, DEFAULT_TACTIC);
   mergeMarketPlayersIntoSeed(game.marketPlayers || []);
-  addSeasonYouthFreeAgents(Math.max(SEASON_YOUTH_FREE_AGENT_COUNT, retiredCount));
+  renewFreeAgentMarketForSeason(retiredCount);
   ensurePlayerStateForAll();
   generateOpeningSponsorOffers(true);
   pushGameMessage({ type:'deportivo', title:`Temporada ${game.seasonNumber} iniciada`, body:`Comienza una nueva temporada con ${clubName(game.selectedClubId)}.`, priority:'normal' });

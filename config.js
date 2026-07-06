@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V3.16',
+  version: 'V3.17',
   data: {
     seedUrl: 'data/seed.json',
     playersUrl: 'data/jugadores.json',
@@ -43,8 +43,24 @@ window.GAME_CONFIG = {
     botsMediaEmergenciaMin: 28,
     botsMediaEmergenciaMax: 52,
     botsFactorSueldoEmergencia: 0.35,
-    agentesLibresIniciales: 50,
-    jovenesLibresPorTemporada: 20
+    agentesLibresIniciales: 300,
+    agentesLibresMediaMin: 40,
+    agentesLibresMediaMax: 62,
+    agentesLibresEdadMin: 19,
+    agentesLibresEdadMax: 30,
+    agentesLibresMaximosPorTemporada: 200,
+    agentesLibresPosiciones: {
+      POR: 0.10,
+      DEF: 0.35,
+      MED: 0.35,
+      DEL: 0.20
+    },
+    rellenarLibresHastaMaximoPorTemporada: true,
+    limpiarLibresViejosAlCambiarTemporada: true,
+    jovenesLibresNuevosPorEquipoTemporada: 3,
+    jovenesLibresEdadMin: 17,
+    jovenesLibresEdadMax: 18,
+    jovenesLibresPorTemporada: 0
   },
   economia: {
     escalaSueldosYClausulas: 0.10,

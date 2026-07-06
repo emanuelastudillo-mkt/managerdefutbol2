@@ -1,4 +1,4 @@
-/* V3.16 · Sponsors, estadio, calendario, tabla, estadísticas y finanzas visuales. */
+/* V3.17 · Sponsors, estadio, calendario, tabla, estadísticas y finanzas visuales. */
 
 function randomInt(min,max){
   return Math.floor(rnd(min, max + 1));

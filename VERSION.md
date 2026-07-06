@@ -1,34 +1,37 @@
-# Versión V3.16
+# Versión V3.17
 
 ## Tipo de actualización
 
-Mejora visual menor sobre empleados.
+Balance y generación de mercado libre.
 
-## Cambios
+## Cambios principales
 
-- Nueva sección visual de empleados contratados.
-- Cards con foto, nombre, puesto, calidad y costo de temporada.
-- Soporte para 9 imágenes `.webp` por puesto y calidad.
-- Ocultos los valores internos de rendimiento.
-- Ajuste visual: barra de progreso de avance centrada y frases rotativas cada 10 segundos debajo del botón.
+- Cantidad inicial de jugadores libres: **300**.
+- Jugadores libres regulares con media entre **40 y 62**.
+- Edad inicial de libres regulares: **19 a 30 años**.
+- Distribución de libres regulares por línea:
+  - 10% porteros
+  - 35% defensores
+  - 35% mediocampistas
+  - 20% delanteros
+- Al iniciar una nueva temporada se crean **3 jóvenes libres por club**.
+- Los jóvenes libres tienen **17 o 18 años**.
+- Los jóvenes libres usan la generación normal de calidad, por lo que conservan la baja probabilidad de salir con media muy alta.
+- El mercado libre regular se rellena hasta un máximo objetivo de **200 libres** cuando queda por debajo.
+- Los libres viejos se limpian sólo si el mercado supera los 200 jugadores.
+- Se conservan los libres menores de **32 años**.
+- Los jugadores libres también pueden retirarse con la misma edad de retiro que el resto.
 
-## Notas
+## Compatibilidad
 
-Esta versión no modifica el balance de empleados ni reglas económicas. El ajuste de frases sólo afecta la presentación del avance.
+- Las partidas existentes conservan sus jugadores actuales.
+- Las nuevas reglas se aplican a nuevas partidas y a la renovación del mercado al cambiar de temporada.
+- No se modifican sueldos ni cláusulas por este ajuste.
 
-## Ajuste adicional antes de implementación
+## Ajustes acumulados dentro de V3.16 que se mantienen
 
-- La pantalla **Nueva partida** ahora permite cargar el nombre del manager.
-- El nombre queda guardado para usarlo luego en el ranking online.
-- Se agregaron desplegables encadenados para **País**, **Liga** y **Equipo**.
-- El ranking online ya no exige finalizar la temporada para subir resultado.
-- Se agregó cooldown de **77 días de juego** entre envíos al ranking.
-
-## Ajuste V3.16 · Curva de entrenamiento
-
-- Agregada comprobación final de mejora por valor actual de habilidad.
-- Fórmula simple: probabilidad final de subida = `100 - habilidad actual`.
-- Ejemplo: habilidad 80 permite sólo 20% de probabilidad final si el entrenamiento ya había definido mejora.
-- Configuración editable en `config.js`:
-  - `entrenamiento.curvaHabilidadActual`
-  - `entrenamiento.probabilidadMinimaSubidaHabilidad`
+- Cards visuales de empleados contratados.
+- Frases rotativas debajo de la barra de avance.
+- Nueva partida con nombre de manager, país, liga y equipo.
+- Ranking con cooldown de 77 días.
+- Curva de dificultad para subidas de habilidad por entrenamiento.

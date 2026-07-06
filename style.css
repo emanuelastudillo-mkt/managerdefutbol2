@@ -1742,7 +1742,7 @@ button.action-failure{
 
 
 
-/* V3.16 · filtros de mercado */
+/* V3.17 · filtros de mercado */
 .market-filters-card{
   margin:0 0 14px;
   border-color:rgba(59,130,246,.18);
@@ -1776,7 +1776,7 @@ button.action-failure{
   .market-filter-grid{grid-template-columns:1fr;}
 }
 
-/* V3.16 · Ranking Online */
+/* V3.17 · Ranking Online */
 .ranking-layout{
   display:grid;
   grid-template-columns:minmax(280px, 0.85fr) minmax(420px, 1.35fr);
@@ -1863,7 +1863,7 @@ button.action-failure{
   }
 }
 
-/* V3.16: plan semanal de entrenamiento compacto */
+/* V3.17: plan semanal de entrenamiento compacto */
 .training-summary-row{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 10px}
 .training-calendar-card .row{align-items:center;margin-bottom:10px}
 .training-week-grid{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:6px;align-items:stretch}
@@ -1904,7 +1904,7 @@ button.action-failure{
 @media (max-width:620px){.training-week-grid{grid-template-columns:1fr}.training-day-card{padding:7px}.training-picker-modal{min-width:0}}
 
 
-/* V3.16: contratación de empleados por categoría */
+/* V3.17: contratación de empleados por categoría */
 .staff-hire-modal{display:grid;gap:14px;min-width:min(720px,calc(100vw - 48px))}
 .staff-hire-modal h2{margin:0}
 .staff-tier-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -1917,7 +1917,7 @@ button.action-failure{
 .staff-card .pill.ok{margin:4px 0 8px}
 @media (max-width:820px){.staff-tier-grid{grid-template-columns:1fr}.staff-hire-modal{min-width:0}}
 
-/* V3.16: cards visuales de empleados contratados */
+/* V3.17: cards visuales de empleados contratados */
 .featured-staff-panel .featured-staff-grid{margin-top:12px;}
 .staff-contract-card{
   display:flex;
@@ -1986,7 +1986,7 @@ button.action-failure{
   .staff-photo-wrap{width:64px;height:64px;flex-basis:64px;}
 }
 
-/* V3.16 ajuste: nueva partida con manager, país, liga y equipo */
+/* V3.17 ajuste: nueva partida con manager, país, liga y equipo */
 .new-game-form-grid{
   display:grid;
   gap:8px;

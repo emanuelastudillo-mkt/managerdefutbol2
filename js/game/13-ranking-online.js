@@ -1,4 +1,4 @@
-/* V3.16 · Ranking online con carga durante la temporada y cooldown. */
+/* V3.17 · Ranking online con carga durante la temporada y cooldown. */
 
 function rankingStoredEndpoint(){
   try{ return localStorage.getItem('fmRankingEndpoint') || RANKING_APPS_SCRIPT_URL || ''; }
