@@ -4,11 +4,12 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V3.14',
+  version: 'V3.15',
   data: {
     seedUrl: 'data/seed.json',
     playersUrl: 'data/jugadores.json',
-    sponsorsUrl: 'data/sponsors.json'
+    sponsorsUrl: 'data/sponsors.json',
+    employeesUrl: 'data/empleados.json'
   },
   calendario: {
     // Cada avance equivale a 7 días. El juego sigue avanzando de domingo a domingo.
@@ -69,6 +70,7 @@ window.GAME_CONFIG = {
     mejoraParchePorAvance: 5
   },
   empleados: {
+    // Los valores base de empleados regulares se mantienen; las categorías se cargan desde data/empleados.json.
     psicologoCosto: 500000,
     psicologoProbabilidadExito: 0.90,
     psicologoCooldownDias: 35,

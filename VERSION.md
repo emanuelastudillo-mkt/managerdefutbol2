@@ -1,40 +1,62 @@
-# Versión V3.14
+# Versión V3.15
 
 ## Tipo de versión
 
-Ajuste visual y funcional sobre la pantalla de entrenamiento semanal de V3.13.
+Actualización funcional del sistema de empleados.
 
 ## Cambios
 
-- La grilla semanal de entrenamiento ahora es más compacta.
-- Se eliminaron los selectores desplegables de cada casilla.
-- Cada casilla se muestra como una pieza rectangular con:
-  - cinta gris superior con el nombre del turno,
-  - entrenamiento elegido debajo con color propio.
-- Al hacer click en una casilla se abre una ventana pequeña con tarjetas de entrenamiento.
-- Al elegir una tarjeta, el entrenamiento se aplica a esa casilla y la ventana se cierra.
-- “Día libre” pasa a llamarse **Turno libre**.
-- Se ocultó el texto explicativo técnico de carga semanal.
-- Se conserva el resumen visible por tipo de entrenamiento:
-  - Regenerativo
-  - Entrenamiento intenso
-  - Entrenamiento táctico
-  - Turno libre
+- Se agregó `data/empleados.json` como catálogo editable de empleados.
+- Los empleados disponibles quedan estructurados por categoría:
+  - Regular
+  - Bueno
+  - Elite
+- El costo regular mantiene los valores existentes.
+- La categoría Bueno cuesta 4 veces más que Regular.
+- La categoría Elite cuesta 50 veces más que Regular.
+- Al contratar un empleado se abre una ventana con 3 opciones disponibles.
+- Se agregó contrato por temporada para:
+  - Psicólogo motivacional
+  - Kinesiólogo
+  - Preparador de juveniles
+
+## Rendimiento por categoría
+
+- Regular: rendimiento estándar.
+- Bueno: rendimiento x2.
+- Elite: rendimiento x3.
+
+## Aplicación práctica
+
+- Psicólogo motivacional:
+  - Regular mantiene la mejora estándar de moral.
+  - Bueno duplica la mejora.
+  - Elite triplica la mejora.
+- Kinesiólogo:
+  - Regular reduce 7 días de lesión si el tratamiento sale bien.
+  - Bueno reduce 14 días.
+  - Elite reduce 21 días.
+- Preparador de juveniles:
+  - Regular revela la cantidad estándar de habilidades.
+  - Bueno revela el doble.
+  - Elite revela el triple.
 
 ## Compatibilidad
 
-- No cambia la lógica de efectos del entrenamiento.
-- No cambia la efectividad del 50% por casilla.
-- No cambia el avance semanal de domingo a domingo.
-- Las partidas anteriores siguen cargando el plan semanal existente.
+- Las partidas anteriores siguen funcionando.
+- Los contratos antiguos de kinesiólogo y preparador de juveniles se interpretan como Regular.
+- Los costos base se editan desde `data/empleados.json`; `config.js` conserva valores de respaldo.
 
 ## Archivos modificados
 
 - `config.js`
 - `index.html`
 - `style.css`
+- `data/empleados.json`
 - `js/core/01-config-constants.js`
-- `js/game/09-simulation-economy-training.js`
+- `js/data/04-data-storage.js`
+- `js/game/05-state-season.js`
+- `js/game/10-academy-employees.js`
 - `README.md`
 - `VERSION.md`
 - `CARACTERISTICAS_VERSION.md`

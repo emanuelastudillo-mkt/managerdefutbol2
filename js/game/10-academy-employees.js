@@ -1,4 +1,4 @@
-/* V3.04 · Academia, captación, juveniles, empleados y tratamientos. */
+/* V3.15 · Academia, captación, juveniles, empleados y tratamientos. */
 
 function createInitialAcademyState(){
   return { players:[], scoutingJobs:[], unlockedStats:{}, trainingPlan:{}, youthPreparer:null, lastConsultTurn:null, lastArrivalTurn:null };
@@ -13,6 +13,164 @@ function normalizeAcademyState(state){
   clean.youthPreparer = clean.youthPreparer || null;
   return clean;
 }
+
+
+function defaultStaffCategories(){
+  return [
+    { id:'regular', nombre:'Regular', multiplicadorCosto:1, multiplicadorRendimiento:1, descripcion:'Mantiene el rendimiento estándar.' },
+    { id:'bueno', nombre:'Bueno', multiplicadorCosto:4, multiplicadorRendimiento:2, descripcion:'Duplica el rendimiento de la acción.' },
+    { id:'elite', nombre:'Elite', multiplicadorCosto:50, multiplicadorRendimiento:3, descripcion:'Triplica el rendimiento de la acción.' }
+  ];
+}
+function defaultStaffDefinitions(){
+  return [
+    { id:'psychologist', nombre:'Psicólogo motivacional', rol:'Motivación', costoBase:PSYCHOLOGIST_COST, duracion:'temporada', descripcion:'Permite realizar charlas motivacionales para mejorar la moral del plantel.', accion:'charla_motivacional' },
+    { id:'kinesiologist', nombre:'Kinesiólogo', rol:'Recuperación', costoBase:KINESIOLOGIST_COST, duracion:'temporada', descripcion:'Permite tratar lesionados una vez por semana para reducir días de recuperación.', accion:'tratamiento_lesion' },
+    { id:'youth_preparer', nombre:'Preparador de juveniles', rol:'Academia', costoBase:YOUTH_PREPARER_COST, duracion:'temporada', descripcion:'Permite consultar informes de juveniles y descubrir más habilidades ocultas.', accion:'informe_juveniles' }
+  ];
+}
+function staffCategories(){
+  const source = Array.isArray(employeesDatabase?.categorias) && employeesDatabase.categorias.length ? employeesDatabase.categorias : defaultStaffCategories();
+  return source.map(item => ({
+    id:String(item.id || 'regular'),
+    nombre:item.nombre || item.label || item.id || 'Regular',
+    multiplicadorCosto:Math.max(0, Number(item.multiplicadorCosto ?? item.costMultiplier ?? 1) || 1),
+    multiplicadorRendimiento:Math.max(1, Number(item.multiplicadorRendimiento ?? item.performanceMultiplier ?? 1) || 1),
+    descripcion:item.descripcion || item.description || ''
+  }));
+}
+function staffDefinitions(){
+  const source = Array.isArray(employeesDatabase?.empleados) && employeesDatabase.empleados.length ? employeesDatabase.empleados : defaultStaffDefinitions();
+  return source.map(item => ({
+    id:String(item.id || ''),
+    nombre:item.nombre || item.name || item.id || 'Empleado',
+    rol:item.rol || item.role || '',
+    costoBase:Math.max(0, Number(item.costoBase ?? item.baseCost ?? 0) || 0),
+    duracion:item.duracion || item.duration || 'temporada',
+    descripcion:item.descripcion || item.description || '',
+    accion:item.accion || item.action || ''
+  })).filter(item => item.id);
+}
+function staffDefinition(staffId){
+  return staffDefinitions().find(item => item.id === staffId) || defaultStaffDefinitions().find(item => item.id === staffId) || null;
+}
+function staffCategory(categoryId){
+  return staffCategories().find(item => item.id === categoryId) || staffCategories()[0] || defaultStaffCategories()[0];
+}
+function staffBaseCost(staffId){
+  const fromJson = Number(staffDefinition(staffId)?.costoBase || 0);
+  if(fromJson > 0) return fromJson;
+  if(staffId === 'psychologist') return PSYCHOLOGIST_COST;
+  if(staffId === 'kinesiologist') return KINESIOLOGIST_COST;
+  if(staffId === 'youth_preparer') return YOUTH_PREPARER_COST;
+  return 0;
+}
+function staffHireCost(staffId, categoryId='regular'){
+  return Math.round(staffBaseCost(staffId) * staffCategory(categoryId).multiplicadorCosto);
+}
+function normalizeStaffContracts(contracts){
+  const clean = (contracts && typeof contracts === 'object' && !Array.isArray(contracts)) ? { ...contracts } : {};
+  Object.keys(clean).forEach(key => {
+    const current = clean[key] || {};
+    clean[key] = {
+      active:Boolean(current.active),
+      season:Number(current.season || 0),
+      category:staffCategory(current.category || current.nivel || 'regular').id,
+      cost:Number(current.cost || 0),
+      performanceMultiplier:Math.max(1, Number(current.performanceMultiplier || staffCategory(current.category || 'regular').multiplicadorRendimiento || 1)),
+      hiredTurn:Number(current.hiredTurn || current.matchdayIndex || 0),
+      hiredGlobalTurn:Number(current.hiredGlobalTurn || current.globalTurn || 0)
+    };
+  });
+  return clean;
+}
+function resetStaffSeasonState(){
+  if(!game) return;
+  game.staffContracts = normalizeStaffContracts(game.staffContracts || {});
+  Object.values(game.staffContracts).forEach(contract => { contract.active = false; });
+  if(game.staffActions?.kinesiologist){ game.staffActions.kinesiologist.active = false; }
+}
+function legacyStaffActive(staffId){
+  if(staffId === 'kinesiologist') return Boolean(game?.staffActions?.kinesiologist?.active);
+  if(staffId === 'youth_preparer') return Boolean(game?.academy?.youthPreparer?.active && Number(game.academy.youthPreparer.season || 0) === Number(game.seasonNumber || 1));
+  return false;
+}
+function staffContract(staffId){
+  game.staffContracts = normalizeStaffContracts(game.staffContracts || {});
+  const contract = game.staffContracts[staffId];
+  if(contract?.active && Number(contract.season || 0) === Number(game.seasonNumber || 1)) return contract;
+  if(legacyStaffActive(staffId)){
+    return { active:true, season:game.seasonNumber || 1, category:'regular', cost:staffBaseCost(staffId), performanceMultiplier:1, legacy:true };
+  }
+  return null;
+}
+function staffActive(staffId){ return Boolean(staffContract(staffId)); }
+function staffPerformanceMultiplier(staffId){ return Math.max(1, Number(staffContract(staffId)?.performanceMultiplier || 1)); }
+function staffCategoryName(staffId){ return staffCategory(staffContract(staffId)?.category || 'regular').nombre; }
+function staffActivePill(staffId){
+  const contract = staffContract(staffId);
+  if(!contract) return '';
+  return `<span class="pill ok">${escapeHtml(staffCategoryName(staffId))} · contratado</span>`;
+}
+function openStaffHireModal(staffId, after=null){
+  if(!game) return;
+  const def = staffDefinition(staffId);
+  if(!def){ showNotice('Empleado no disponible.'); return; }
+  if(staffActive(staffId)){ showNotice(`${def.nombre} ya está contratado esta temporada.`); return; }
+  const cards = staffCategories().map(cat => {
+    const cost = staffHireCost(staffId, cat.id);
+    const disabled = (game.budget || 0) < cost;
+    const mult = Number(cat.multiplicadorRendimiento || 1);
+    const effect = mult <= 1 ? 'Rendimiento estándar' : mult === 2 ? 'Rendimiento x2' : mult === 3 ? 'Rendimiento x3' : `Rendimiento x${mult}`;
+    return `<button class="staff-tier-card ${disabled ? 'disabled' : ''}" data-hire-staff-tier="${escapeHtml(staffId)}:${escapeHtml(cat.id)}" ${disabled ? 'disabled' : ''}>
+      <span class="pill">${escapeHtml(cat.nombre)}</span>
+      <strong>${formatMoney(cost)}</strong>
+      <em>${escapeHtml(effect)}</em>
+      <small>${escapeHtml(cat.descripcion || '')}</small>
+    </button>`;
+  }).join('');
+  openModal(`<div class="staff-hire-modal">
+    <h2>Contratar ${escapeHtml(def.nombre)}</h2>
+    <p class="muted">Elegí una categoría para esta temporada.</p>
+    <div class="staff-tier-grid">${cards}</div>
+  </div>`);
+  document.querySelectorAll('[data-hire-staff-tier]').forEach(btn => btn.addEventListener('click', () => {
+    const [id, category] = String(btn.dataset.hireStaffTier || '').split(':');
+    hireStaffEmployee(id, category, after);
+  }));
+}
+function hireStaffEmployee(staffId, categoryId='regular', after=null){
+  if(!game) return;
+  const def = staffDefinition(staffId);
+  if(!def) return;
+  if(staffActive(staffId)){ showNotice(`${def.nombre} ya está contratado esta temporada.`); return; }
+  const cat = staffCategory(categoryId);
+  const cost = staffHireCost(staffId, cat.id);
+  if((game.budget || 0) < cost){ showNotice('Presupuesto insuficiente para contratar este empleado.'); return; }
+  recordBudgetChange(-cost, `Contratación de ${def.nombre} ${cat.nombre}`, { type:`staff_${staffId}`, category:cat.id });
+  game.staffContracts = normalizeStaffContracts(game.staffContracts || {});
+  game.staffContracts[staffId] = {
+    active:true,
+    season:game.seasonNumber || 1,
+    category:cat.id,
+    cost,
+    performanceMultiplier:cat.multiplicadorRendimiento,
+    hiredTurn:currentTurnIndex(),
+    hiredGlobalTurn:Number(game.globalTurn || 0)
+  };
+  game.staffActions = game.staffActions || {};
+  if(staffId === 'kinesiologist') game.staffActions.kinesiologist = { active:true, category:cat.id, ...turnStamp() };
+  if(staffId === 'youth_preparer'){
+    game.academy = normalizeAcademyState(game.academy);
+    game.academy.youthPreparer = { active:true, category:cat.id, season:game.seasonNumber || 1, hiredTurn:currentTurnIndex() };
+  }
+  closeModal();
+  saveLocal(true);
+  if(typeof after === 'function') after(); else renderAll();
+  showNotice(`${def.nombre} ${cat.nombre} contratado por esta temporada.`);
+}
+function staffCostLabel(staffId){ return `Desde ${formatMoney(staffHireCost(staffId, 'regular'))}`; }
+
 function resetAcademySeasonState(){
   if(!game) return;
   game.academy = normalizeAcademyState(game.academy);
@@ -195,18 +353,10 @@ function processAcademyTurn(){
   if(activeTab === 'academy' && added > 0) renderAcademy();
 }
 function academyYouthPreparerActive(){
-  return Boolean(game?.academy?.youthPreparer?.active && Number(game.academy.youthPreparer.season || 0) === Number(game.seasonNumber || 1));
+  return staffActive('youth_preparer');
 }
 function hireYouthPreparer(){
-  if(!game) return;
-  game.academy = normalizeAcademyState(game.academy);
-  if(academyYouthPreparerActive()){ showNotice('El preparador de juveniles ya está contratado esta temporada.'); return; }
-  if((game.budget || 0) < YOUTH_PREPARER_COST){ showNotice('Presupuesto insuficiente para contratar al preparador de juveniles.'); return; }
-  recordBudgetChange(-YOUTH_PREPARER_COST, 'Preparador de juveniles', { type:'academy_youth_preparer' });
-  game.academy.youthPreparer = { active:true, season:game.seasonNumber || 1, hiredTurn:currentTurnIndex() };
-  saveLocal(true);
-  renderAcademy();
-  showNotice('Preparador de juveniles contratado por esta temporada.');
+  openStaffHireModal('youth_preparer', renderAcademy);
 }
 function academyLockedStatTargets(){
   const targets = [];
@@ -223,7 +373,8 @@ function consultAcademyPlayers(){
   if(Number(game.academy.lastConsultTurn) === turn){ showNotice('El preparador ya entregó un informe esta semana.'); return; }
   const targets = academyLockedStatTargets();
   if(!targets.length){ showNotice('No quedan habilidades ocultas por desbloquear en la academia.'); return; }
-  const amount = Math.min(targets.length, 1 + Math.floor(Math.random() * 2));
+  const baseAmount = 1 + Math.floor(Math.random() * 2);
+  const amount = Math.min(targets.length, Math.max(1, Math.round(baseAmount * staffPerformanceMultiplier('youth_preparer'))));
   const revealed = [];
   for(let i=0;i<amount;i++){
     const remaining = academyLockedStatTargets();
@@ -351,7 +502,7 @@ function renderAcademy(){
     <div class="grid cols-3 academy-summary">
       <div class="card"><p class="label">Juveniles</p><div class="metric">${active.length}</div><p class="small muted">Stats ocultas hasta consultar informes.</p></div>
       <div class="card"><p class="label">Captación</p><div class="metric small">${formatMoney(ACADEMY_SCOUTING_COST)}</div><button class="primary" id="btnAcademyScouting">Hacer captación de talentos</button></div>
-      <div class="card"><p class="label">Preparador de juveniles</p><div class="metric small">${formatMoney(YOUTH_PREPARER_COST)}</div>${activePreparer ? '<span class="pill ok">Contratado</span>' : '<button class="primary" id="btnHireYouthPreparer">Contratar</button>'}<button class="ghost" id="btnConsultAcademy" ${activePreparer ? '' : 'disabled'}>Consultar juveniles</button></div>
+      <div class="card"><p class="label">Preparador de juveniles</p><div class="metric small">${staffCostLabel('youth_preparer')}</div>${activePreparer ? staffActivePill('youth_preparer') : '<button class="primary" id="btnHireYouthPreparer">Contratar</button>'}<button class="ghost" id="btnConsultAcademy" ${activePreparer ? '' : 'disabled'}>Consultar juveniles</button></div>
     </div>
     <div class="card" style="margin-top:14px"><h3>Captaciones pendientes</h3>${academyPendingJobsMarkup()}</div>
     <div class="card academy-rules-card" style="margin-top:14px"><p class="muted">Cada captación tarda 35 días y puede sumar entre 5 y 10 juveniles. Los juveniles cobran ${formatMoney(ACADEMY_PLAYER_TURN_COST)} por semana. Despedir uno cuesta ${formatMoney(ACADEMY_DISMISS_COMPENSATION)}.</p></div>
@@ -371,17 +522,17 @@ function renderAcademy(){
 
 function renderEmployees(){
   const last = game.staffActions?.motivationalTalk || null;
+  const psychologistActive = staffActive('psychologist');
   const cooldownLeft = turnCooldownLeft(last, PSYCHOLOGIST_COOLDOWN_TURNS);
-  const canCallPsychologist = cooldownLeft <= 0 && (game.budget || 0) >= PSYCHOLOGIST_COST;
+  const canCallPsychologist = psychologistActive && cooldownLeft <= 0;
   const cooldownText = cooldownLeft > 0 ? `<p class="small warn">Disponible nuevamente en ${formatDaysFromTurns(cooldownLeft)}.</p>` : '';
-  const kinesio = game.staffActions?.kinesiologist || null;
-  const kinesioActive = Boolean(kinesio?.active);
+  const kinesioActive = staffActive('kinesiologist');
   const injuredList = injuredPlayersByClub(game.selectedClubId);
   view.innerHTML = `
     <div class="row section-title">
       <div>
         <h2>Empleados</h2>
-        <p class="tagline">Acciones de apoyo para el plantel. La moral es visible; los valores exactos de mejora no se muestran.</p>
+        <p class="tagline">Acciones de apoyo para el plantel. Cada empleado puede contratarse en categoría Regular, Bueno o Elite.</p>
       </div>
       <div class="pill">Presupuesto: ${formatMoney(game.budget || 0)}</div>
     </div>
@@ -390,9 +541,10 @@ function renderEmployees(){
         <h3>Psicólogo motivacional</h3>
         <p class="muted">Convoca una charla para intentar mejorar la moral del plantel.</p>
         <p class="label">Costo</p>
-        <div class="metric small">${formatMoney(PSYCHOLOGIST_COST)}</div>
+        <div class="metric small">${staffCostLabel('psychologist')}</div>
+        ${psychologistActive ? staffActivePill('psychologist') : `<button id="btnHirePsychologist" class="primary">Contratar</button>`}
         ${cooldownText}
-        <button id="btnMotivationalTalk" class="primary" ${canCallPsychologist ? '' : 'disabled'}>Llamar al psicólogo motivacional</button>
+        <button id="btnMotivationalTalk" class="primary" ${canCallPsychologist ? '' : 'disabled'}>Charla motivacional</button>
       </div>
       <div class="card staff-card">
         <h3>Estado del plantel</h3>
@@ -402,10 +554,10 @@ function renderEmployees(){
       </div>
       <div class="card staff-card">
         <h3>Kinesiólogo</h3>
-        <p class="muted">Contratación por temporada completa. Permite tratar lesionados una vez por semana para intentar reducir 7 días de lesión.</p>
+        <p class="muted">Contratación por temporada completa. Permite tratar lesionados una vez por semana.</p>
         <p class="label">Costo</p>
-        <div class="metric small">${formatMoney(KINESIOLOGIST_COST)}</div>
-        ${kinesioActive ? '<span class="pill ok">Contratado</span>' : `<button id="btnHireKinesiologist" class="primary" ${(game.budget || 0) >= KINESIOLOGIST_COST ? '' : 'disabled'}>Contratar kinesiólogo</button>`}
+        <div class="metric small">${staffCostLabel('kinesiologist')}</div>
+        ${kinesioActive ? staffActivePill('kinesiologist') : `<button id="btnHireKinesiologist" class="primary">Contratar</button>`}
       </div>
       <div class="card staff-card">
         <h3>Tratamientos</h3>
@@ -413,6 +565,7 @@ function renderEmployees(){
       </div>
     </div>
   `;
+  $('btnHirePsychologist')?.addEventListener('click', () => openStaffHireModal('psychologist', renderEmployees));
   $('btnMotivationalTalk')?.addEventListener('click', (event) => callMotivationalPsychologist(event.currentTarget));
   $('btnHireKinesiologist')?.addEventListener('click', hireKinesiologist);
   document.querySelectorAll('[data-kinesio-treat]').forEach(btn => {
@@ -435,19 +588,11 @@ function wasKinesioTreatedThisTurn(playerId){
   return Boolean(game.staffActions?.kinesiologyTreatments?.[key]);
 }
 function hireKinesiologist(){
-  if(!game) return;
-  if(game.staffActions?.kinesiologist?.active){ showNotice('El kinesiólogo ya está contratado.'); return; }
-  if((game.budget || 0) < KINESIOLOGIST_COST){ showNotice('Presupuesto insuficiente para contratar al kinesiólogo.'); return; }
-  recordBudgetChange(-KINESIOLOGIST_COST, 'Contratación de kinesiólogo', { type:'staff_kinesiologist' });
-  game.staffActions = game.staffActions || {};
-  game.staffActions.kinesiologist = { active:true, ...turnStamp() };
-  saveLocal(true);
-  showNotice('Kinesiólogo contratado por la temporada completa.');
-  renderEmployees();
+  openStaffHireModal('kinesiologist', renderEmployees);
 }
 function treatInjuredPlayer(playerId, button=null){
   const performTreatment = () => {
-    if(!game?.staffActions?.kinesiologist?.active){ return { success:false, message:'Primero tenés que contratar al kinesiólogo.' }; }
+    if(!staffActive('kinesiologist')){ return { success:false, message:'Primero tenés que contratar al kinesiólogo.' }; }
     if(!isInjured(playerId)){ return { success:false, message:'El jugador no está lesionado.', after:renderEmployees }; }
     game.staffActions.kinesiologyTreatments = game.staffActions.kinesiologyTreatments || {};
     const key = `${currentTurnIndex()}:${playerId}`;
@@ -456,7 +601,8 @@ function treatInjuredPlayer(playerId, button=null){
     game.staffActions.kinesiologyTreatments[key] = { success, ...turnStamp({ playerId }) };
     if(success){
       const st = playerStatus(playerId);
-      const nextThrough = Number(st.injuredThrough) - 1;
+      const recoveryReductionTurns = Math.max(1, Math.round(staffPerformanceMultiplier('kinesiologist')));
+      const nextThrough = Number(st.injuredThrough) - recoveryReductionTurns;
       if(nextThrough < game.matchdayIndex){
         const { injuredThrough, injuryLabel, injuryChance, injuredAtMatchday, ...rest } = st;
         game.playerStatus[playerId] = rest;
@@ -468,7 +614,7 @@ function treatInjuredPlayer(playerId, button=null){
     return {
       success,
       buttonLabel: success ? 'Tratamiento realizado' : 'Tratamiento fallido',
-      message: success ? 'Tratamiento exitoso. La recuperación se acortó 7 días.' : 'El tratamiento falló. La lesión no se redujo.',
+      message: success ? `Tratamiento exitoso. La recuperación se acortó ${formatDaysFromTurns(Math.max(1, Math.round(staffPerformanceMultiplier('kinesiologist'))))}.` : 'El tratamiento falló. La lesión no se redujo.',
       after:renderEmployees
     };
   };
@@ -488,19 +634,21 @@ function callMotivationalPsychologist(button=null){
     if(!game) return { success:false, message:'No hay partida activa.' };
     const last = game.staffActions?.motivationalTalk || null;
     const cooldownLeft = turnCooldownLeft(last, PSYCHOLOGIST_COOLDOWN_TURNS);
+    if(!staffActive('psychologist')){ return { success:false, message:'Primero tenés que contratar al psicólogo motivacional.' }; }
     if(cooldownLeft > 0){ return { success:false, message:`La charla motivacional estará disponible en ${formatDaysFromTurns(cooldownLeft)}.` }; }
-    if((game.budget || 0) < PSYCHOLOGIST_COST){ return { success:false, message:'Presupuesto insuficiente para llamar al psicólogo motivacional.' }; }
-    recordBudgetChange(-PSYCHOLOGIST_COST, 'Psicólogo motivacional', { type:'staff_psychologist' });
     const success = Math.random() < PSYCHOLOGIST_SUCCESS_CHANCE;
+    const moraleMultiplier = staffPerformanceMultiplier('psychologist');
     if(success){
       playersByClub(game.selectedClubId).forEach(player => {
-        game.playerMorale[player.id] = clamp(Math.round(currentMorale(player.id) + rnd(18,25)), 1, 99);
+        game.playerMorale[player.id] = clamp(Math.round(currentMorale(player.id) + rnd(18,25) * moraleMultiplier), 1, 99);
       });
     }
     game.staffActions = game.staffActions || {};
     game.staffActions.motivationalTalk = {
       success,
       ...turnStamp(),
+      category:staffContract('psychologist')?.category || 'regular',
+      performanceMultiplier:staffPerformanceMultiplier('psychologist'),
       message: success ? 'La charla motivacional fue un éxito' : 'La charla motivacional fue un fracaso'
     };
     saveLocal(true);

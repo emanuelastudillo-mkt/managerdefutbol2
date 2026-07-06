@@ -1,4 +1,4 @@
-/* V3.14 · Eventos principales, normalización de partida, calendario anual, temporadas y ascensos/descensos. */
+/* V3.15 · Eventos principales, normalización de partida, calendario anual, temporadas y ascensos/descensos. */
 
 function clubSelectOptionsMarkup(){
   const divisions = seed.divisions || [{ id:'default', name:'Liga única' }];
@@ -147,6 +147,7 @@ function normalizeGame(saved){
     if(!trainingOptionByValue(normalized.trainingPlan[p.id])) normalized.trainingPlan[p.id] = DEFAULT_TRAINING_TYPE;
   });
   normalized.staffActions = normalized.staffActions || {};
+  normalized.staffContracts = normalizeStaffContracts(normalized.staffContracts || {});
   normalized.academy = normalizeAcademyState(normalized.academy);
   if(normalized.staffActions.motivationalTalk && !Number.isFinite(normalized.staffActions.motivationalTalk.globalTurn)){
     normalized.staffActions.motivationalTalk.globalTurn = ((Math.max(1, normalized.staffActions.motivationalTalk.season || normalized.seasonNumber || 1) - 1) * 53) + Number(normalized.staffActions.motivationalTalk.matchdayIndex || 0);
@@ -421,6 +422,7 @@ function newGame(selectedClubId){
     trainingPlan: Object.fromEntries(seed.players.map(p => [p.id, DEFAULT_TRAINING_TYPE])),
     trainingSchedule: defaultTrainingSchedule(),
     staffActions: {},
+    staffContracts: {},
     academy: createInitialAcademyState(),
     stadium: createInitialStadiumState(),
     sponsors: createInitialSponsorState(),
@@ -760,6 +762,7 @@ function startNextSeason(selectedClubId){
   game.seasonEndPlayerOffers = null;
   game.rejectedPurchaseOffers = {};
   resetAcademySeasonState();
+  resetStaffSeasonState();
   game.advanceLockedUntil = 0;
   game.lastBudgetDelta = 0;
   game.tactic = normalizeTactic(nextClubId, DEFAULT_TACTIC);

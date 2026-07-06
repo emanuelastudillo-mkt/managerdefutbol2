@@ -1,4 +1,4 @@
-/* V3.14 · Ranking online. */
+/* V3.15 · Ranking online. */
 
 function rankingStoredEndpoint(){
   try{ return localStorage.getItem('fmRankingEndpoint') || RANKING_APPS_SCRIPT_URL || ''; }

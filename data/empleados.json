@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "version": "V3.15",
+    "descripcion": "Catálogo de empleados por categoría para Fútbol Manager. El valor regular conserva los costos anteriores; bueno cuesta 4x y elite 50x."
+  },
+  "categorias": [
+    {
+      "id": "regular",
+      "nombre": "Regular",
+      "multiplicadorCosto": 1,
+      "multiplicadorRendimiento": 1,
+      "descripcion": "Mantiene el rendimiento estándar."
+    },
+    {
+      "id": "bueno",
+      "nombre": "Bueno",
+      "multiplicadorCosto": 4,
+      "multiplicadorRendimiento": 2,
+      "descripcion": "Duplica el rendimiento de la acción."
+    },
+    {
+      "id": "elite",
+      "nombre": "Elite",
+      "multiplicadorCosto": 50,
+      "multiplicadorRendimiento": 3,
+      "descripcion": "Triplica el rendimiento de la acción."
+    }
+  ],
+  "empleados": [
+    {
+      "id": "psychologist",
+      "nombre": "Psicólogo motivacional",
+      "rol": "Motivación",
+      "costoBase": 500000,
+      "duracion": "temporada",
+      "descripcion": "Permite realizar charlas motivacionales para mejorar la moral del plantel.",
+      "accion": "charla_motivacional"
+    },
+    {
+      "id": "kinesiologist",
+      "nombre": "Kinesiólogo",
+      "rol": "Recuperación",
+      "costoBase": 1000000,
+      "duracion": "temporada",
+      "descripcion": "Permite tratar lesionados una vez por semana para reducir días de recuperación.",
+      "accion": "tratamiento_lesion"
+    },
+    {
+      "id": "youth_preparer",
+      "nombre": "Preparador de juveniles",
+      "rol": "Academia",
+      "costoBase": 1000000,
+      "duracion": "temporada",
+      "descripcion": "Permite consultar informes de juveniles y descubrir más habilidades ocultas.",
+      "accion": "informe_juveniles"
+    }
+  ]
+}

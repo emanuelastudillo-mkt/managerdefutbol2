@@ -1,4 +1,4 @@
-/* V3.14 · Utilidades DOM, formato, avisos, transición de avance y helpers básicos de club. */
+/* V3.15 · Utilidades DOM, formato, avisos, transición de avance y helpers básicos de club. */
 
 function escapeHtml(value){
   return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));

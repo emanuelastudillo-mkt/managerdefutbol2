@@ -1,28 +1,47 @@
-# Fútbol Manager MVP V3.14
+# Fútbol Manager MVP V3.15
 
-## Cambios V3.14
+## Cambios V3.15
 
-- Ajuste visual de la pantalla **Entrenamiento**.
-- El plan semanal ahora ocupa menos espacio.
-- Las casillas dejaron de usar menús desplegables.
-- Cada turno se muestra como una tarjeta rectangular compacta.
-- Al hacer click en una casilla se abre una ventana con tarjetas de entrenamiento.
-- Al elegir un entrenamiento, se aplica y la ventana se cierra automáticamente.
-- “Día libre” ahora se muestra como **Turno libre**.
-- Se ocultó información técnica de carga semanal para limpiar la interfaz.
-- El resumen visible muestra la cantidad semanal por tipo:
-  - Regenerativo
-  - Entrenamiento intenso
-  - Entrenamiento táctico
-  - Turno libre
+- Nuevo archivo editable: `data/empleados.json`.
+- El sistema de empleados ahora tiene tres categorías:
+  - Regular
+  - Bueno
+  - Elite
+- Al contratar un empleado se muestran las tres opciones disponibles.
+- El costo Regular conserva el valor anterior.
+- Bueno cuesta 4 veces más.
+- Elite cuesta 50 veces más.
+- Regular mantiene el rendimiento estándar.
+- Bueno duplica el rendimiento.
+- Elite triplica el rendimiento.
+
+## Empleados incluidos
+
+- Psicólogo motivacional.
+- Kinesiólogo.
+- Preparador de juveniles.
+
+## Efectos por empleado
+
+- Psicólogo motivacional: mejora la moral del plantel.
+- Kinesiólogo: reduce días de lesión si el tratamiento funciona.
+- Preparador de juveniles: revela habilidades ocultas de la academia.
 
 ## Base funcional
 
-- La temporada anual mantiene 365/366 días según año bisiesto.
-- La liga se juega ida y vuelta.
-- El avance sigue siendo semanal, de domingo a domingo.
-- La planificación de entrenamiento semanal se aplica al avanzar.
+- Temporada anual de 365/366 días.
+- Liga ida y vuelta.
+- Avance semanal de domingo a domingo.
+- Entrenamiento semanal con 4 casillas por día.
+- Ranking online configurado.
 
-## Ranking online
+## Archivos principales
 
-La URL del ranking online ya está configurada internamente para el Web App entregado.
+- `index.html`
+- `config.js`
+- `style.css`
+- `data/Liga Argentina.json`
+- `data/jugadores.json`
+- `data/sponsors.json`
+- `data/empleados.json`
+- `js/`

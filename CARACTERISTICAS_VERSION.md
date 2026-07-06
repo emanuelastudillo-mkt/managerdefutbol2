@@ -1,25 +1,46 @@
-# Características internas de versión · V3.14
+# Características internas de versión · V3.15
 
 ## Objetivo
 
-Compactar la pantalla de entrenamiento semanal para reducir espacio visual y hacer más rápida la selección de cada turno.
+Pasar el sistema de empleados a una base JSON editable y agregar categorías de contratación con impacto real en costos y rendimiento.
 
-## Entrenamiento
+## Nuevo archivo
 
-- Reemplazo de selectores desplegables por casillas clickeables.
-- Cada casilla muestra una cinta gris con el nombre del turno.
-- La elección de entrenamiento se hace desde una ventana modal con tarjetas.
-- La selección se guarda inmediatamente y vuelve a renderizar la grilla.
-- “Día libre” se renombra como **Turno libre**.
+### `data/empleados.json`
 
-## Interfaz
+Contiene:
 
-- Grilla más rectangular, compacta y pegada.
-- Se eliminó el texto visible sobre carga máxima y efectividad.
-- Se mantiene un resumen simple de cantidad de sesiones por tipo.
+- categorías de empleados,
+- multiplicadores de costo,
+- multiplicadores de rendimiento,
+- empleados disponibles,
+- costo base regular,
+- descripción funcional de cada empleado.
 
-## Lógica
+## Categorías
 
-- Sin cambios en el balance de entrenamiento.
-- Sin cambios en los efectos por tipo.
-- Sin cambios en avance semanal ni calendario.
+| Categoría | Costo | Rendimiento |
+|---|---:|---:|
+| Regular | x1 | x1 |
+| Bueno | x4 | x2 |
+| Elite | x50 | x3 |
+
+## Empleados incluidos
+
+- Psicólogo motivacional.
+- Kinesiólogo.
+- Preparador de juveniles.
+
+## Cambios de lógica
+
+- El botón de contratación abre una ventana con las tres categorías.
+- La categoría elegida se guarda en `game.staffContracts`.
+- Los empleados se contratan por temporada.
+- Al cambiar de temporada, los contratos se desactivan.
+- Se mantiene compatibilidad con datos viejos de `staffActions` y `academy.youthPreparer`.
+
+## Efectos
+
+- Psicólogo motivacional: multiplica la mejora de moral.
+- Kinesiólogo: multiplica los días reducidos por tratamiento exitoso.
+- Preparador de juveniles: multiplica la cantidad de habilidades reveladas por informe.

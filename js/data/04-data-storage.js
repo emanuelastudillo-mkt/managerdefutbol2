@@ -1,4 +1,4 @@
-/* V3.14 · Carga de JSON, calendario anual, normalización inicial, persistencia local e inicialización. */
+/* V3.15 · Carga de JSON, calendario anual, normalización inicial, persistencia local e inicialización. */
 
 async function fetchJsonIfExists(url){
   try{
@@ -28,6 +28,27 @@ async function loadSponsorsDatabase(){
   const sponsors = Array.isArray(raw.sponsors) ? raw.sponsors.filter(sponsor => sponsor && sponsor.activo !== false) : [];
   return { ...raw, lugares_sponsor:lugares, sponsors, source:SPONSORS_DATABASE_URL };
 }
+async function loadEmployeesDatabase(){
+  const raw = await fetchJsonIfExists(EMPLOYEES_DATABASE_URL);
+  const fallback = {
+    categorias:[
+      { id:'regular', nombre:'Regular', multiplicadorCosto:1, multiplicadorRendimiento:1, descripcion:'Mantiene el rendimiento estándar.' },
+      { id:'bueno', nombre:'Bueno', multiplicadorCosto:4, multiplicadorRendimiento:2, descripcion:'Duplica el rendimiento de la acción.' },
+      { id:'elite', nombre:'Elite', multiplicadorCosto:50, multiplicadorRendimiento:3, descripcion:'Triplica el rendimiento de la acción.' }
+    ],
+    empleados:[
+      { id:'psychologist', nombre:'Psicólogo motivacional', rol:'Motivación', costoBase:PSYCHOLOGIST_COST, duracion:'temporada', descripcion:'Permite realizar charlas motivacionales para mejorar la moral del plantel.', accion:'charla_motivacional' },
+      { id:'kinesiologist', nombre:'Kinesiólogo', rol:'Recuperación', costoBase:KINESIOLOGIST_COST, duracion:'temporada', descripcion:'Permite tratar lesionados una vez por semana para reducir días de recuperación.', accion:'tratamiento_lesion' },
+      { id:'youth_preparer', nombre:'Preparador de juveniles', rol:'Academia', costoBase:YOUTH_PREPARER_COST, duracion:'temporada', descripcion:'Permite consultar informes de juveniles y descubrir más habilidades ocultas.', accion:'informe_juveniles' }
+    ],
+    source:'fallback'
+  };
+  const clean = raw && typeof raw === 'object' ? raw : fallback;
+  const categorias = Array.isArray(clean.categorias) && clean.categorias.length ? clean.categorias : fallback.categorias;
+  const empleados = Array.isArray(clean.empleados) && clean.empleados.length ? clean.empleados : fallback.empleados;
+  return { ...clean, categorias, empleados, source:raw ? EMPLOYEES_DATABASE_URL : 'fallback' };
+}
+
 function playersDatabaseHash(players=[]){
   const raw = players.map(p => `${p.id}:${p.clubId}:${p.position}:${p.overall}:${p.salary}:${p.clause}`).join('|');
   return `players-${hashNumber(raw, 1000000000)}`;
@@ -582,6 +603,7 @@ async function init(){
   try{
     seed = await loadInitialSeed();
     sponsorsDatabase = await loadSponsorsDatabase();
+    employeesDatabase = await loadEmployeesDatabase();
     fillClubSelect();
     bindEvents();
     startUiTicker();
