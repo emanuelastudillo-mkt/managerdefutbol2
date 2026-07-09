@@ -1,0 +1,280 @@
+{
+  "version": "V3.79",
+  "pais": "Brasil",
+  "sistema": "hinchas_brasil",
+  "descripcion": "Cantidad base de hinchas por equipo en Brasil, calculada desde prestigio global, capacidad de estadio y liga.",
+  "formula": {
+    "descripcion": "Se normaliza el prestigio dentro de cada liga y se aplica un porcentaje de ocupación base a la capacidad del estadio.",
+    "variables": {
+      "prestigio_normalizado": "(prestigio - prestigio_min_liga) / (prestigio_max_liga - prestigio_min_liga)",
+      "ocupacion_base": "ocupacion_min_liga + prestigio_normalizado * (ocupacion_max_liga - ocupacion_min_liga)",
+      "hinchas_base": "capacidad_estadio * ocupacion_base, redondeado hacia abajo a centenas"
+    },
+    "rangos_por_liga": {
+      "Liga Profesional": {
+        "minPct": 0.6,
+        "maxPct": 0.91
+      },
+      "Primera Nacional": {
+        "minPct": 0.42,
+        "maxPct": 0.7
+      },
+      "Federal A": {
+        "minPct": 0.18,
+        "maxPct": 0.5
+      },
+      "Primera División Chile": {
+        "minPct": 0.45,
+        "maxPct": 0.84
+      },
+      "Brasileirão": {
+        "minPct": 0.58,
+        "maxPct": 0.93
+      },
+      "Premier League": {
+        "minPct": 0.68,
+        "maxPct": 0.97
+      },
+      "LaLiga España": {
+        "minPct": 0.62,
+        "maxPct": 0.96
+      },
+      "Serie A Italia": {
+        "minPct": 0.58,
+        "maxPct": 0.94
+      },
+      "SuperLiga Rumania": {
+        "minPct": 0.32,
+        "maxPct": 0.76
+      }
+    }
+  },
+  "totales": {
+    "equipos": 18,
+    "hinchas_base_total": 694900,
+    "promedio_hinchas_base": 38605.56,
+    "hinchas_base_min": 13400,
+    "hinchas_base_max": 73300
+  },
+  "hinchadas": [
+    {
+      "equipo": "Flamengo",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 84,
+      "estadio": "Maracanã",
+      "capacidad_estadio": 78838,
+      "estadio_ficticio": false,
+      "hinchas_base": 73300,
+      "ocupacion_base_porcentaje": 93.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Palmeiras",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 83,
+      "estadio": "Allianz Parque",
+      "capacidad_estadio": 43713,
+      "estadio_ficticio": false,
+      "hinchas_base": 39900,
+      "ocupacion_base_porcentaje": 91.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Corinthians",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 81,
+      "estadio": "Neo Química Arena",
+      "capacidad_estadio": 49205,
+      "estadio_ficticio": false,
+      "hinchas_base": 43500,
+      "ocupacion_base_porcentaje": 88.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "São Paulo",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 80,
+      "estadio": "Morumbi",
+      "capacidad_estadio": 66795,
+      "estadio_ficticio": false,
+      "hinchas_base": 58000,
+      "ocupacion_base_porcentaje": 86.9,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Santos",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 78,
+      "estadio": "Vila Belmiro",
+      "capacidad_estadio": 16068,
+      "estadio_ficticio": false,
+      "hinchas_base": 13400,
+      "ocupacion_base_porcentaje": 83.9,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Grêmio",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 77,
+      "estadio": "Arena do Grêmio",
+      "capacidad_estadio": 55662,
+      "estadio_ficticio": false,
+      "hinchas_base": 45800,
+      "ocupacion_base_porcentaje": 82.3,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Internacional",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 76,
+      "estadio": "Beira-Rio",
+      "capacidad_estadio": 50842,
+      "estadio_ficticio": false,
+      "hinchas_base": 41000,
+      "ocupacion_base_porcentaje": 80.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Atlético Mineiro",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 76,
+      "estadio": "Arena MRV",
+      "capacidad_estadio": 46000,
+      "estadio_ficticio": false,
+      "hinchas_base": 37100,
+      "ocupacion_base_porcentaje": 80.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Cruzeiro",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 75,
+      "estadio": "Mineirão",
+      "capacidad_estadio": 61846,
+      "estadio_ficticio": false,
+      "hinchas_base": 49000,
+      "ocupacion_base_porcentaje": 79.3,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Fluminense",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 74,
+      "estadio": "Maracanã",
+      "capacidad_estadio": 78838,
+      "estadio_ficticio": false,
+      "hinchas_base": 61300,
+      "ocupacion_base_porcentaje": 77.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Botafogo",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 74,
+      "estadio": "Nilton Santos",
+      "capacidad_estadio": 44661,
+      "estadio_ficticio": false,
+      "hinchas_base": 34700,
+      "ocupacion_base_porcentaje": 77.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Vasco da Gama",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 73,
+      "estadio": "São Januário",
+      "capacidad_estadio": 21880,
+      "estadio_ficticio": false,
+      "hinchas_base": 16600,
+      "ocupacion_base_porcentaje": 76.3,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Athletico Paranaense",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 70,
+      "estadio": "Ligga Arena",
+      "capacidad_estadio": 42372,
+      "estadio_ficticio": false,
+      "hinchas_base": 30300,
+      "ocupacion_base_porcentaje": 71.7,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Bahia",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 68,
+      "estadio": "Arena Fonte Nova",
+      "capacidad_estadio": 47907,
+      "estadio_ficticio": false,
+      "hinchas_base": 32800,
+      "ocupacion_base_porcentaje": 68.7,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Fortaleza",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 67,
+      "estadio": "Castelão",
+      "capacidad_estadio": 63903,
+      "estadio_ficticio": false,
+      "hinchas_base": 42800,
+      "ocupacion_base_porcentaje": 67.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Sport Recife",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 64,
+      "estadio": "Ilha do Retiro",
+      "capacidad_estadio": 32983,
+      "estadio_ficticio": false,
+      "hinchas_base": 20600,
+      "ocupacion_base_porcentaje": 62.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Vitória",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 62,
+      "estadio": "Barradão",
+      "capacidad_estadio": 30000,
+      "estadio_ficticio": false,
+      "hinchas_base": 17800,
+      "ocupacion_base_porcentaje": 59.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Ceará",
+      "liga": "Brasileirão",
+      "pais": "Brasil",
+      "prestigio": 61,
+      "estadio": "Castelão",
+      "capacidad_estadio": 63903,
+      "estadio_ficticio": false,
+      "hinchas_base": 37000,
+      "ocupacion_base_porcentaje": 58.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    }
+  ],
+  "notas": [
+    "Base jugable de asistencia/hinchada inicial; no representa padrón real de simpatizantes."
+  ]
+}

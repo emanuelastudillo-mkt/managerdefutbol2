@@ -1,0 +1,181 @@
+{
+  "version": "V3.84",
+  "pais": "Chile",
+  "sistema": "estadios_chile",
+  "descripcion": "Estadios base para clubes de Chile.",
+  "notas": [
+    "Capacidades redondeadas para balance jugable cuando corresponde.",
+    "Los estadios ficticios se marcan explícitamente."
+  ],
+  "leagues": [
+    {
+      "name": "Primera División Chile",
+      "country": "Chile",
+      "teams": [
+        {
+          "name": "Colo-Colo",
+          "city": "Santiago",
+          "country": "Chile",
+          "reputation": 68,
+          "stadium": "Monumental David Arellano",
+          "stadiumCapacity": 47000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Universidad de Chile",
+          "city": "Santiago",
+          "country": "Chile",
+          "reputation": 65,
+          "stadium": "Nacional Julio Martínez Prádanos",
+          "stadiumCapacity": 48665,
+          "stadiumIsFictional": false,
+          "stadiumNote": "Usa estadio nacional como escenario principal jugable."
+        },
+        {
+          "name": "Universidad Católica",
+          "city": "Santiago",
+          "country": "Chile",
+          "reputation": 64,
+          "stadium": "San Carlos de Apoquindo",
+          "stadiumCapacity": 20000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Cobreloa",
+          "city": "Calama",
+          "country": "Chile",
+          "reputation": 57,
+          "stadium": "Zorros del Desierto",
+          "stadiumCapacity": 12000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Unión Española",
+          "city": "Santiago",
+          "country": "Chile",
+          "reputation": 52,
+          "stadium": "Santa Laura",
+          "stadiumCapacity": 19887,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Santiago Wanderers",
+          "city": "Valparaíso",
+          "country": "Chile",
+          "reputation": 51,
+          "stadium": "Elías Figueroa Brander",
+          "stadiumCapacity": 21000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Everton",
+          "city": "Viña del Mar",
+          "country": "Chile",
+          "reputation": 49,
+          "stadium": "Sausalito",
+          "stadiumCapacity": 23000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "O'Higgins",
+          "city": "Rancagua",
+          "country": "Chile",
+          "reputation": 48,
+          "stadium": "El Teniente",
+          "stadiumCapacity": 14450,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Palestino",
+          "city": "Santiago",
+          "country": "Chile",
+          "reputation": 47,
+          "stadium": "Municipal de La Cisterna",
+          "stadiumCapacity": 12000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Audax Italiano",
+          "city": "La Florida",
+          "country": "Chile",
+          "reputation": 45,
+          "stadium": "Bicentenario de La Florida",
+          "stadiumCapacity": 12000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Huachipato",
+          "city": "Talcahuano",
+          "country": "Chile",
+          "reputation": 44,
+          "stadium": "CAP",
+          "stadiumCapacity": 10500,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Deportes Iquique",
+          "city": "Iquique",
+          "country": "Chile",
+          "reputation": 42,
+          "stadium": "Tierra de Campeones",
+          "stadiumCapacity": 12000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Coquimbo Unido",
+          "city": "Coquimbo",
+          "country": "Chile",
+          "reputation": 41,
+          "stadium": "Francisco Sánchez Rumoroso",
+          "stadiumCapacity": 18750,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Cobresal",
+          "city": "El Salvador",
+          "country": "Chile",
+          "reputation": 39,
+          "stadium": "El Cobre",
+          "stadiumCapacity": 11240,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Deportes La Serena",
+          "city": "La Serena",
+          "country": "Chile",
+          "reputation": 38,
+          "stadium": "La Portada",
+          "stadiumCapacity": 18000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Ñublense",
+          "city": "Chillán",
+          "country": "Chile",
+          "reputation": 37,
+          "stadium": "Nelson Oyarzún",
+          "stadiumCapacity": 12000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Rangers",
+          "city": "Talca",
+          "country": "Chile",
+          "reputation": 36,
+          "stadium": "Fiscal de Talca",
+          "stadiumCapacity": 8200,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Magallanes",
+          "city": "Santiago",
+          "country": "Chile",
+          "reputation": 18,
+          "stadium": "Municipal de San Bernardo",
+          "stadiumCapacity": 3500,
+          "stadiumIsFictional": false
+        }
+      ]
+    }
+  ]
+}

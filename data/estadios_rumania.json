@@ -1,0 +1,180 @@
+{
+  "version": "V3.81",
+  "pais": "Rumania",
+  "sistema": "estadios_rumania",
+  "descripcion": "Estadios base para clubes de Rumania.",
+  "notas": [
+    "Capacidades redondeadas para balance jugable cuando corresponde.",
+    "Los estadios ficticios se marcan explícitamente."
+  ],
+  "leagues": [
+    {
+      "name": "SuperLiga Rumania",
+      "country": "Rumania",
+      "teams": [
+        {
+          "name": "FCSB",
+          "city": "Bucarest",
+          "country": "Rumania",
+          "reputation": 58,
+          "stadium": "Arena Națională",
+          "stadiumCapacity": 55634,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "CFR Cluj",
+          "city": "Cluj-Napoca",
+          "country": "Rumania",
+          "reputation": 56,
+          "stadium": "Dr. Constantin Rădulescu",
+          "stadiumCapacity": 23500,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Universitatea Craiova",
+          "city": "Craiova",
+          "country": "Rumania",
+          "reputation": 54,
+          "stadium": "Ion Oblemenco",
+          "stadiumCapacity": 30983,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Dinamo București",
+          "city": "Bucarest",
+          "country": "Rumania",
+          "reputation": 52,
+          "stadium": "Arcul de Triumf",
+          "stadiumCapacity": 8207,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Rapid București",
+          "city": "Bucarest",
+          "country": "Rumania",
+          "reputation": 52,
+          "stadium": "Giulești",
+          "stadiumCapacity": 14047,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Farul Constanța",
+          "city": "Constanța",
+          "country": "Rumania",
+          "reputation": 49,
+          "stadium": "Central Academia Gheorghe Hagi",
+          "stadiumCapacity": 4554,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Petrolul Ploiești",
+          "city": "Ploiești",
+          "country": "Rumania",
+          "reputation": 47,
+          "stadium": "Ilie Oană",
+          "stadiumCapacity": 15073,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "UTA Arad",
+          "city": "Arad",
+          "country": "Rumania",
+          "reputation": 45,
+          "stadium": "Francisc von Neuman",
+          "stadiumCapacity": 12700,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Sepsi OSK",
+          "city": "Sfântu Gheorghe",
+          "country": "Rumania",
+          "reputation": 44,
+          "stadium": "Sepsi Arena",
+          "stadiumCapacity": 8400,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Hermannstadt",
+          "city": "Sibiu",
+          "country": "Rumania",
+          "reputation": 42,
+          "stadium": "Municipal Sibiu",
+          "stadiumCapacity": 12900,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Universitatea Cluj",
+          "city": "Cluj-Napoca",
+          "country": "Rumania",
+          "reputation": 42,
+          "stadium": "Cluj Arena",
+          "stadiumCapacity": 30335,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Oțelul Galați",
+          "city": "Galați",
+          "country": "Rumania",
+          "reputation": 40,
+          "stadium": "Oțelul",
+          "stadiumCapacity": 13630,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "FC Argeș",
+          "city": "Pitești",
+          "country": "Rumania",
+          "reputation": 39,
+          "stadium": "Nicolae Dobrin",
+          "stadiumCapacity": 15000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Poli Iași",
+          "city": "Iași",
+          "country": "Rumania",
+          "reputation": 37,
+          "stadium": "Emil Alexandrescu",
+          "stadiumCapacity": 11390,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Botoșani",
+          "city": "Botoșani",
+          "country": "Rumania",
+          "reputation": 20,
+          "stadium": "Municipal Botoșani",
+          "stadiumCapacity": 7782,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Voluntari",
+          "city": "Voluntari",
+          "country": "Rumania",
+          "reputation": 19,
+          "stadium": "Anghel Iordănescu",
+          "stadiumCapacity": 4600,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Gloria Bistrița",
+          "city": "Bistrița",
+          "country": "Rumania",
+          "reputation": 18,
+          "stadium": "Jean Pădureanu",
+          "stadiumCapacity": 7800,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Chindia Târgoviște",
+          "city": "Târgoviște",
+          "country": "Rumania",
+          "reputation": 17,
+          "stadium": "Eugen Popescu",
+          "stadiumCapacity": 8400,
+          "stadiumIsFictional": false
+        }
+      ]
+    }
+  ]
+}

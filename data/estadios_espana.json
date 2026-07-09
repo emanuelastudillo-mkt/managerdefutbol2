@@ -1,0 +1,180 @@
+{
+  "version": "V3.79",
+  "pais": "España",
+  "sistema": "estadios_españa",
+  "descripcion": "Estadios base para clubes de España.",
+  "notas": [
+    "Capacidades redondeadas para balance jugable cuando corresponde.",
+    "Los estadios ficticios se marcan explícitamente."
+  ],
+  "leagues": [
+    {
+      "name": "LaLiga España",
+      "country": "España",
+      "teams": [
+        {
+          "name": "Real Madrid",
+          "city": "Madrid",
+          "country": "España",
+          "reputation": 99,
+          "stadium": "Santiago Bernabéu",
+          "stadiumCapacity": 83000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Barcelona",
+          "city": "Barcelona",
+          "country": "España",
+          "reputation": 97,
+          "stadium": "Camp Nou",
+          "stadiumCapacity": 99354,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Atlético Madrid",
+          "city": "Madrid",
+          "country": "España",
+          "reputation": 92,
+          "stadium": "Metropolitano",
+          "stadiumCapacity": 70460,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Sevilla",
+          "city": "Sevilla",
+          "country": "España",
+          "reputation": 82,
+          "stadium": "Ramón Sánchez-Pizjuán",
+          "stadiumCapacity": 43883,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Valencia",
+          "city": "Valencia",
+          "country": "España",
+          "reputation": 80,
+          "stadium": "Mestalla",
+          "stadiumCapacity": 48600,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Athletic Club",
+          "city": "Bilbao",
+          "country": "España",
+          "reputation": 79,
+          "stadium": "San Mamés",
+          "stadiumCapacity": 53331,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Real Betis",
+          "city": "Sevilla",
+          "country": "España",
+          "reputation": 78,
+          "stadium": "Benito Villamarín",
+          "stadiumCapacity": 60721,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Villarreal",
+          "city": "Villarreal",
+          "country": "España",
+          "reputation": 77,
+          "stadium": "Estadio de la Cerámica",
+          "stadiumCapacity": 23500,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Real Sociedad",
+          "city": "San Sebastián",
+          "country": "España",
+          "reputation": 77,
+          "stadium": "Reale Arena",
+          "stadiumCapacity": 39500,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Celta",
+          "city": "Vigo",
+          "country": "España",
+          "reputation": 70,
+          "stadium": "Balaídos",
+          "stadiumCapacity": 29000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Espanyol",
+          "city": "Barcelona",
+          "country": "España",
+          "reputation": 69,
+          "stadium": "Stage Front Stadium",
+          "stadiumCapacity": 40500,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Deportivo La Coruña",
+          "city": "A Coruña",
+          "country": "España",
+          "reputation": 67,
+          "stadium": "Riazor",
+          "stadiumCapacity": 32912,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Mallorca",
+          "city": "Palma",
+          "country": "España",
+          "reputation": 66,
+          "stadium": "Son Moix",
+          "stadiumCapacity": 23142,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Osasuna",
+          "city": "Pamplona",
+          "country": "España",
+          "reputation": 66,
+          "stadium": "El Sadar",
+          "stadiumCapacity": 23516,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Zaragoza",
+          "city": "Zaragoza",
+          "country": "España",
+          "reputation": 65,
+          "stadium": "La Romareda",
+          "stadiumCapacity": 34596,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Sporting Gijón",
+          "city": "Gijón",
+          "country": "España",
+          "reputation": 64,
+          "stadium": "El Molinón",
+          "stadiumCapacity": 30000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Getafe",
+          "city": "Getafe",
+          "country": "España",
+          "reputation": 63,
+          "stadium": "Coliseum",
+          "stadiumCapacity": 16800,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Rayo Vallecano",
+          "city": "Madrid",
+          "country": "España",
+          "reputation": 62,
+          "stadium": "Campo de Fútbol de Vallecas",
+          "stadiumCapacity": 14708,
+          "stadiumIsFictional": false
+        }
+      ]
+    }
+  ]
+}

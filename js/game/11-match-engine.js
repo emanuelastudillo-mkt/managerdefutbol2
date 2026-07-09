@@ -1,4 +1,4 @@
-/* V3.04 · Motor alternativo de partido, eventos, lesiones, estadísticas y limpieza táctica. */
+/* V3.43 · Motor alternativo de partido, eventos, lesiones, estadísticas y limpieza táctica. */
 
 function simulateMatch(match){
   if(window.Simulator20?.simulateMatch) return window.Simulator20.simulateMatch(match);
@@ -44,9 +44,10 @@ function makeMatchContext(match, home, away){
   const pitchScore = fieldScoreForClub(match.homeId);
   const pitch = fieldConditionName(pitchScore);
   const effect = pitchEffect(pitch);
-  const homeFans = Math.max(800, Math.round((homeClub?.reputation || 60) * rnd(210,360)));
-  const awayFans = Math.max(120, Math.round((awayClub?.reputation || 60) * rnd(18,70)));
-  return { weather, pitch, pitchScore, homeFans, awayFans, pitchEffect:effect };
+  const attendance = typeof attendanceContextForMatch === 'function'
+    ? attendanceContextForMatch(match)
+    : { homeFans:Math.max(800, Math.round((homeClub?.reputation || 60) * rnd(210,360))), awayFans:Math.max(120, Math.round((awayClub?.reputation || 60) * rnd(18,70))), totalFans:0, capacity:0, homeCrowdBonus:0, ticketPrice:0, ticketRevenue:0 };
+  return { weather, pitch, pitchScore, ...attendance, pitchEffect:effect };
 }
 function poisson(lambda){
   const L = Math.exp(-lambda);
@@ -189,6 +190,7 @@ function scoreAtMinute(goals, minute, clubId){
   return { gf, gc };
 }
 function applyResultToTables(match, hg, ag){
+  if(match?.playoff || match?.knockout) return;
   const h = game.standings[match.homeId];
   const a = game.standings[match.awayId];
   h.pj++; a.pj++;
@@ -198,7 +200,7 @@ function applyResultToTables(match, hg, ag){
   else { h.pe++; a.pe++; h.pts++; a.pts++; }
   h.dg = h.gf - h.gc; a.dg = a.gf - a.gc;
 }
-function applyPlayerStats(clubId, lineup, substitutions, goals, cards, injuries){
+function applyPlayerStats(clubId, lineup, substitutions, goals, cards, injuries, keySaves=[], errors=[]){
   const playedIds = new Set(lineup.map(p => p.id));
   substitutions.filter(s => s.clubId === clubId).forEach(s => playedIds.add(s.inId));
   playedIds.forEach(id => { if(game.playerStats[id]) game.playerStats[id].played++; });
@@ -214,6 +216,15 @@ function applyPlayerStats(clubId, lineup, substitutions, goals, cards, injuries)
   injuries.filter(i=>i.clubId===clubId).forEach(i=>{
     if(game.playerStats[i.playerId]) game.playerStats[i.playerId].injuries++;
   });
+  keySaves.filter(s=>s.clubId===clubId).forEach(s=>{
+    if(game.playerStats[s.playerId]) game.playerStats[s.playerId].keySaves = Number(game.playerStats[s.playerId].keySaves || 0) + 1;
+  });
+  errors.filter(e=>e.clubId===clubId).forEach(e=>{
+    if(game.playerStats[e.playerId]){
+      game.playerStats[e.playerId].errors = Number(game.playerStats[e.playerId].errors || 0) + 1;
+      if(e.goal) game.playerStats[e.playerId].goalErrors = Number(game.playerStats[e.playerId].goalErrors || 0) + 1;
+    }
+  });
 }
 function applyAvailability(cards, injuries){
   cards.forEach(c => {
@@ -223,12 +234,15 @@ function applyAvailability(cards, injuries){
   });
   injuries.forEach(i => {
     const label = i.injuryLabel || i.name || 'Lesión';
+    const injuryDays = Math.max(1, Math.round(Number(i.matchesOut || 1)));
     game.playerStatus[i.playerId] = {
       ...playerStatus(i.playerId),
-      injuredThrough: game.matchdayIndex + i.matchesOut,
+      injuredThrough: game.matchdayIndex + Math.max(1, Math.ceil(injuryDays / Math.max(1, LEAGUE_ROUND_INTERVAL_DAYS))),
+      injuredUntilTurn: currentTurnIndex() + injuryDays,
       injuryLabel: label,
       injuryChance: i.chance,
-      injuredAtMatchday: game.matchdayIndex
+      injuredAtMatchday: game.matchdayIndex,
+      injuredAtTurn: currentTurnIndex()
     };
   });
 }

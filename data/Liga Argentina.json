@@ -1,78 +1,404 @@
 {
+  "version": "V3.82",
+  "pais": "Argentina",
+  "descripcion": "Estructura jugable de Argentina con 3 divisiones de 18 clubes.",
+  "criterio": "Formato normalizado para el juego: cada club incluye nombre, ciudad, prestigio, color principal y ruta de escudo.",
+  "escala_prestigio": "Global: 99 élite mundial, 70-84 grandes regionales/europeos fuertes, 20 o menos clubes libres para managers nuevos.",
   "leagues": [
     {
       "name": "Liga Profesional",
+      "country": "Argentina",
       "teams": [
-        { "name": "River Plate",           "reputation": 92 },
-        { "name": "Boca Juniors",          "reputation": 99 },
-        { "name": "Racing Club",           "reputation": 90 },
-        { "name": "Independiente",         "reputation": 89 },
-        { "name": "San Lorenzo",           "reputation": 87 },
-        { "name": "Estudiantes",           "reputation": 85 },
-        { "name": "Vélez",                 "reputation": 84 },
-        { "name": "Rosario",               "reputation": 83 },
-        { "name": "Newell's",              "reputation": 82 },
-        { "name": "Talleres",              "reputation": 81 },
-        { "name": "Huracán",               "reputation": 80 },
-        { "name": "Lanús",                 "reputation": 79 },
-        { "name": "Belgrano",              "reputation": 78 },
-        { "name": "Gimnasia",              "reputation": 77 },
-        { "name": "Defensa",               "reputation": 76 },
-        { "name": "Banfield",              "reputation": 75 },
-        { "name": "Atlético Tucumán",      "reputation": 74 },
-        { "name": "Platense",              "reputation": 73 },
-        { "name": "Unión",                 "reputation": 72 },
-        { "name": "Instituto",             "reputation": 70 }
+        {
+          "name": "Boca Juniors",
+          "city": "Buenos Aires",
+          "reputation": 80,
+          "primaryColor": "#0A2C74",
+          "crestPath": "img/escudos/Boca_Juniors.png"
+        },
+        {
+          "name": "River Plate",
+          "city": "Buenos Aires",
+          "reputation": 79,
+          "primaryColor": "#E31B23",
+          "crestPath": "img/escudos/River_Plate.png"
+        },
+        {
+          "name": "Racing Club",
+          "city": "Avellaneda",
+          "reputation": 70,
+          "primaryColor": "#6CB4EE",
+          "crestPath": "img/escudos/Racing_Club.png"
+        },
+        {
+          "name": "Independiente",
+          "city": "Avellaneda",
+          "reputation": 69,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Independiente.png"
+        },
+        {
+          "name": "San Lorenzo",
+          "city": "Buenos Aires",
+          "reputation": 67,
+          "primaryColor": "#003A70",
+          "crestPath": "img/escudos/San_Lorenzo.png"
+        },
+        {
+          "name": "Estudiantes",
+          "city": "La Plata",
+          "reputation": 66,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Estudiantes.png"
+        },
+        {
+          "name": "Vélez",
+          "city": "Buenos Aires",
+          "reputation": 64,
+          "primaryColor": "#005BAC",
+          "crestPath": "img/escudos/V#U00e9lez.png"
+        },
+        {
+          "name": "Rosario",
+          "city": "Rosario",
+          "reputation": 63,
+          "primaryColor": "#0033A0",
+          "crestPath": "img/escudos/Rosario.png"
+        },
+        {
+          "name": "Newell's",
+          "city": "Rosario",
+          "reputation": 61,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Newell's.png"
+        },
+        {
+          "name": "Talleres",
+          "city": "Córdoba",
+          "reputation": 62,
+          "primaryColor": "#0057A6",
+          "crestPath": "img/escudos/Talleres.png"
+        },
+        {
+          "name": "Huracán",
+          "city": "Buenos Aires",
+          "reputation": 58,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/Hurac#U00e1n.png"
+        },
+        {
+          "name": "Lanús",
+          "city": "Lanús",
+          "reputation": 57,
+          "primaryColor": "#7B003A",
+          "crestPath": "img/escudos/Lan#U00fas.png"
+        },
+        {
+          "name": "Belgrano",
+          "city": "Córdoba",
+          "reputation": 56,
+          "primaryColor": "#00A3E0",
+          "crestPath": "img/escudos/Belgrano.png"
+        },
+        {
+          "name": "Gimnasia",
+          "city": "La Plata",
+          "reputation": 54,
+          "primaryColor": "#002B5C",
+          "crestPath": "img/escudos/Gimnasia.png"
+        },
+        {
+          "name": "Defensa",
+          "city": "Florencio Varela",
+          "reputation": 53,
+          "primaryColor": "#F5D328",
+          "crestPath": "img/escudos/Defensa.png"
+        },
+        {
+          "name": "Banfield",
+          "city": "Banfield",
+          "reputation": 52,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/Banfield.png"
+        },
+        {
+          "name": "Atlético Tucumán",
+          "city": "San Miguel de Tucumán",
+          "reputation": 50,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/Atl#U00e9tico_Tucum#U00e1n.png"
+        },
+        {
+          "name": "Platense",
+          "city": "Vicente López",
+          "reputation": 49,
+          "primaryColor": "#6B2E1A",
+          "crestPath": "img/escudos/Platense.png"
+        }
       ]
     },
     {
       "name": "Primera Nacional",
+      "country": "Argentina",
       "teams": [
-        { "name": "Tigre",                 "reputation": 75 },
-        { "name": "Independiente Rivadavia","reputation": 72 },
-        { "name": "San Martín Tucumán",    "reputation": 70 },
-        { "name": "Barracas",              "reputation": 68 },
-        { "name": "Godoy Cruz",            "reputation": 67 },
-        { "name": "Argentinos",            "reputation": 66 },
-        { "name": "Central Córdoba SdE",   "reputation": 65 },
-        { "name": "Aldosivi",              "reputation": 64 },
-        { "name": "Sarmiento",             "reputation": 63 },
-        { "name": "San Martín San Juan",   "reputation": 62 },
-        { "name": "Riestra",               "reputation": 61 },
-        { "name": "Morón",                 "reputation": 60 },
-        { "name": "Deportivo Maipú",       "reputation": 59 },
-        { "name": "Deportivo Madryn",      "reputation": 58 },
-        { "name": "Olimpo",                "reputation": 57 },
-        { "name": "Atlanta",               "reputation": 56 },
-        { "name": "Temperley",             "reputation": 55 },
-        { "name": "Agropecuario",          "reputation": 53 },
-        { "name": "Atlético Rafaela",      "reputation": 52 },
-        { "name": "Gimnasia de Jujuy",     "reputation": 50 }
+        {
+          "name": "Argentinos",
+          "city": "Buenos Aires",
+          "reputation": 55,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Argentinos.png"
+        },
+        {
+          "name": "Godoy Cruz",
+          "city": "Mendoza",
+          "reputation": 54,
+          "primaryColor": "#0033A0",
+          "crestPath": "img/escudos/Godoy_Cruz.png"
+        },
+        {
+          "name": "Tigre",
+          "city": "Victoria",
+          "reputation": 47,
+          "primaryColor": "#0057A6",
+          "crestPath": "img/escudos/Tigre.png"
+        },
+        {
+          "name": "Unión",
+          "city": "Santa Fe",
+          "reputation": 48,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Uni#U00f3n.png"
+        },
+        {
+          "name": "Instituto",
+          "city": "Córdoba",
+          "reputation": 46,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Instituto.png"
+        },
+        {
+          "name": "San Martín Tucumán",
+          "city": "San Miguel de Tucumán",
+          "reputation": 45,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/San_Mart#U00edn_Tucum#U00e1n.png"
+        },
+        {
+          "name": "Barracas",
+          "city": "Buenos Aires",
+          "reputation": 40,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Barracas.png"
+        },
+        {
+          "name": "Central Córdoba SdE",
+          "city": "Santiago del Estero",
+          "reputation": 42,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/Central_C#U00f3rdoba_SdE.png"
+        },
+        {
+          "name": "Independiente Rivadavia",
+          "city": "Mendoza",
+          "reputation": 43,
+          "primaryColor": "#0033A0",
+          "crestPath": "img/escudos/Independiente_Rivadavia.png"
+        },
+        {
+          "name": "Aldosivi",
+          "city": "Mar del Plata",
+          "reputation": 39,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/Aldosivi.png"
+        },
+        {
+          "name": "Sarmiento",
+          "city": "Junín",
+          "reputation": 38,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/Sarmiento.png"
+        },
+        {
+          "name": "San Martín San Juan",
+          "city": "San Juan",
+          "reputation": 37,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/San_Mart#U00edn_San_Juan.png"
+        },
+        {
+          "name": "Riestra",
+          "city": "Buenos Aires",
+          "reputation": 36,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/Riestra.png"
+        },
+        {
+          "name": "Morón",
+          "city": "Morón",
+          "reputation": 35,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Mor#U00f3n.png"
+        },
+        {
+          "name": "Deportivo Maipú",
+          "city": "Maipú",
+          "reputation": 34,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Deportivo_Maip#U00fa.png"
+        },
+        {
+          "name": "Deportivo Madryn",
+          "city": "Puerto Madryn",
+          "reputation": 33,
+          "primaryColor": "#F5D328",
+          "crestPath": "img/escudos/Deportivo_Madryn.png"
+        },
+        {
+          "name": "Olimpo",
+          "city": "Bahía Blanca",
+          "reputation": 36,
+          "primaryColor": "#F5D328",
+          "crestPath": "img/escudos/Olimpo.png"
+        },
+        {
+          "name": "Atlanta",
+          "city": "Buenos Aires",
+          "reputation": 34,
+          "primaryColor": "#0057A6",
+          "crestPath": "img/escudos/Atlanta.png"
+        }
       ]
     },
     {
       "name": "Federal A",
+      "country": "Argentina",
       "teams": [
-        { "name": "Acassuso",              "reputation": 60 },
-        { "name": "Deportivo Armenio",     "reputation": 55 },
-        { "name": "Midland",               "reputation": 50 },
-        { "name": "Tristan Suárez",        "reputation": 45 },
-        { "name": "Real Pilar",            "reputation": 42 },
-        { "name": "Camioneros",            "reputation": 40 },
-        { "name": "Chaco For Ever",        "reputation": 38 },
-        { "name": "Deportivo Rincón",      "reputation": 35 },
-        { "name": "San Martín de Formosa", "reputation": 33 },
-        { "name": "Ituzaingó",             "reputation": 30 },
-        { "name": "Claypole",              "reputation": 28 },
-        { "name": "Ciudad de Bolívar",     "reputation": 26 },
-        { "name": "San Miguel",            "reputation": 24 },
-        { "name": "Argentino Merlo",       "reputation": 22 },
-        { "name": "Sportivo Barracas",     "reputation": 20 },
-        { "name": "Atenas Río Cuarto",     "reputation": 18 },
-        { "name": "Argentino Monte Maíz",  "reputation": 16 },
-        { "name": "Sarmiento La Banda",    "reputation": 14 },
-        { "name": "Sportivo Belgrano",     "reputation": 12 },
-        { "name": "Gimnasia y Tiro",       "reputation": 10 }
+        {
+          "name": "Temperley",
+          "city": "Temperley",
+          "reputation": 30,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/Temperley.png"
+        },
+        {
+          "name": "Atlético Rafaela",
+          "city": "Rafaela",
+          "reputation": 29,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/Atl#U00e9tico_Rafaela.png"
+        },
+        {
+          "name": "Gimnasia de Jujuy",
+          "city": "San Salvador de Jujuy",
+          "reputation": 28,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/Gimnasia_de_Jujuy.png"
+        },
+        {
+          "name": "Agropecuario",
+          "city": "Carlos Casares",
+          "reputation": 26,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/Agropecuario.png"
+        },
+        {
+          "name": "Chaco For Ever",
+          "city": "Resistencia",
+          "reputation": 25,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/Chaco_For_Ever.png"
+        },
+        {
+          "name": "San Miguel",
+          "city": "San Miguel",
+          "reputation": 24,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/San_Miguel.png"
+        },
+        {
+          "name": "Gimnasia y Tiro",
+          "city": "Salta",
+          "reputation": 22,
+          "primaryColor": "#F5F5F5",
+          "crestPath": "img/escudos/Gimnasia_y_Tiro.png"
+        },
+        {
+          "name": "Acassuso",
+          "city": "San Isidro",
+          "reputation": 20,
+          "primaryColor": "#002B5C",
+          "crestPath": "img/escudos/Acassuso.png"
+        },
+        {
+          "name": "Sportivo Belgrano",
+          "city": "San Francisco",
+          "reputation": 20,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/Sportivo_Belgrano.png"
+        },
+        {
+          "name": "Deportivo Armenio",
+          "city": "Ingeniero Maschwitz",
+          "reputation": 19,
+          "primaryColor": "#F28C28",
+          "crestPath": "img/escudos/Deportivo_Armenio.png"
+        },
+        {
+          "name": "Tristan Suárez",
+          "city": "Tristán Suárez",
+          "reputation": 19,
+          "primaryColor": "#0057A6",
+          "crestPath": "img/escudos/Tristan_Su#U00e1rez.png"
+        },
+        {
+          "name": "Midland",
+          "city": "Libertad",
+          "reputation": 18,
+          "primaryColor": "#0033A0",
+          "crestPath": "img/escudos/Midland.png"
+        },
+        {
+          "name": "Real Pilar",
+          "city": "Pilar",
+          "reputation": 18,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/Real_Pilar.png"
+        },
+        {
+          "name": "Camioneros",
+          "city": "Esteban Echeverría",
+          "reputation": 17,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/Camioneros.png"
+        },
+        {
+          "name": "Claypole",
+          "city": "Claypole",
+          "reputation": 17,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/Claypole.png"
+        },
+        {
+          "name": "Argentino Merlo",
+          "city": "Merlo",
+          "reputation": 16,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/Argentino_Merlo.png"
+        },
+        {
+          "name": "Sportivo Barracas",
+          "city": "Buenos Aires",
+          "reputation": 15,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/Sportivo_Barracas.png"
+        },
+        {
+          "name": "Argentino Monte Maíz",
+          "city": "Monte Maíz",
+          "reputation": 15,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/Argentino_Monte_Ma#U00edz.png"
+        }
       ]
     }
   ]

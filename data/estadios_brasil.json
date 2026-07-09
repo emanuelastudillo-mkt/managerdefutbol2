@@ -1,0 +1,180 @@
+{
+  "version": "V3.79",
+  "pais": "Brasil",
+  "sistema": "estadios_brasil",
+  "descripcion": "Estadios base para clubes de Brasil.",
+  "notas": [
+    "Capacidades redondeadas para balance jugable cuando corresponde.",
+    "Los estadios ficticios se marcan explícitamente."
+  ],
+  "leagues": [
+    {
+      "name": "Brasileirão",
+      "country": "Brasil",
+      "teams": [
+        {
+          "name": "Flamengo",
+          "city": "Rio de Janeiro",
+          "country": "Brasil",
+          "reputation": 84,
+          "stadium": "Maracanã",
+          "stadiumCapacity": 78838,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Palmeiras",
+          "city": "São Paulo",
+          "country": "Brasil",
+          "reputation": 83,
+          "stadium": "Allianz Parque",
+          "stadiumCapacity": 43713,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Corinthians",
+          "city": "São Paulo",
+          "country": "Brasil",
+          "reputation": 81,
+          "stadium": "Neo Química Arena",
+          "stadiumCapacity": 49205,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "São Paulo",
+          "city": "São Paulo",
+          "country": "Brasil",
+          "reputation": 80,
+          "stadium": "Morumbi",
+          "stadiumCapacity": 66795,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Santos",
+          "city": "Santos",
+          "country": "Brasil",
+          "reputation": 78,
+          "stadium": "Vila Belmiro",
+          "stadiumCapacity": 16068,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Grêmio",
+          "city": "Porto Alegre",
+          "country": "Brasil",
+          "reputation": 77,
+          "stadium": "Arena do Grêmio",
+          "stadiumCapacity": 55662,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Internacional",
+          "city": "Porto Alegre",
+          "country": "Brasil",
+          "reputation": 76,
+          "stadium": "Beira-Rio",
+          "stadiumCapacity": 50842,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Atlético Mineiro",
+          "city": "Belo Horizonte",
+          "country": "Brasil",
+          "reputation": 76,
+          "stadium": "Arena MRV",
+          "stadiumCapacity": 46000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Cruzeiro",
+          "city": "Belo Horizonte",
+          "country": "Brasil",
+          "reputation": 75,
+          "stadium": "Mineirão",
+          "stadiumCapacity": 61846,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Fluminense",
+          "city": "Rio de Janeiro",
+          "country": "Brasil",
+          "reputation": 74,
+          "stadium": "Maracanã",
+          "stadiumCapacity": 78838,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Botafogo",
+          "city": "Rio de Janeiro",
+          "country": "Brasil",
+          "reputation": 74,
+          "stadium": "Nilton Santos",
+          "stadiumCapacity": 44661,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Vasco da Gama",
+          "city": "Rio de Janeiro",
+          "country": "Brasil",
+          "reputation": 73,
+          "stadium": "São Januário",
+          "stadiumCapacity": 21880,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Athletico Paranaense",
+          "city": "Curitiba",
+          "country": "Brasil",
+          "reputation": 70,
+          "stadium": "Ligga Arena",
+          "stadiumCapacity": 42372,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Bahia",
+          "city": "Salvador",
+          "country": "Brasil",
+          "reputation": 68,
+          "stadium": "Arena Fonte Nova",
+          "stadiumCapacity": 47907,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Fortaleza",
+          "city": "Fortaleza",
+          "country": "Brasil",
+          "reputation": 67,
+          "stadium": "Castelão",
+          "stadiumCapacity": 63903,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Sport Recife",
+          "city": "Recife",
+          "country": "Brasil",
+          "reputation": 64,
+          "stadium": "Ilha do Retiro",
+          "stadiumCapacity": 32983,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Vitória",
+          "city": "Salvador",
+          "country": "Brasil",
+          "reputation": 62,
+          "stadium": "Barradão",
+          "stadiumCapacity": 30000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Ceará",
+          "city": "Fortaleza",
+          "country": "Brasil",
+          "reputation": 61,
+          "stadium": "Castelão",
+          "stadiumCapacity": 63903,
+          "stadiumIsFictional": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-/* V3.17 · Sponsors, estadio, calendario, tabla, estadísticas y finanzas visuales. */
+/* V3.28 · Sponsors, estadio, calendario, tabla, estadísticas y finanzas visuales. */
 
 function randomInt(min,max){
   return Math.floor(rnd(min, max + 1));
@@ -44,7 +44,8 @@ function sponsorCohesionBonus(){
 function sponsorOfferValue(baseSponsor, lugar){
   const base = Number(baseSponsor?.valor_base_por_7_dias || 0);
   const place = Number(lugar?.multiplicador_lugar || 1);
-  const totalMultiplier = sponsorDivisionMultiplier() * place * (1 + sponsorPositionBonus() + sponsorMoraleBonus() + sponsorCohesionBonus());
+  const specialBonusPct = typeof specialActiveBonus === 'function' ? specialActiveBonus('sponsors_extra') : 0;
+  const totalMultiplier = sponsorDivisionMultiplier() * place * (1 + sponsorPositionBonus() + sponsorMoraleBonus() + sponsorCohesionBonus()) * (1 + (specialBonusPct / 100));
   const perTurn = Math.round(base * SPONSOR_BASE_VALUE_FACTOR * totalMultiplier);
   const durationDays = Number(baseSponsor?.dias_duracion_oferta || 0);
   const turns = clamp(Math.round(durationDays > 0 ? durationDays / DAYS_PER_ADVANCE : randomInt(3,35)), 3, 35);
@@ -183,7 +184,77 @@ function activeSponsorsMarkup(){
   return `<div class="table-wrap"><table class="sponsor-table"><thead><tr><th>Marca</th><th>Lugar</th><th>Días restantes</th><th>Pago recibido</th></tr></thead><tbody>${active.map(item => `<tr><td><strong>${escapeHtml(item.sponsorName)}</strong></td><td>${escapeHtml(item.placeName)}</td><td>${formatDaysFromTurns(item.turnsRemaining)}</td><td>${formatMoney(item.total || 0)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
+function botFieldAuditMarkup(){
+  const audit = botFieldAudit(game);
+  const needsPetition = audit.invalid > 0 || audit.massUnplayable;
+  const tone = needsPetition ? 'warn' : 'ok';
+  const detail = audit.massUnplayable
+    ? `Varios clubes rivales tienen el campo en condiciones inaceptables. La dirigencia puede pedir que se cumplan las condiciones mínimas antes de los próximos partidos.`
+    : needsPetition
+      ? `Se detectaron ${audit.invalid} estadios rivales por debajo de las condiciones mínimas. La dirigencia puede elevar un reclamo formal.`
+      : `La revisión de estadios rivales no encontró campos en condiciones inaceptables.`;
+  return `<div class="card stadium-card bot-field-audit ${tone}" style="margin-top:14px">
+    <div class="row"><div><h3>Petitorio a la Federación Argentina</h3><p class="muted small">${escapeHtml(detail)}</p></div><span class="pill ${tone}">${needsPetition ? 'Reclamo disponible' : 'Sin reclamo'}</span></div>
+    <div class="row" style="margin-top:10px"><button id="btnRepairBotFields" class="ghost">Presentar petitorio a la Federación Argentina</button></div>
+  </div>`;
+}
+function repairBotFieldsFromUi(){
+  const result = repairInvalidBotFieldStates(game, 'manual_stadium_audit', { message:true });
+  if(result.repaired){
+    saveLocal(true);
+    renderStadium();
+    showNotice(`La Federación Argentina recibió el petitorio. Campos corregidos: ${result.repaired}.`);
+  } else {
+    showNotice('La Federación Argentina no encontró campos rivales fuera de reglamento.');
+  }
+}
 
+
+
+function stadiumExpansionProjectMarkup(project){
+  const total = Math.max(1, Number(project.totalDays || project.daysLeft || 1));
+  const left = Math.max(0, Number(project.daysLeft || 0));
+  const progress = clamp(Math.round(((total - left) / total) * 100), 0, 100);
+  return `<div class="stadium-expansion-active">
+    <div class="row"><div><strong>${escapeHtml(project.name)}</strong><p class="muted small">Slot ${escapeHtml(project.slot || '—')} · +${new Intl.NumberFormat('es-AR').format(project.capacityGain || 0)} lugares</p></div><span class="pill">${left} día(s)</span></div>
+    <div class="project-progress"><span style="width:${progress}%"></span></div>
+  </div>`;
+}
+function stadiumExpansionCard(expansion){
+  const status = stadiumExpansionStartStatus(game.selectedClubId, expansion);
+  const durationDays = typeof stadiumExpansionDurationDays === 'function' ? stadiumExpansionDurationDays(expansion) : Number(expansion.days || 1);
+  return `<div class="stadium-expansion-option ${status.ok ? '' : 'dim-row'}">
+    <div>
+      <strong>#${expansion.id} · ${escapeHtml(expansion.name)}</strong>
+      <p class="muted small">Desde ${new Intl.NumberFormat('es-AR').format(expansion.minCapacity)} · +${new Intl.NumberFormat('es-AR').format(expansion.capacityGain)} lugares · ${durationDays} día(s) · Slot ${escapeHtml(expansion.slot)}</p>
+      <p class="small ${status.ok ? 'ok' : 'muted'}">${status.ok ? `Costo ${formatMoney(expansion.cost)}` : escapeHtml(status.reason)}</p>
+    </div>
+    <button class="primary" data-start-stadium-expansion="${expansion.id}" ${status.ok ? '' : 'disabled'}>Iniciar</button>
+  </div>`;
+}
+function stadiumExpansionsMarkup(){
+  const clubId = game.selectedClubId;
+  const capacity = clubStadiumCapacity(clubId);
+  const baseCapacity = baseStadiumCapacityForClub(clubId);
+  const active = activeStadiumExpansionProjects(clubId);
+  const available = availableStadiumExpansionsForClub(clubId).slice(0, 12);
+  const maxWorks = maxSimultaneousStadiumWorks(capacity);
+  const penalty = stadiumConstructionAttendancePenalty(clubId);
+  const nextLocked = (STADIUM_EXPANSIONS || []).filter(item => capacity < Number(item.minCapacity || 0)).slice(0, 3);
+  return `<div class="card stadium-card stadium-expansions-card" style="margin-top:14px">
+    <div class="row"><div><h3>Ampliaciones</h3><p class="muted small">La capacidad nueva cuenta recién cuando la obra termina. No se pueden repetir slots y las obras integrales bloquean cualquier otra obra. Duración configurada: x${STADIUM_EXPANSION_DAYS_MULTIPLIER} sobre la tabla base.</p></div><span class="pill">${active.length}/${maxWorks} obra(s) activas</span></div>
+    <div class="grid cols-4 stadium-expansion-summary">
+      <div><p class="label">Capacidad base</p><strong>${new Intl.NumberFormat('es-AR').format(baseCapacity)}</strong></div>
+      <div><p class="label">Capacidad actual</p><strong>${new Intl.NumberFormat('es-AR').format(capacity)}</strong></div>
+      <div><p class="label">Máximo</p><strong>${new Intl.NumberFormat('es-AR').format(STADIUM_EXPANSION_MAX_CAPACITY)}</strong></div>
+      <div><p class="label">Penalización asistencia</p><strong class="${penalty > 0 ? 'warn' : ''}">${Math.round(penalty * 100)}%</strong></div>
+    </div>
+    ${active.length ? `<h4>Obras en construcción</h4><div class="stack">${active.map(stadiumExpansionProjectMarkup).join('')}</div>` : '<p class="muted small">No hay obras activas.</p>'}
+    <h4 style="margin-top:14px">Obras disponibles</h4>
+    <div class="stack">${available.length ? available.map(stadiumExpansionCard).join('') : '<p class="muted small">No hay ampliaciones disponibles para la capacidad actual o el estadio llegó al máximo.</p>'}</div>
+    ${nextLocked.length ? `<p class="muted small" style="margin-top:12px">Próximos umbrales: ${nextLocked.map(item => `${escapeHtml(item.name)} desde ${new Intl.NumberFormat('es-AR').format(item.minCapacity)}`).join(' · ')}</p>` : ''}
+  </div>`;
+}
 function renderStadium(){
   ensureStadiumState();
   ensureSponsorState();
@@ -191,6 +262,15 @@ function renderStadium(){
   const score = fieldScoreForClub(game.selectedClubId);
   const label = fieldConditionName(score);
   const project = stadiumProjectForClub(game.selectedClubId);
+  ensureFanState();
+  const currentFans = clubFansCurrent(game.selectedClubId);
+  const baseFans = clubFansBase(game.selectedClubId);
+  const capacity = clubStadiumCapacity(game.selectedClubId);
+  const constructionPenalty = stadiumConstructionAttendancePenalty(game.selectedClubId);
+  const effectiveCapacity = Math.max(0, Math.floor(capacity * (1 - constructionPenalty)));
+  const ticketPrice = ticketPriceForClub(game.selectedClubId);
+  const lastFanDelta = Math.round(Number(game?.fans?.clubs?.[game.selectedClubId]?.lastDelta || 0));
+  const lastFanClass = lastFanDelta >= 0 ? 'ok' : 'bad';
   const replantActive = project.replantingTurnsLeft > 0;
   const patchActive = project.patchingTurnsLeft > 0;
   const replantProgress = replantActive ? Math.round(((REPLANT_TURNS - project.replantingTurnsLeft) / REPLANT_TURNS) * 100) : 0;
@@ -209,7 +289,19 @@ function renderStadium(){
         <p class="label">Estado actual</p>
         <div class="stadium-score-row"><strong class="field-state ${fieldConditionClass(score)}">${escapeHtml(label)}</strong><span>${score}/100</span></div>
         ${fieldBar(score, label)}
+        <p class="stadium-identity-line">${escapeHtml(clubStadiumName(game.selectedClubId))} · Capacidad ${new Intl.NumberFormat('es-AR').format(capacity)}${constructionPenalty > 0 ? ` · Aforo partido con obras ${new Intl.NumberFormat('es-AR').format(effectiveCapacity)}` : ''}</p>
 
+      </div>
+      <div class="card stadium-card">
+        <h3>Hinchada y entradas</h3>
+        <div class="grid cols-3">
+          <div><p class="label">Hinchas Totales</p><strong>${new Intl.NumberFormat('es-AR').format(currentFans)}</strong></div>
+          <div><p class="label">Vitalicios</p><strong>${new Intl.NumberFormat('es-AR').format(baseFans)}</strong></div>
+          <div><p class="label">Nuevos socios</p><strong class="${lastFanClass}">${lastFanDelta >= 0 ? '+' : ''}${new Intl.NumberFormat('es-AR').format(lastFanDelta)}</strong></div>
+        </div>
+        <label for="ticketPriceInput" style="margin-top:14px">Precio de entrada</label>
+        <input id="ticketPriceInput" type="number" min="${TICKET_PRICE_MIN}" max="${TICKET_PRICE_MAX}" step="10" value="${ticketPrice}">
+        <p class="muted small">Mínimo ${formatMoney(TICKET_PRICE_MIN)} y máximo ${formatMoney(TICKET_PRICE_MAX)}. Entradas baratas protegen caídas por mala posición; entradas caras limitan el crecimiento de hinchas.</p>
       </div>
       <div class="card stadium-card">
         <h3>Mantenimiento</h3>
@@ -227,6 +319,8 @@ function renderStadium(){
     </div>
     ${replantActive ? `<div class="card stadium-progress-card" style="margin-top:14px"><div class="row"><h3>Replantando</h3><span class="pill">${formatDaysFromTurns(project.replantingTurnsLeft)} restante(s)</span></div><div class="project-progress"><span style="width:${replantProgress}%"></span></div><p class="muted small">Durante el replante el campo se mantiene en estado muy malo. Al finalizar pasará a 99.</p></div>` : ''}
     ${patchActive ? `<div class="card stadium-progress-card" style="margin-top:14px"><div class="row"><h3>Regando y parchando campo de juego</h3><span class="pill">${formatDaysFromTurns(project.patchingTurnsLeft)} restante(s)</span></div><div class="project-progress"><span style="width:${patchProgress}%"></span></div><p class="muted small">El campo mejora progresivamente mientras dura el mantenimiento.</p></div>` : ''}
+    ${stadiumExpansionsMarkup()}
+    ${botFieldAuditMarkup()}
     <div class="card sponsors-card" style="margin-top:14px">
       <div class="row"><div><h3>Sponsors</h3><p class="muted small">Cada algunos partidos tendras ofertas publicitarias. El pago se recibe completo al aceptar.</p></div></div>
       <h4>Ofertas disponibles</h4>
@@ -235,36 +329,85 @@ function renderStadium(){
       ${activeSponsorsMarkup()}
     </div>
   `;
+  $('ticketPriceInput')?.addEventListener('change', event => {
+    const price = setTicketPriceForClub(game.selectedClubId, event.target.value);
+    saveLocal(true);
+    renderStadium();
+    showNotice(`Precio de entrada actualizado a ${formatMoney(price)}.`);
+  });
   $('btnReplant')?.addEventListener('click', startReplantingField);
   $('btnPatch')?.addEventListener('click', startPatchingField);
+  $('btnRepairBotFields')?.addEventListener('click', repairBotFieldsFromUi);
+  document.querySelectorAll('[data-start-stadium-expansion]').forEach(btn => btn.addEventListener('click', () => startStadiumExpansion(btn.dataset.startStadiumExpansion)));
   document.querySelectorAll('[data-accept-sponsor]').forEach(btn => btn.addEventListener('click', () => acceptSponsorOffer(btn.dataset.acceptSponsor)));
   document.querySelectorAll('[data-reject-sponsor]').forEach(btn => btn.addEventListener('click', () => rejectSponsorOffer(btn.dataset.rejectSponsor)));
 }
 
+function promotionPlayoffTieForMatch(match){
+  const tieId = String(match?.playoffTieId || '');
+  if(!tieId) return null;
+  const ties = game?.argentinaPlayoffs?.ties;
+  return Array.isArray(ties) ? ties.find(tie => String(tie.id) === tieId) || null : null;
+}
+function matchVisibleInFixtureDivision(match, division){
+  if(!match || !division) return false;
+  const divisionId = String(division.id || '');
+  const directDivisionId = String(match.divisionId || seed.clubs.find(c=>c.id===match.homeId)?.divisionId || 'default');
+  if(directDivisionId === divisionId) return true;
+  if(match.promotionPlayoff || match.playoffTieId){
+    if(String(match.upperDivisionId || '') === divisionId || String(match.lowerDivisionId || '') === divisionId) return true;
+    const tie = promotionPlayoffTieForMatch(match);
+    if(tie && (String(tie.upperDivisionId || '') === divisionId || String(tie.lowerDivisionId || '') === divisionId)) return true;
+  }
+  return false;
+}
+function fixtureRoundTitle(round){
+  if(round?.playoffRound || round?.matches?.some(m => m?.promotionPlayoff)){
+    const stage = String(round.playoffStage || round.matches?.find(m => m?.promotionPlayoff)?.playoffStage || '').toUpperCase();
+    if(stage.includes('VUELTA')) return 'Playoffs VUELTA';
+    if(stage.includes('IDA')) return 'Playoffs IDA';
+  }
+  return round?.title || (typeof playoffRoundMatchdayLabel === 'function' ? playoffRoundMatchdayLabel(round?.matchday) : `Fecha ${round?.matchday || ''}`);
+}
+
 function renderFixture(){
   const divisions = seed.divisions || [{ id:'default', name:'Liga única' }];
+  const ownClubId = Number(game?.selectedClubId || 0);
+  const showMine = fixtureViewMode !== 'league';
   const visibleDivisions = selectedFixtureDivision === 'all' ? divisions : divisions.filter(d => d.id === selectedFixtureDivision);
   const html = game.fixtures.map(round=>{
+    if(showMine){
+      const matches = round.matches.filter(m => Number(m.homeId) === ownClubId || Number(m.awayId) === ownClubId);
+      if(!matches.length) return '';
+      return `<div class="card own-fixture-round"><div class="row"><h3>${escapeHtml(fixtureRoundTitle(round))}</h3><span class="pill">${round.startDate && round.endDate && round.startDate !== round.endDate ? `${round.startDate} → ${round.endDate}` : round.date}</span></div><div class="grid cols-2">${matches.map(matchCard).join('')}</div></div>`;
+    }
     const groups = visibleDivisions.map(division => {
-      const matches = round.matches.filter(m => (m.divisionId || seed.clubs.find(c=>c.id===m.homeId)?.divisionId || 'default') === division.id);
+      const matches = round.matches.filter(m => matchVisibleInFixtureDivision(m, division));
       if(!matches.length) return '';
       return `<div class="fixture-division-block"><h4>${escapeHtml(division.name)}</h4><div class="grid cols-2">${matches.map(matchCard).join('')}</div></div>`;
     }).join('');
-    return `<div class="card"><div class="row"><h3>Fecha ${round.matchday}</h3><span class="pill">${round.date}</span></div>${groups || '<p class="muted">Sin partidos para esta división.</p>'}</div>`;
-  }).join('');
+    return `<div class="card"><div class="row"><h3>${escapeHtml(fixtureRoundTitle(round))}</h3><span class="pill">${round.startDate && round.endDate && round.startDate !== round.endDate ? `${round.startDate} → ${round.endDate}` : round.date}</span></div>${groups || '<p class="muted">Sin partidos para esta división.</p>'}</div>`;
+  }).filter(Boolean).join('');
   view.innerHTML = `
-    <div class="row section-title">
-      <div><h2>Calendario</h2><p class="tagline">Los partidos jugados son clickeables para ver estadísticas y eventos.</p></div>
-      ${divisionFilterMarkup('fixtureDivisionFilter', selectedFixtureDivision)}
+    <div class="row section-title fixture-title-row">
+      <div><h2>Calendario</h2><p class="tagline">Por defecto se muestra el calendario de tu club. Los partidos jugados son clickeables para ver estadísticas y eventos.</p></div>
+      <div class="fixture-controls row">
+        <button type="button" id="btnMyFixture" class="${showMine ? 'primary' : 'ghost'}">Mi calendario</button>
+        <div class="division-filter"><label for="fixtureDivisionFilter">Liga</label><select id="fixtureDivisionFilter">${divisionOptions(selectedFixtureDivision)}</select></div>
+      </div>
     </div>
-    <div class="stack">${html}</div>`;
-  $('fixtureDivisionFilter')?.addEventListener('change', event => { selectedFixtureDivision = event.target.value; renderFixture(); });
+    <div class="stack">${html || '<div class="card"><p class="muted">Sin partidos para mostrar.</p></div>'}</div>`;
+  $('btnMyFixture')?.addEventListener('click', () => { fixtureViewMode = 'mine'; renderFixture(); });
+  $('fixtureDivisionFilter')?.addEventListener('change', event => { selectedFixtureDivision = event.target.value; fixtureViewMode = 'league'; renderFixture(); });
 }
 function matchCard(m){
   const events = game.matchHistory.find(x=>x.id===m.id);
   const clickable = m.played ? 'clickable' : '';
   const attr = m.played ? `data-match-id="${escapeHtml(m.id)}"` : '';
+  const playoffNote = m.promotionPlayoff ? `<div class="match-date-line playoff-note">${escapeHtml(`Playoffs ${String(m.playoffStage || '').toUpperCase() || ''}`.trim())} · mismo partido en ambas ligas</div>` : '';
   return `<button class="match-card ${clickable}" ${attr}>
+    <div class="match-date-line">${escapeHtml(typeof matchDateLabel === 'function' ? matchDateLabel(m.date) : (m.date || ''))}</div>
+    ${playoffNote}
     <div class="match-line">
       <div>${clubSpan(m.homeId)}</div>
       <strong class="score">${m.played ? `${m.homeGoals} - ${m.awayGoals}` : 'vs'}</strong>
@@ -273,11 +416,57 @@ function matchCard(m){
     ${events ? `<div class="events">${events.goals.slice(0,4).map(g=>`${g.minute}' ${escapeHtml(playerById(g.playerId)?.name || 'Jugador')}`).join(' · ')}${events.goals.length>4?' · ...':''}</div>` : ''}
   </button>`;
 }
+
+function standingsHistoryEntries(){
+  const history = typeof normalizeStandingsHistoryState === 'function' ? normalizeStandingsHistoryState(game?.standingsHistory || {}) : (game?.standingsHistory || { seasons:[] });
+  return Array.isArray(history.seasons) ? history.seasons.slice().sort((a,b)=>Number(b.year || 0)-Number(a.year || 0)) : [];
+}
+function currentStandingsYearKey(){
+  return `current-${Number(game?.seasonYear || seasonYearForNumber?.(game?.seasonNumber || 1) || new Date().getFullYear())}`;
+}
+function standingsYearOptionsMarkup(selected){
+  const currentYear = Number(game?.seasonYear || (typeof seasonYearForNumber === 'function' ? seasonYearForNumber(game?.seasonNumber || 1) : new Date().getFullYear()));
+  const currentKey = currentStandingsYearKey();
+  const opts = [`<option value="${escapeHtml(currentKey)}" ${selected === currentKey || selected === 'current' ? 'selected' : ''}>${currentYear} · actual</option>`];
+  standingsHistoryEntries().forEach(entry => {
+    const key = `history-${Number(entry.season || 0)}-${Number(entry.year || 0)}`;
+    opts.push(`<option value="${escapeHtml(key)}" ${selected === key ? 'selected' : ''}>${Number(entry.year || 0)} · Temp. ${Number(entry.season || 0)}</option>`);
+  });
+  return `<div class="division-filter standings-year-filter"><label for="standingsYearFilter">Año</label><select id="standingsYearFilter">${opts.join('')}</select></div>`;
+}
+function selectedStandingsHistoryEntry(){
+  const selected = String(selectedStandingsYear || 'current');
+  if(!selected.startsWith('history-')) return null;
+  const parts = selected.split('-');
+  const season = Number(parts[1] || 0);
+  const year = Number(parts[2] || 0);
+  return standingsHistoryEntries().find(entry => Number(entry.season || 0) === season && Number(entry.year || 0) === year) || null;
+}
+function standingsRowsForDisplay(divisionId){
+  const historical = selectedStandingsHistoryEntry();
+  if(historical){
+    return Array.isArray(historical.divisions?.[divisionId]) ? historical.divisions[divisionId].slice().sort((a,b)=>Number(a.position || 999)-Number(b.position || 999)) : [];
+  }
+  return sortedStandings(divisionId);
+}
+function standingsDisplaySubtitle(){
+  const historical = selectedStandingsHistoryEntry();
+  if(!historical) return '';
+  return `<p class="muted small">Tabla histórica guardada al cierre de la temporada ${Number(historical.season || 0)}.</p>`;
+}
+
 function renderStandings(){
   const divisions = seed.divisions || [{ id:'default', name:'Liga única' }];
+  const managerDivision = typeof managerCurrentDivisionId === 'function' ? managerCurrentDivisionId() : (game?.selectedLeagueId || divisions[0]?.id || 'default');
+  const currentKey = currentStandingsYearKey();
+  const validYearKeys = new Set([currentKey, 'current', ...standingsHistoryEntries().map(entry => `history-${Number(entry.season || 0)}-${Number(entry.year || 0)}`)]);
+  if(!validYearKeys.has(String(selectedStandingsYear || 'current'))) selectedStandingsYear = currentKey;
+  if(selectedStandingsDivision !== 'all' && !divisions.some(d => d.id === selectedStandingsDivision)){
+    selectedStandingsDivision = managerDivision;
+  }
   const visibleDivisions = selectedStandingsDivision === 'all' ? divisions : divisions.filter(d => d.id === selectedStandingsDivision);
   const blocks = visibleDivisions.map(division => {
-    const tableRows = sortedStandings(division.id);
+    const tableRows = standingsRowsForDisplay(division.id);
     const rows = tableRows.map((s,i)=>{
       const statusClass = standingsStatusClass(division.id, i, tableRows.length);
       const ownClass = s.clubId===game.selectedClubId ? 'own-club-row' : '';
@@ -289,15 +478,20 @@ function renderStandings(){
   }).join('');
   view.innerHTML = `
     <div class="row section-title">
-      <div><h2>Tabla de posiciones</h2></div>
-      ${divisionFilterMarkup('standingsDivisionFilter', selectedStandingsDivision)}
+      <div><h2>Tabla de posiciones</h2>${standingsDisplaySubtitle()}</div>
+      <div class="row filters-row">${standingsYearOptionsMarkup(selectedStandingsYear)}${divisionFilterMarkup('standingsDivisionFilter', selectedStandingsDivision)}</div>
     </div>
     <div class="stack">${blocks || '<div class="card"><p class="muted">Sin datos para esta división.</p></div>'}</div>`;
+  $('standingsYearFilter')?.addEventListener('change', event => { selectedStandingsYear = event.target.value; renderStandings(); });
   $('standingsDivisionFilter')?.addEventListener('change', event => { selectedStandingsDivision = event.target.value; renderStandings(); });
 }
 
 
 function standingsStatusClass(divisionId, index, total){
+  if(typeof argentineStandingStatusClass === 'function'){
+    const argClass = argentineStandingStatusClass(divisionId, index, total);
+    if(argClass) return argClass;
+  }
   const divisions = divisionOrderList();
   const current = divisions.findIndex(d => d.id === divisionId);
   if(index === 0) return current > 0 ? 'promotion-row' : 'champion-row';
@@ -309,29 +503,58 @@ function renderManagerStats(){
   game.managerStats = normalizeManagerStats(game.managerStats);
   const totals = game.managerStats.totals;
   const seasons = game.managerStats.seasons.slice().sort((a,b)=>(b.season || 0)-(a.season || 0));
+  const career = (game.managerStats.careerHistory || []).slice().sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+  const breakdown = typeof managerPrestigeBreakdown === 'function' ? managerPrestigeBreakdown(game.managerStats) : { total:Number(game.managerStats.prestige || 0), experiencePrestige:0, winPrestige:0, objectivePrestige:0, championPrestige:0, badSeasonPenalty:0, dismissalPenalty:0 };
+  const prestige = breakdown.total;
+  const prestigeLabel = typeof formatManagerPrestige === 'function' ? formatManagerPrestige(prestige) : String(Math.floor(Number(prestige || 0)));
+  const prestigeAccess = typeof managerClubAccessPrestige === 'function' ? managerClubAccessPrestige(prestige) : Math.floor(Number(prestige || 0));
+  const experience = Number(game.managerStats.experience || 0);
   const rows = seasons.map(item => `<tr>
     <td>${item.season}</td>
     <td>${clubBadge(item.clubId)} ${escapeHtml(item.clubName || clubName(item.clubId))}</td>
     <td>${escapeHtml(item.divisionName || '—')}</td>
     <td><strong>${escapeHtml(item.label || (item.position === 1 ? 'Campeón' : `${item.position || '—'}°`))}</strong></td>
+    <td>${item.objectiveAchieved ? '<span class="ok">Sí</span>' : '<span class="muted">No</span>'}</td>
+    <td>${Number(item.ppg || 0).toFixed(2)}</td>
     <td>${item.pts || 0}</td><td>${item.pg || 0}</td><td>${item.pe || 0}</td><td>${item.pp || 0}</td><td>${item.gf || 0}</td><td>${item.gc || 0}</td>
   </tr>`).join('');
-  view.innerHTML = `<div class="row section-title"><div><h2>Tus estadísticas</h2><p class="tagline">Historial acumulado del manager.</p></div></div>
+  const careerRows = career.map(item => `<tr>
+    <td>${item.season || '—'}</td>
+    <td>${clubBadge(item.clubId)} ${escapeHtml(item.clubName || clubName(item.clubId))}</td>
+    <td>${escapeHtml(item.divisionName || '—')}</td>
+    <td>${item.position ? `${item.position}°` : '—'}</td>
+    <td>${item.played || 0}</td>
+    <td>${Number(item.ppg || 0).toFixed(2)}</td>
+    <td>${escapeHtml(item.type === 'dismissal' ? 'Despido' : item.type || 'Cambio')}</td>
+  </tr>`).join('');
+  view.innerHTML = `<div class="row section-title"><div><h2>Tus estadísticas</h2><p class="tagline">Historial acumulado, experiencia y prestigio del manager.</p></div></div>
     <div class="grid cols-6 compact-team-stats">
+      <div class="card manager-prestige-card"><p class="label">Prestigio manager</p><strong>${prestigeLabel}</strong><span class="small muted">Acceso por carrera: prestigio ${prestigeAccess}. Clubes de prestigio ${MANAGER_CLUB_OPEN_PRESTIGE} o menos: libres.</span></div>
+      <div class="card"><p class="label">Puntos experiencia</p><strong>${experience}</strong><span class="small muted">+${typeof formatManagerPrestigeDecimal === 'function' ? formatManagerPrestigeDecimal(Number(breakdown.experiencePrestige || 0)) : Number(breakdown.experiencePrestige || 0).toFixed(3)} prestigio</span></div>
       <div class="card"><p class="label">Partidos</p><strong>${totals.played || 0}</strong></div>
       <div class="card"><p class="label">Ganados</p><strong>${totals.won || 0}</strong></div>
       <div class="card"><p class="label">Empatados</p><strong>${totals.drawn || 0}</strong></div>
       <div class="card"><p class="label">Perdidos</p><strong>${totals.lost || 0}</strong></div>
       <div class="card"><p class="label">GF / GC</p><strong>${totals.gf || 0} / ${totals.gc || 0}</strong></div>
       <div class="card"><p class="label">Títulos obtenidos</p><strong>${game.managerStats.titles || 0}</strong></div>
+      <div class="card"><p class="label">Victorias p/ prestigio</p><strong>${Math.floor((totals.won || 0) / MANAGER_PRESTIGE_WINS_STEP)}</strong><span class="small muted">1 cada ${MANAGER_PRESTIGE_WINS_STEP} victorias</span></div>
+      <div class="card"><p class="label">Objetivos cumplidos</p><strong>${Number(breakdown.objectivePrestige || 0)}</strong><span class="small muted">+${MANAGER_PRESTIGE_OBJECTIVE_REWARD} c/u</span></div>
+      <div class="card"><p class="label">Títulos / penalizaciones</p><strong>${Number(breakdown.championPrestige || 0)} / -${Number(breakdown.badSeasonPenalty || 0) + Number(breakdown.dismissalPenalty || 0)}</strong></div>
     </div>
     <div class="card" style="margin-top:14px"><h3>Finales de temporada</h3>
-      <div class="table-wrap"><table><thead><tr><th>Temp.</th><th>Club</th><th>División</th><th>Posición</th><th>PTS</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th></tr></thead><tbody>${rows || '<tr><td colspan="10" class="muted">Aún no finalizaste ninguna temporada.</td></tr>'}</tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Temp.</th><th>Club</th><th>División</th><th>Posición</th><th>Objetivo</th><th>PPG</th><th>PTS</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th></tr></thead><tbody>${rows || '<tr><td colspan="12" class="muted">Aún no finalizaste ninguna temporada.</td></tr>'}</tbody></table></div>
+    </div>
+    <div class="card" style="margin-top:14px"><h3>Carrera laboral</h3>
+      <div class="table-wrap"><table><thead><tr><th>Temp.</th><th>Club</th><th>División</th><th>Posición</th><th>PJ</th><th>PPG</th><th>Evento</th></tr></thead><tbody>${careerRows || '<tr><td colspan="7" class="muted">Sin cambios de club todavía.</td></tr>'}</tbody></table></div>
     </div>`;
 }
 
 function renderStats(){
   const divisions = seed.divisions || [{ id:'default', name:'Liga única' }];
+  const managerDivision = typeof managerCurrentDivisionId === 'function' ? managerCurrentDivisionId() : (game?.selectedLeagueId || divisions[0]?.id || 'default');
+  if(selectedStatsDivision !== 'all' && !divisions.some(d => d.id === selectedStatsDivision)){
+    selectedStatsDivision = managerDivision;
+  }
   const visibleDivisions = selectedStatsDivision === 'all' ? divisions : divisions.filter(d => d.id === selectedStatsDivision);
   const blocks = visibleDivisions.map(division => {
     const allowedClubs = new Set(seed.clubs.filter(c => (c.divisionId || 'default') === division.id).map(c => c.id));

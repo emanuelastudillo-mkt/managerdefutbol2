@@ -1,0 +1,280 @@
+{
+  "version": "V3.79",
+  "pais": "España",
+  "sistema": "hinchas_españa",
+  "descripcion": "Cantidad base de hinchas por equipo en España, calculada desde prestigio global, capacidad de estadio y liga.",
+  "formula": {
+    "descripcion": "Se normaliza el prestigio dentro de cada liga y se aplica un porcentaje de ocupación base a la capacidad del estadio.",
+    "variables": {
+      "prestigio_normalizado": "(prestigio - prestigio_min_liga) / (prestigio_max_liga - prestigio_min_liga)",
+      "ocupacion_base": "ocupacion_min_liga + prestigio_normalizado * (ocupacion_max_liga - ocupacion_min_liga)",
+      "hinchas_base": "capacidad_estadio * ocupacion_base, redondeado hacia abajo a centenas"
+    },
+    "rangos_por_liga": {
+      "Liga Profesional": {
+        "minPct": 0.6,
+        "maxPct": 0.91
+      },
+      "Primera Nacional": {
+        "minPct": 0.42,
+        "maxPct": 0.7
+      },
+      "Federal A": {
+        "minPct": 0.18,
+        "maxPct": 0.5
+      },
+      "Primera División Chile": {
+        "minPct": 0.45,
+        "maxPct": 0.84
+      },
+      "Brasileirão": {
+        "minPct": 0.58,
+        "maxPct": 0.93
+      },
+      "Premier League": {
+        "minPct": 0.68,
+        "maxPct": 0.97
+      },
+      "LaLiga España": {
+        "minPct": 0.62,
+        "maxPct": 0.96
+      },
+      "Serie A Italia": {
+        "minPct": 0.58,
+        "maxPct": 0.94
+      },
+      "SuperLiga Rumania": {
+        "minPct": 0.32,
+        "maxPct": 0.76
+      }
+    }
+  },
+  "totales": {
+    "equipos": 18,
+    "hinchas_base_total": 606300,
+    "promedio_hinchas_base": 33683.33,
+    "hinchas_base_min": 9100,
+    "hinchas_base_max": 93500
+  },
+  "hinchadas": [
+    {
+      "equipo": "Real Madrid",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 99,
+      "estadio": "Santiago Bernabéu",
+      "capacidad_estadio": 83000,
+      "estadio_ficticio": false,
+      "hinchas_base": 79600,
+      "ocupacion_base_porcentaje": 96.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Barcelona",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 97,
+      "estadio": "Camp Nou",
+      "capacidad_estadio": 99354,
+      "estadio_ficticio": false,
+      "hinchas_base": 93500,
+      "ocupacion_base_porcentaje": 94.2,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Atlético Madrid",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 92,
+      "estadio": "Metropolitano",
+      "capacidad_estadio": 70460,
+      "estadio_ficticio": false,
+      "hinchas_base": 63100,
+      "ocupacion_base_porcentaje": 89.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Sevilla",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 82,
+      "estadio": "Ramón Sánchez-Pizjuán",
+      "capacidad_estadio": 43883,
+      "estadio_ficticio": false,
+      "hinchas_base": 35200,
+      "ocupacion_base_porcentaje": 80.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Valencia",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 80,
+      "estadio": "Mestalla",
+      "capacidad_estadio": 48600,
+      "estadio_ficticio": false,
+      "hinchas_base": 38100,
+      "ocupacion_base_porcentaje": 78.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Athletic Club",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 79,
+      "estadio": "San Mamés",
+      "capacidad_estadio": 53331,
+      "estadio_ficticio": false,
+      "hinchas_base": 41300,
+      "ocupacion_base_porcentaje": 77.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Real Betis",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 78,
+      "estadio": "Benito Villamarín",
+      "capacidad_estadio": 60721,
+      "estadio_ficticio": false,
+      "hinchas_base": 46500,
+      "ocupacion_base_porcentaje": 76.7,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Villarreal",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 77,
+      "estadio": "Estadio de la Cerámica",
+      "capacidad_estadio": 23500,
+      "estadio_ficticio": false,
+      "hinchas_base": 17800,
+      "ocupacion_base_porcentaje": 75.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Real Sociedad",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 77,
+      "estadio": "Reale Arena",
+      "capacidad_estadio": 39500,
+      "estadio_ficticio": false,
+      "hinchas_base": 29900,
+      "ocupacion_base_porcentaje": 75.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Celta",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 70,
+      "estadio": "Balaídos",
+      "capacidad_estadio": 29000,
+      "estadio_ficticio": false,
+      "hinchas_base": 20100,
+      "ocupacion_base_porcentaje": 69.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Espanyol",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 69,
+      "estadio": "Stage Front Stadium",
+      "capacidad_estadio": 40500,
+      "estadio_ficticio": false,
+      "hinchas_base": 27700,
+      "ocupacion_base_porcentaje": 68.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Deportivo La Coruña",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 67,
+      "estadio": "Riazor",
+      "capacidad_estadio": 32912,
+      "estadio_ficticio": false,
+      "hinchas_base": 21900,
+      "ocupacion_base_porcentaje": 66.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Mallorca",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 66,
+      "estadio": "Son Moix",
+      "capacidad_estadio": 23142,
+      "estadio_ficticio": false,
+      "hinchas_base": 15100,
+      "ocupacion_base_porcentaje": 65.7,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Osasuna",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 66,
+      "estadio": "El Sadar",
+      "capacidad_estadio": 23516,
+      "estadio_ficticio": false,
+      "hinchas_base": 15400,
+      "ocupacion_base_porcentaje": 65.7,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Zaragoza",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 65,
+      "estadio": "La Romareda",
+      "capacidad_estadio": 34596,
+      "estadio_ficticio": false,
+      "hinchas_base": 22400,
+      "ocupacion_base_porcentaje": 64.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Sporting Gijón",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 64,
+      "estadio": "El Molinón",
+      "capacidad_estadio": 30000,
+      "estadio_ficticio": false,
+      "hinchas_base": 19100,
+      "ocupacion_base_porcentaje": 63.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Getafe",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 63,
+      "estadio": "Coliseum",
+      "capacidad_estadio": 16800,
+      "estadio_ficticio": false,
+      "hinchas_base": 10500,
+      "ocupacion_base_porcentaje": 62.9,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Rayo Vallecano",
+      "liga": "LaLiga España",
+      "pais": "España",
+      "prestigio": 62,
+      "estadio": "Campo de Fútbol de Vallecas",
+      "capacidad_estadio": 14708,
+      "estadio_ficticio": false,
+      "hinchas_base": 9100,
+      "ocupacion_base_porcentaje": 62.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    }
+  ],
+  "notas": [
+    "Base jugable de asistencia/hinchada inicial; no representa padrón real de simpatizantes."
+  ]
+}

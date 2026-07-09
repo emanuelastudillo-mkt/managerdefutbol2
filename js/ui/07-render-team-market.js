@@ -1,4 +1,4 @@
-/* V3.17 · Primer equipo, mercado, plantel, táctica y validación de alineación. */
+/* V3.44 · Primer equipo, mercado, plantel, táctica y validación de alineación. */
 
 function firstTeamTabsMarkup(current){
   const tabs = [
@@ -74,6 +74,110 @@ function marketNumberFilterValue(key){
 function marketPlayerPrice(player){
   return Number(player?.clause || player?.value || 0);
 }
+
+function marketOfferClubPrestige(){
+  const club = seed?.clubs?.find(c => Number(c.id) === Number(game?.selectedClubId));
+  const rawPrestige = Number(club?.reputation ?? club?.prestigio ?? club?.prestige ?? 0);
+  return clamp(Math.round(Number.isFinite(rawPrestige) ? rawPrestige : 0), 0, 99);
+}
+function probAceptarOferta(mediaJugador, prestigioClubOfertante){
+  const media = Number(mediaJugador || 0);
+  const prestige = Number(prestigioClubOfertante || 0);
+  const diferencia = media - prestige;
+  const puntos = [
+    { d:-30, p:95 },
+    { d:0, p:80 },
+    { d:30, p:20 },
+    { d:50, p:3 },
+    { d:70, p:1 },
+    { d:100, p:0.5 }
+  ];
+  if(diferencia <= puntos[0].d) return puntos[0].p;
+  if(diferencia >= puntos[puntos.length - 1].d) return puntos[puntos.length - 1].p;
+  for(let i=0; i<puntos.length - 1; i++){
+    const a = puntos[i];
+    const b = puntos[i + 1];
+    if(diferencia >= a.d && diferencia <= b.d){
+      const t = (diferencia - a.d) / (b.d - a.d);
+      return a.p + t * (b.p - a.p);
+    }
+  }
+  return 1;
+}
+function probRechazarOferta(mediaJugador, prestigioClubOfertante){
+  return 100 - probAceptarOferta(mediaJugador, prestigioClubOfertante);
+}
+function marketPlayerAcceptanceChance(player=null){
+  const media = player ? visibleOverall(player) : marketOfferClubPrestige();
+  const chance = probAceptarOferta(media, marketOfferClubPrestige());
+  return clamp(Math.round(chance * 10) / 10, 0.5, 95);
+}
+function marketPlayerRejectionChance(player=null){
+  return clamp(Math.round(probRechazarOferta(player ? visibleOverall(player) : marketOfferClubPrestige(), marketOfferClubPrestige()) * 10) / 10, 5, 99.5);
+}
+function freeAgentAcceptanceChance(player=null){
+  return marketPlayerAcceptanceChance(player);
+}
+function marketAcceptanceLabel(player=null){
+  const chance = marketPlayerAcceptanceChance(player);
+  return Number.isInteger(chance) ? String(chance) : chance.toFixed(1);
+}
+function marketAcceptanceHiddenLabel(){
+  return 'Interés oculto';
+}
+function marketAcceptanceHiddenHint(){
+  return 'El jugador puede aceptar o rechazar según su media real y el prestigio del club, pero la probabilidad exacta permanece oculta.';
+}
+function marketScoutedOverallCell(player){
+  if(typeof scoutedOverallLabel === 'function') return scoutedOverallLabel(player);
+  return '<span class="muted">—</span>';
+}
+function marketScoutedOverallNumber(player){
+  if(!player) return 0;
+  if(typeof playerRequiresScouting === 'function' && !playerRequiresScouting(player)) return visibleOverall(player);
+  if(typeof scoutingStatMap !== 'function' || typeof scoutingVisibleKeys !== 'function') return 0;
+  const map = scoutingStatMap(player);
+  const visible = scoutingVisibleKeys(player);
+  const values = Object.entries(map).filter(([key]) => visible.has(key)).map(([,value]) => Number(value || 0)).filter(Number.isFinite);
+  return values.length >= 2 ? clamp(Math.round(avg(values)), 1, 99) : 0;
+}
+function marketScoutedPhysicalCell(player){
+  if(typeof scoutedPhysicalLabel === 'function') return scoutedPhysicalLabel(player);
+  return '<span class="muted">—</span>';
+}
+function marketScoutedMoraleCell(player){
+  if(typeof scoutedMoraleLabel === 'function') return scoutedMoraleLabel(player);
+  return '<span class="muted">—</span>';
+}
+function marketScoutingHintText(){
+  return 'Las estadísticas de jugadores libres y contratados están ocultas. Sólo aparecen habilidades reveladas por el Centro de Ojeo.';
+}
+function freeAgentOfferRecord(playerId){
+  if(!game) return null;
+  const key = String(playerId);
+  const record = game.rejectedFreeAgentOffers?.[key] || null;
+  if(!record) return null;
+  if(Number(record.season || 0) !== Number(game.seasonNumber || 1)) return null;
+  if(Number(record.clubId || 0) !== Number(game.selectedClubId || 0)) return null;
+  return record;
+}
+function isFreeAgentOfferBlockedThisSeason(playerId){
+  return Boolean(freeAgentOfferRecord(playerId));
+}
+function markFreeAgentOfferRejected(playerId, chance){
+  if(!game) return;
+  game.rejectedFreeAgentOffers = (game.rejectedFreeAgentOffers && typeof game.rejectedFreeAgentOffers === 'object' && !Array.isArray(game.rejectedFreeAgentOffers)) ? game.rejectedFreeAgentOffers : {};
+  game.rejectedFreeAgentOffers[String(playerId)] = {
+    playerId:Number(playerId),
+    clubId:Number(game.selectedClubId || 0),
+    season:Number(game.seasonNumber || 1),
+    prestigeChance:Math.round(Number(chance || 0)),
+    createdAt:Date.now()
+  };
+}
+function freeAgentOfferButtonLabel(playerId){
+  return isFreeAgentOfferBlockedThisSeason(playerId) ? 'Rechazó hasta próxima temp.' : 'Hacer oferta';
+}
 function marketPlayerMatchesPosition(player){
   const filter = String(marketFilters.position || 'all').toUpperCase();
   if(filter === 'ALL') return true;
@@ -85,7 +189,7 @@ function marketPlayerMatchesPosition(player){
   return pos === filter;
 }
 function marketPlayerMatchesFilters(player){
-  const media = visibleOverall(player);
+  const media = marketScoutedOverallNumber(player);
   const age = Number(player.age || 0);
   const price = marketPlayerPrice(player);
   const minMedia = Number(marketFilters.mediaMin || 0);
@@ -93,6 +197,7 @@ function marketPlayerMatchesFilters(player){
   const minAge = Number(marketFilters.ageMin || 0);
   const maxAge = Number(marketFilters.ageMax || 0);
   const maxPrice = Number(marketFilters.priceMax || 0);
+  if((minMedia || maxMedia) && !media) return false;
   if(minMedia && media < minMedia) return false;
   if(maxMedia && media > maxMedia) return false;
   if(minAge && age < minAge) return false;
@@ -105,8 +210,8 @@ function marketFiltersMarkup(total, shown){
   return `<div class="card market-filters-card">
     <div class="row market-filters-head"><div><p class="label">Buscar coincidencias</p><h3>Filtros de mercado</h3></div><span class="pill">${shown}/${total} jugador(es)</span></div>
     <div class="market-filter-grid">
-      <label>Media desde<input data-market-filter="mediaMin" type="number" min="1" max="99" placeholder="Min." value="${escapeHtml(marketNumberFilterValue('mediaMin'))}"></label>
-      <label>Media hasta<input data-market-filter="mediaMax" type="number" min="1" max="99" placeholder="Max." value="${escapeHtml(marketNumberFilterValue('mediaMax'))}"></label>
+      <label>Media desde<input data-market-filter="mediaMin" type="number" min="1" max="99" placeholder="Min. scouteada" value="${escapeHtml(marketNumberFilterValue('mediaMin'))}"></label>
+      <label>Media hasta<input data-market-filter="mediaMax" type="number" min="1" max="99" placeholder="Max. scouteada" value="${escapeHtml(marketNumberFilterValue('mediaMax'))}"></label>
       <label>Edad desde<input data-market-filter="ageMin" type="number" min="15" max="45" placeholder="Min." value="${escapeHtml(marketNumberFilterValue('ageMin'))}"></label>
       <label>Edad hasta<input data-market-filter="ageMax" type="number" min="15" max="45" placeholder="Max." value="${escapeHtml(marketNumberFilterValue('ageMax'))}"></label>
       <label>Precio hasta<input data-market-filter="priceMax" type="number" min="0" step="100000" placeholder="Máximo" value="${escapeHtml(marketNumberFilterValue('priceMax'))}"></label>
@@ -121,11 +226,30 @@ function bindMarketFilters(){
       const key = input.dataset.marketFilter;
       if(!key) return;
       marketFilters[key] = input.value || (key === 'position' ? 'all' : '');
+      marketVisibleLimit = 20;
       renderMarket();
     });
   });
   $('clearMarketFilters')?.addEventListener('click', () => {
     marketFilters = { mediaMin:'', mediaMax:'', ageMin:'', ageMax:'', priceMax:'', position:'all' };
+    marketVisibleLimit = 20;
+    renderMarket();
+  });
+}
+function marketHasActiveFilters(){
+  return Boolean(Number(marketFilters.mediaMin || 0) || Number(marketFilters.mediaMax || 0) || Number(marketFilters.ageMin || 0) || Number(marketFilters.ageMax || 0) || Number(marketFilters.priceMax || 0) || String(marketFilters.position || 'all') !== 'all');
+}
+function marketVisiblePlayers(players){
+  const limit = Math.max(20, Number(marketVisibleLimit || 20));
+  return players.slice(0, limit);
+}
+function marketMoreButtonMarkup(total, shown){
+  if(shown >= total) return '';
+  return `<div class="row market-more-row"><button id="marketLoadMoreBtn" class="ghost" type="button">Ver más</button><span class="small muted">Mostrando ${shown} de ${total}. Se agregan 20 jugadores por vez.</span></div>`;
+}
+function bindMarketMoreButton(){
+  $('marketLoadMoreBtn')?.addEventListener('click', () => {
+    marketVisibleLimit = Math.max(20, Number(marketVisibleLimit || 20)) + 20;
     renderMarket();
   });
 }
@@ -134,70 +258,97 @@ function renderMarket(){
   ensurePlayerStateForAll();
   if(marketSubTab !== 'contracted') marketSubTab = 'free';
   if(marketSubTab === 'contracted') return renderContractedMarket();
-  const freeBase = (game.marketPlayers || []).filter(p => Number(p.clubId || 0) === 0 && !p.sold).slice().sort((a,b)=>visibleOverall(b)-visibleOverall(a));
-  const free = freeBase.filter(marketPlayerMatchesFilters);
+  const freeBase = (game.marketPlayers || []).filter(p => Number(p.clubId || 0) === 0 && !p.sold).slice().sort((a,b)=>marketScoutedOverallNumber(b)-marketScoutedOverallNumber(a) || visibleOverall(b)-visibleOverall(a));
+  const freeFiltered = freeBase.filter(marketPlayerMatchesFilters);
+  const free = marketVisiblePlayers(freeFiltered);
   const rows = free.map(p => `<tr>
     <td>${faceImg(p, 'photo-thumb')}</td>
-    <td><button class="linklike" data-player-id="${p.id}"><strong>${escapeHtml(p.name)}</strong></button></td>
+    <td><button class="linklike" data-player-id="${p.id}"><strong>${typeof playerNameWithStar === 'function' ? playerNameWithStar(p) : escapeHtml(p.name)}</strong></button></td>
     <td><span class="pill role-pill">${roleBadge(p.position)}</span></td>
     <td>${Number(p.age || 0) || '—'}</td>
     <td>${nationalityShortMarkup(p.nationality)}</td>
-    <td>${visibleOverall(p)}</td>
-    <td>${conditionBar(p.id)}</td>
-    <td>${moraleBar(p.id)}</td>
+    <td>${marketScoutedOverallCell(p)}</td>
+    <td>${marketScoutedPhysicalCell(p)}</td>
+    <td>${marketScoutedMoraleCell(p)}</td>
     <td>${formatMoney(marketPlayerPrice(p))}</td>
     <td>${formatMoney(p.salary || 0)}</td>
-    <td><button class="primary small-btn" data-hire-free-agent="${p.id}">Contratar</button></td>
+    <td><button class="primary small-btn" data-hire-free-agent="${p.id}" ${isFreeAgentOfferBlockedThisSeason(p.id) ? 'disabled' : ''}>${escapeHtml(freeAgentOfferButtonLabel(p.id))}</button><br><span class="small muted">${marketAcceptanceHiddenLabel()}</span></td>
   </tr>`).join('');
   view.innerHTML = `
     <div class="section-title"><h2>Mercado</h2><p class="tagline">Jugadores libres y jugadores contratados disponibles para negociar.</p></div>
     ${marketTabsMarkup()}
-    ${marketFiltersMarkup(freeBase.length, free.length)}
-    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>Jugador</th><th>Rol</th><th>Edad</th><th>Nac.</th><th>Media</th><th>Físico</th><th>Moral</th><th>Valor</th><th>Sueldo</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="11" class="muted">No hay jugadores libres que coincidan con los filtros.</td></tr>'}</tbody></table></div>`;
+    ${typeof transferBudgetSummaryMarkup === 'function' ? transferBudgetSummaryMarkup() : ''}
+    ${marketFiltersMarkup(freeBase.length, freeFiltered.length)}
+    <div class="market-limit-note small muted">Se muestran ${free.length} jugador(es) que coinciden con el filtro. ${marketScoutingHintText()} ${marketAcceptanceHiddenHint()}</div>
+    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>Jugador</th><th>Rol</th><th>Edad</th><th>Nac.</th><th>Media scouteada</th><th>Físico</th><th>Moral</th><th>Valor</th><th>Sueldo</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="11" class="muted">No hay jugadores libres que coincidan con los filtros.</td></tr>'}</tbody></table></div>
+    ${marketMoreButtonMarkup(freeFiltered.length, free.length)}`;
   bindMarketTabs();
   bindMarketFilters();
+  bindMarketMoreButton();
   document.querySelectorAll('[data-hire-free-agent]').forEach(btn => btn.addEventListener('click', () => hireFreeAgent(Number(btn.dataset.hireFreeAgent))));
 }
 function renderContractedMarket(){
   const basePlayers = contractedMarketPlayers();
-  const players = basePlayers.filter(marketPlayerMatchesFilters);
+  const filteredPlayers = basePlayers.filter(marketPlayerMatchesFilters);
+  const players = marketVisiblePlayers(filteredPlayers);
   const rows = players.map(p => {
     const blocked = typeof isPurchaseOfferBlockedThisSeason === 'function' && isPurchaseOfferBlockedThisSeason(p.id);
     const label = blocked ? 'Rechazada hasta próxima temp.' : 'Hacer oferta';
     return `<tr>
     <td>${faceImg(p, 'photo-thumb')}</td>
-    <td><button class="linklike" data-player-id="${p.id}"><strong>${escapeHtml(p.name)}</strong></button></td>
+    <td><button class="linklike" data-player-id="${p.id}"><strong>${typeof playerNameWithStar === 'function' ? playerNameWithStar(p) : escapeHtml(p.name)}</strong></button></td>
     <td><span class="pill role-pill">${roleBadge(p.position)}</span></td>
     <td>${Number(p.age || 0) || '—'}</td>
     <td>${nationalityShortMarkup(p.nationality)}</td>
     <td>${clubBadge(p.clubId)} ${escapeHtml(clubName(p.clubId))}</td>
-    <td>${visibleOverall(p)}</td>
+    <td>${marketScoutedOverallCell(p)}</td>
     <td>${formatMoney(p.clause || p.value || 0)}</td>
     <td>${formatMoney(p.salary || 0)}</td>
+    <td><span class="small muted">${marketAcceptanceHiddenLabel()}</span></td>
     <td><button class="primary small-btn" data-make-player-offer="${p.id}" ${blocked ? 'disabled' : ''}>${escapeHtml(label)}</button></td>
   </tr>`;
   }).join('');
   view.innerHTML = `
     <div class="section-title"><h2>Mercado</h2><p class="tagline">Jugadores de otros clubes. Podés iniciar una negociación desde esta pestaña.</p></div>
     ${marketTabsMarkup()}
-    ${marketFiltersMarkup(basePlayers.length, players.length)}
-    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>Jugador</th><th>Rol</th><th>Edad</th><th>Nac.</th><th>Equipo</th><th>Media</th><th>Cláusula</th><th>Sueldo</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="10" class="muted">No hay jugadores contratados que coincidan con los filtros.</td></tr>'}</tbody></table></div>`;
+    ${typeof transferBudgetSummaryMarkup === 'function' ? transferBudgetSummaryMarkup() : ''}
+    ${marketFiltersMarkup(basePlayers.length, filteredPlayers.length)}
+    <div class="market-limit-note small muted">Se muestran ${players.length} jugador(es) que coinciden con el filtro. ${marketScoutingHintText()}</div>
+    <div class="table-wrap"><table><thead><tr><th>Foto</th><th>Jugador</th><th>Rol</th><th>Edad</th><th>Nac.</th><th>Equipo</th><th>Media scouteada</th><th>Cláusula</th><th>Sueldo</th><th>Aceptación</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="11" class="muted">No hay jugadores contratados que coincidan con los filtros.</td></tr>'}</tbody></table></div>
+    ${marketMoreButtonMarkup(filteredPlayers.length, players.length)}`;
   bindMarketTabs();
   bindMarketFilters();
+  bindMarketMoreButton();
   document.querySelectorAll('[data-make-player-offer]').forEach(btn => btn.addEventListener('click', () => openPurchaseOfferModal(Number(btn.dataset.makePlayerOffer))));
 }
 
 function hireFreeAgent(playerId){
   const idx = (game.marketPlayers || []).findIndex(p => Number(p.id) === Number(playerId) && Number(p.clubId || 0) === 0 && !p.sold);
   if(idx < 0) return;
+  if(isFreeAgentOfferBlockedThisSeason(playerId)){ showNotice('El jugador ya rechazó una oferta de este club. Podrás volver a intentar la próxima temporada.'); return; }
   if(!hasFirstTeamRosterSpace(game.selectedClubId, 1)){ showRosterLimitNotice(); return; }
+  const chance = freeAgentAcceptanceChance(game.marketPlayers[idx]);
+  const roll = Math.random() * 100;
+  if(roll >= chance){
+    const rejected = game.marketPlayers[idx];
+    markFreeAgentOfferRejected(playerId, chance);
+    pushGameMessage({ type:'mercado', title:'Libre rechazó la oferta', body:`${rejected?.name || 'El jugador'} rechazó negociar con ${clubName(game.selectedClubId)}. La decisión depende de su media real y del prestigio del club. Podrás volver a intentar la próxima temporada.`, priority:'normal' });
+    saveLocal(true);
+    showNotice(`${rejected?.name || 'Jugador'} rechazó la oferta.`);
+    renderMarket();
+    return;
+  }
   game.marketPlayers[idx].clubId = game.selectedClubId;
   game.marketPlayers[idx].freeAgent = false;
+  game.marketPlayers[idx].transferListed = false;
+  game.marketPlayers[idx].intransferible = false;
   mergeMarketPlayersIntoSeed(game.marketPlayers);
   const player = playerById(playerId);
   if(player){
     player.clubId = game.selectedClubId;
     player.freeAgent = false;
+    player.transferListed = false;
+    player.intransferible = false;
     player.salaryPaidCount = 0;
     player.lastSalaryPaidSeason = 0;
     refreshPlayerClause(player);
@@ -208,7 +359,8 @@ function hireFreeAgent(playerId){
   game.playerCondition[playerId] = clamp(game.playerCondition[playerId] || (15 + hashNumber(`free-cond-${playerId}`, 15)), 1, 29);
   if(!Number.isFinite(game.playerMorale[playerId])) game.playerMorale[playerId] = 35 + hashNumber(`free-morale-${playerId}`, 55);
   ensurePlayerStateForAll();
-  pushGameMessage({ type:'mercado', title:'Jugador libre contratado', body:`${player?.name || 'El jugador'} se incorporó al plantel como agente libre.`, priority:'normal' });
+  if(typeof syncPlayerStarsWithClubs === 'function') syncPlayerStarsWithClubs(game);
+  pushGameMessage({ type:'mercado', title:'Jugador libre contratado', body:`${player?.name || 'El jugador'} aceptó la oferta y se incorporó al plantel como agente libre.`, priority:'normal' });
   saveLocal(true);
   showNotice(`${player?.name || 'Jugador'} contratado.`);
   renderMarket();
@@ -323,7 +475,7 @@ function worldStatCell(player, key){
 function worldPlayerRow(player){
   return `<tr class="${Number(player.clubId || 0) === game.selectedClubId ? 'own-player-row' : ''}">
     <td>${faceImg(player, 'photo-thumb')}</td>
-    <td><button class="linklike" data-player-id="${player.id}"><strong>${escapeHtml(player.name)}</strong></button></td>
+    <td><button class="linklike" data-player-id="${player.id}"><strong>${typeof playerNameWithStar === 'function' ? playerNameWithStar(player) : escapeHtml(player.name)}</strong></button></td>
     <td><span class="pill role-pill">${roleBadge(player.position)}</span></td>
     <td>${Number(player.age || 0) || '—'}</td>
     <td>${worldPlayerTeamMarkup(player)}</td>
@@ -348,7 +500,7 @@ function renderWorldPlayers(){
   view.innerHTML = `
     <div class="section-title">
       <h2>Jugadores</h2>
-      <p class="tagline">Listado mundial. La mayor parte de las habilidades se oculta y vuelve a sortearse en cada semana.</p>
+      <p class="tagline">Listado mundial. Las habilidades externas sólo aparecen si fueron reveladas por el Centro de Ojeo.</p>
     </div>
     <div class="card world-player-filters">
       <label>Posición<select id="worldPositionFilter">${worldPlayersPositionOptions()}</select></label>
@@ -385,7 +537,7 @@ function renderSquad(){
   const rows = players.map(p=>`
     <tr class="${isUnavailable(p.id) ? 'dim-row' : ''}">
       <td>${faceImg(p, 'photo-thumb')}</td>
-      <td><button class="linklike" data-player-id="${p.id}"><strong>${escapeHtml(p.name)}</strong></button></td>
+      <td><button class="linklike" data-player-id="${p.id}"><strong>${typeof playerNameWithStar === 'function' ? playerNameWithStar(p) : escapeHtml(p.name)}</strong></button></td>
       <td>#${jerseyNumber(p.id)}</td>
       <td>${Number(p.age || 0) || '—'}</td>
       <td><span class="pill role-pill">${roleBadge(p.position)}</span></td>
@@ -399,7 +551,8 @@ function renderSquad(){
     </tr>`).join('');
   view.innerHTML = `
     <div class="section-title"><h2>Plantel</h2><p class="tagline">Cada jugador es clickeable. La media se calcula sólo con habilidades visibles. Los controles de orden están en la cabecera de cada columna.</p></div>
-    <div class="table-wrap"><table class="squad-table"><thead><tr>
+    <div class="squad-scroll-top" id="squadScrollTop"><div></div></div>
+    <div class="table-wrap squad-table-wrap" id="squadTableWrap"><table class="squad-table"><thead><tr>
       <th>Foto</th>
       <th>${columnSort('Jugador', [['nombre_asc','A-Z'],['nombre_desc','Z-A']])}</th>
       <th>${columnSort('Dorsal', [['dorsal_asc','Menor a mayor'],['dorsal_desc','Mayor a menor']])}</th>
@@ -419,6 +572,28 @@ function renderSquad(){
     select.addEventListener('change', e => {
       if(e.target.value){ squadSort = e.target.value; renderSquad(); }
     });
+  });
+  bindSquadTopScrollbar();
+}
+function bindSquadTopScrollbar(){
+  const top = $('squadScrollTop');
+  const wrap = $('squadTableWrap');
+  const table = wrap?.querySelector('table');
+  if(!top || !wrap || !table) return;
+  const inner = top.querySelector('div');
+  if(inner) inner.style.width = `${table.scrollWidth}px`;
+  let syncing = false;
+  top.addEventListener('scroll', () => {
+    if(syncing) return;
+    syncing = true;
+    wrap.scrollLeft = top.scrollLeft;
+    syncing = false;
+  });
+  wrap.addEventListener('scroll', () => {
+    if(syncing) return;
+    syncing = true;
+    top.scrollLeft = wrap.scrollLeft;
+    syncing = false;
   });
 }
 function tacticSelectionClass(playerId){
@@ -448,6 +623,14 @@ function bindTacticClickEvents(){
       event.stopPropagation();
       const playerId = Number(el.dataset.tacticPlayer || 0);
       if(!playerId) return;
+      if(el.classList.contains('player-chip') && el.dataset.tacticZone === 'starter'){
+        game.tactic = applyStarterMentalities(game.tactic);
+        setPlayerMentality(playerId, nextMentality(playerMentality(playerId)), game.tactic);
+        tacticClickSelection = null;
+        saveLocal(true);
+        renderTactics();
+        return;
+      }
       if(!tacticClickSelection){
         tacticClickSelection = { playerId };
         renderTactics();
@@ -476,6 +659,58 @@ function bindTacticClickEvents(){
   });
 }
 
+
+function savedTacticsPanelMarkup(){
+  const maxSlots = Number.isFinite(Number(typeof TACTIC_SAVE_SLOT_COUNT !== 'undefined' ? TACTIC_SAVE_SLOT_COUNT : 3)) ? Number(TACTIC_SAVE_SLOT_COUNT) : 3;
+  const slots = [];
+  for(let i=1; i<=maxSlots; i++){
+    const info = typeof tacticSlotStatus === 'function' ? tacticSlotStatus(i) : { exists:false, label:'Vacía', details:'Sin táctica guardada.' };
+    slots.push(`<div class="saved-tactic-slot ${info.exists ? 'filled' : 'empty'}">
+      <div><strong>Táctica ${i}</strong><span>${escapeHtml(info.label)}</span><em>${escapeHtml(info.details)}</em></div>
+      <div class="saved-tactic-actions">
+        <button type="button" class="ghost" data-save-tactic-slot="${i}">Guardar ${i}</button>
+        <button type="button" class="primary" data-load-tactic-slot="${i}" ${info.exists ? '' : 'disabled'}>Cargar ${i}</button>
+      </div>
+    </div>`);
+  }
+  return `<div class="card saved-tactics-card" style="margin-top:14px">
+    <div class="row"><div><h3>Tácticas personalizadas</h3></div></div>
+    <div class="saved-tactics-grid">${slots.join('')}</div>
+  </div>`;
+}
+function bindSavedTacticButtons(){
+  document.querySelectorAll('[data-save-tactic-slot]').forEach(btn => {
+    btn.addEventListener('click', () => saveCurrentTacticSlot(Number(btn.dataset.saveTacticSlot || 1)));
+  });
+  document.querySelectorAll('[data-load-tactic-slot]').forEach(btn => {
+    btn.addEventListener('click', () => loadSavedTacticSlot(Number(btn.dataset.loadTacticSlot || 1)));
+  });
+}
+
+
+function tacticSectorSkillVisors(){
+  const slots = pitchSlots(game.tactic || DEFAULT_TACTIC);
+  const groupPlayers = { defense:[], midfield:[], attack:[] };
+  slots.forEach(slot => {
+    if(!slot.player) return;
+    const group = slotGroup(slot.slot);
+    if(group === 'def') groupPlayers.defense.push(slot.player);
+    else if(group === 'mid') groupPlayers.midfield.push(slot.player);
+    else if(group === 'att') groupPlayers.attack.push(slot.player);
+  });
+  const stat = (players, type) => {
+    if(!players.length) return 0;
+    if(type === 'defense') return clamp(Math.round(avg(players.map(p => avg([Number(p.skills?.marca ?? 0), Number(p.skills?.entradas ?? 0), Number(p.skills?.posicionamiento ?? 0)])))), 0, 99);
+    if(type === 'midfield') return clamp(Math.round(avg(players.map(p => avg([Number(p.skills?.paseCorto ?? 0), Number(p.skills?.paseLargo ?? 0), Number(p.skills?.vision ?? 0)])))), 0, 99);
+    return clamp(Math.round(avg(players.map(p => avg([Number(p.skills?.remate ?? 0), Number(p.skills?.cabezazo ?? 0)])))), 0, 99);
+  };
+  const rows = [
+    { key:'defense', label:'Defensa', value:stat(groupPlayers.defense, 'defense'), detail:'' },
+    { key:'midfield', label:'Medios', value:stat(groupPlayers.midfield, 'midfield'), detail:'' },
+    { key:'attack', label:'Delantera', value:stat(groupPlayers.attack, 'attack'), detail:'' }
+  ];
+  return `<div class="tactic-skill-visor-list">${rows.map(row => `<div class="tactic-skill-visor ${row.key}"><div class="row"><span>${escapeHtml(row.label)}</span><strong>${row.value}%</strong></div><div class="project-progress"><span style="width:${row.value}%"></span></div>${row.detail ? `<small class="muted">${escapeHtml(row.detail)}</small>` : ''}</div>`).join('')}</div>`;
+}
 function renderTactics(){
   game.tactic = applyStarterMentalities(normalizeTactic(game.selectedClubId, game.tactic));
   const formationOptions = Object.keys(FORMATIONS).map(f=>`<option value="${f}" ${game.tactic.formation===f?'selected':''}>${f}</option>`).join('');
@@ -488,10 +723,13 @@ function renderTactics(){
     .sort((a,b)=>positionOrder(a.position)-positionOrder(b.position) || visibleOverall(b)-visibleOverall(a));
   const pitch = pitchSlots(game.tactic).map(slot => {
     const fit = slot.player ? playerFitsSlot(slot.player, slot.slot) : true;
+    const fitLevel = slot.player ? playerTacticFitLevel(slot.player, slot.slot) : 'exact';
+    const fitClass = fitLevel === 'zone' ? 'out-zone' : fitLevel === 'role' ? 'off-role' : '';
     const chip = slot.player ? `
-      <button type="button" class="player-chip tactic-click-player ${playerGroupClass(slot.player.position)} ${fit ? '' : 'out-zone'}${tacticSelectionClass(slot.player.id)}" data-tactic-player="${slot.player.id}" data-tactic-zone="starter" data-tactic-index="${slot.index}" title="${fit ? 'Click para seleccionar o intercambiar' : 'Fuera de zona: rinde al 50%'}">
+      <button type="button" class="player-chip tactic-click-player mentality-${playerMentality(slot.player.id)} ${playerGroupClass(slot.player.position)} ${fitClass}${tacticSelectionClass(slot.player.id)}" data-tactic-player="${slot.player.id}" data-tactic-zone="starter" data-tactic-index="${slot.index}" title="${playerTacticFitTitle(slot.player, slot.slot)} · Click para cambiar estado: ${escapeHtml(mentalityLabel(playerMentality(slot.player.id)))}">
         <span class="jersey-dot">${jerseyNumber(slot.player.id)}</span>
         <span class="player-chip-name">${escapeHtml(playerLastName(slot.player.name))}</span>
+        ${mentalityMarker(slot.mentality)}
       </button>` : `<button type="button" class="empty-slot ${slotGroup(slot.slot)} tactic-empty-slot" data-tactic-empty-slot="${slot.index}" title="Seleccioná un jugador y hacé click acá"><strong>${slot.slot}</strong><span>Vacío</span></button>`;
     return `<div class="pitch-slot" style="left:${slot.x}%; top:${slot.y}%">${chip}</div>`;
   }).join('');
@@ -500,25 +738,45 @@ function renderTactics(){
     const fit = p ? playerFitsSlot(p, slot.slot) : false;
     return `<div class="lineup-row tactic-lineup-row ${p && !fit ? 'bad-zone' : ''}${p ? tacticSelectionClass(p.id) : ''}" ${p ? `data-tactic-player="${p.id}" data-tactic-zone="starter" data-tactic-index="${slot.index}"` : `data-tactic-empty-slot="${slot.index}"`}>
       <span class="pill">${slot.index+1}. ${slot.slot}</span>
-      <span>${p ? `<strong>${escapeHtml(p.name)}</strong>` : '<span class="muted">Vacío</span>'}</span>
-      <span class="age-cell">${p ? `${Number(p.age || 0) || '—'} años` : '—'}</span>
-      <span>${p ? `<strong>${visibleOverall(p)}</strong>` : '—'}</span>
-      ${p ? conditionBar(p.id) : '<span></span>'}
-      ${p ? moraleBar(p.id) : '<span></span>'}
-      <strong>${p ? (isInjured(p.id) ? tacticStatusIcon(p.id) : fit ? 'OK' : '50%') : 'Click'}</strong>
+      <span>${p ? `<strong>${typeof playerNameWithStar === 'function' ? playerNameWithStar(p) : escapeHtml(p.name)}</strong>` : '<span class="muted">Vacío</span>'}</span>
+      <span class="age-cell lineup-center-cell">${p ? `${Number(p.age || 0) || '—'} años` : '—'}</span>
+      <span class="lineup-center-cell">${p ? `<strong>${visibleOverall(p)}</strong>` : '—'}</span>
+      <span class="lineup-center-cell">${p ? conditionBar(p.id) : ''}</span>
+      <span class="lineup-center-cell">${p ? moraleBar(p.id) : ''}</span>
+      <strong class="lineup-center-cell">${p ? (isInjured(p.id) ? tacticStatusIcon(p.id) : playerTacticFitLabel(p, slot.slot)) : 'Click'}</strong>
     </div>`;
   }).join('');
   view.innerHTML = `
-    <div class="section-title"><h2>Táctica y convocatoria</h2><p class="tagline">Click en un jugador y luego click en otro para intercambiarlos entre titulares, suplentes, reservas o pizarra. Si juega fuera de zona natural, rinde al 50%.</p></div>
+    <div class="section-title"><h2>Táctica y convocatoria</h2></div>
     <div class="card tactic-board-card">
       <div class="row tactic-top-row"><div><h3>Cancha táctica</h3><p class="muted small">Formación ${game.tactic.formation}</p></div><div class="formation-box"><label>Formación</label><select id="formation">${formationOptions}</select></div><div class="tactic-autopick-row"><button id="autoPickBestBtn" class="ghost">Mejor once</button><button id="autoPickConditionBtn" class="ghost">Mejor condición física</button></div></div>
       <div class="tactic-click-help">${tacticSelectionHint()}</div>
-      <div class="pitch-board centered">${pitch}</div>
+      <div class="tactic-board-layout">
+        <aside class="tactic-board-side tactic-board-left tactic-board-visors" aria-label="Visores tácticos">
+          ${tacticSectorSkillVisors()}
+        </aside>
+        <div class="pitch-board-wrap">
+          <div class="pitch-board centered">${pitch}</div>
+          <div class="tactic-state-legend">
+            <span>${mentalityMarker('muy_defensivo')} Muy defensivo</span>
+            <span>${mentalityMarker('defensivo')} Defensivo</span>
+            <span>${mentalityMarker('normal')} Normal</span>
+            <span>${mentalityMarker('ofensivo')} Ofensivo</span>
+            <span>${mentalityMarker('muy_ofensivo')} Muy ofensivo</span>
+          </div>
+        </div>
+        <aside class="tactic-board-side tactic-board-right">
+          <h3>Instrucciones zonales</h3>
+          <p class="muted small">Defensa, medios y delanteros. Pueden contraponerse o no con la mentalidad individual de cada jugador.</p>
+          <div class="sector-style-grid vertical">${sectorStyleControls()}</div>
+        </aside>
+      </div>
     </div>
+    ${savedTacticsPanelMarkup()}
     <div class="grid cols-2 tactic-lists" style="margin-top:14px">
       <div class="card">
         <h3>Titulares</h3>
-        <div class="lineup-row lineup-head"><span>Pos.</span><span>Jugador</span><span>Edad</span><span>Media</span><span>Físico</span><span>Moral</span><span>Estado</span></div>
+        <div class="lineup-row lineup-head"><span>Pos.</span><span>Jugador</span><span class="lineup-center-cell">Edad</span><span class="lineup-center-cell">Media</span><span class="lineup-center-cell">Físico</span><span class="lineup-center-cell">Moral</span><span class="lineup-center-cell">Estado</span></div>
         <div class="lineup-list">${starterList}</div>
       </div>
       <div class="card">
@@ -532,12 +790,7 @@ function renderTactics(){
       <p class="muted small">Elegí reglas simples: cansados, mejores suplentes o sólo cambios obligados por lesión.</p>
       <div class="autosub-grid">${[0,1,2,3,4].map(i => autoSubRow(i)).join('')}</div>
     </div>
-    <div class="card match-instructions-card" style="margin-top:14px">
-      <h3>Instrucciones de partido</h3>
-      <p class="muted small">El simulador 2.0 usa estas instrucciones según el resultado parcial del partido.</p>
-      <div class="instruction-grid">${matchInstructionControls()}</div>
-    </div>
-    <div class="row sticky-actions"><button id="saveTactic" class="primary">Guardar táctica</button><span id="tacticErrors" class="bad small"></span></div>
+    <div class="row sticky-actions"><button id="saveTactic" class="primary">Confirmar equipo</button><span id="tacticErrors" class="bad small"></span></div>
   `;
   prependFirstTeamTabs('tactics');
   $('formation').addEventListener('change', () => {
@@ -572,6 +825,7 @@ function renderTactics(){
     renderTactics();
   });
   $('saveTactic').addEventListener('click', saveTacticFromScreen);
+  bindSavedTacticButtons();
   bindTacticClickEvents();
 }
 function tacticPlayerRow(p){
@@ -581,7 +835,7 @@ function tacticPlayerRow(p){
   const roleDisabled = isSuspended(p.id) || (isInjured(p.id) && !benchAllowed);
   const mentalityText = current === 'starter' ? playerMentality(p.id) : '—';
   return `<tr class="${unavailable ? 'dim-row' : ''}">
-    <td><button class="linklike" data-player-id="${p.id}"><strong>${escapeHtml(p.name)}</strong></button></td>
+    <td><button class="linklike" data-player-id="${p.id}"><strong>${typeof playerNameWithStar === 'function' ? playerNameWithStar(p) : escapeHtml(p.name)}</strong></button></td>
     <td>#${jerseyNumber(p.id)}</td>
     <td>${Number(p.age || 0) || '—'}</td>
     <td><span class="pill role-pill">${roleBadge(p.position)}</span></td>
@@ -593,8 +847,32 @@ function tacticPlayerRow(p){
       <option value="starter" ${current==='starter'?'selected':''}>Titular</option>
       <option value="bench" ${current==='bench'?'selected':''}>Suplente</option>
     </select></td>
-    <td>${current === 'starter' ? mentalityMarker(mentalityText) + ' ' + escapeHtml(mentalityText) : '<span class="muted">Sólo titulares</span>'}</td>
+    <td>${current === 'starter' ? mentalityMarker(mentalityText) + ' ' + escapeHtml(mentalityLabel(mentalityText)) : '<span class="muted">Sólo titulares</span>'}</td>
   </tr>`;
+}
+function sectorStyleControls(){
+  const current = typeof normalizeSectorStyles === 'function' ? normalizeSectorStyles(game.tactic?.sectorStyles) : (game.tactic?.sectorStyles || { defense:'posicional', midfield:'posicional', attack:'posicional' });
+  const options = typeof TACTIC_SECTOR_STYLE_OPTIONS !== 'undefined' ? TACTIC_SECTOR_STYLE_OPTIONS : [
+    { value:'presion_alta', label:'Presión alta', tone:'intense' },
+    { value:'rotacion', label:'Rotación', tone:'massage' },
+    { value:'posicional', label:'Posicional', tone:'tactical' },
+    { value:'repliegue', label:'Repliegue', tone:'regen' }
+  ];
+  const descriptions = {
+    defense:'',
+    midfield:'',
+    attack:''
+  };
+  const row = (key, label) => {
+    const selected = current[key] || 'posicional';
+    const selectedOption = options.find(opt => opt.value === selected) || options.find(opt => opt.value === 'posicional') || options[0];
+    return `<div class="sector-style-control training-tone-${selectedOption?.tone || 'tactical'}">
+      <label>${label}</label>
+      <select class="training-individual-select training-tone-${selectedOption?.tone || 'tactical'}" data-sector-style="${key}">${options.map(opt=>`<option value="${opt.value}" ${selected===opt.value?'selected':''}>${opt.label}</option>`).join('')}</select>
+      ${descriptions[key] ? `<span>${escapeHtml(descriptions[key] || '')}</span>` : ''}
+    </div>`;
+  };
+  return row('defense','Defensa') + row('midfield','Medios') + row('attack','Delanteros');
 }
 function matchInstructionControls(){
   const current = window.Simulator20?.normalizeMatchInstructions
@@ -632,30 +910,36 @@ function saveTacticFromScreen(){
     inId: Number(document.querySelector(`[data-sub-in="${i}"]`)?.value || 0),
     trigger: document.querySelector(`[data-sub-trigger="${i}"]`)?.value || 'tired'
   }));
-  const selectedInstructions = {
-    winning: document.querySelector('[data-match-instruction="winning"]')?.value || 'normal',
-    drawing: document.querySelector('[data-match-instruction="drawing"]')?.value || 'normal',
-    losing: document.querySelector('[data-match-instruction="losing"]')?.value || 'normal'
+  const selectedInstructions = { winning:'normal', drawing:'normal', losing:'normal' };
+  const selectedSectorStyles = typeof normalizeSectorStyles === 'function' ? normalizeSectorStyles({
+    defense: document.querySelector('[data-sector-style="defense"]')?.value || 'posicional',
+    midfield: document.querySelector('[data-sector-style="midfield"]')?.value || 'posicional',
+    attack: document.querySelector('[data-sector-style="attack"]')?.value || 'posicional'
+  }) : {
+    defense: document.querySelector('[data-sector-style="defense"]')?.value || 'posicional',
+    midfield: document.querySelector('[data-sector-style="midfield"]')?.value || 'posicional',
+    attack: document.querySelector('[data-sector-style="attack"]')?.value || 'posicional'
   };
   const nextTactic = applyStarterMentalities({
     formation:$('formation')?.value || game.tactic.formation,
     starters:game.tactic.starters.slice(0,11),
     bench:game.tactic.bench.slice(0,10),
     autoSubs,
-    playerMentalities:{ ...(game.tactic.playerMentalities || {}) },
-    matchInstructions: window.Simulator20?.normalizeMatchInstructions ? window.Simulator20.normalizeMatchInstructions(selectedInstructions) : selectedInstructions
+    playerMentalities:{ ...(game.playerMentalities || {}), ...(game.tactic.playerMentalities || {}) },
+    matchInstructions: window.Simulator20?.normalizeMatchInstructions ? window.Simulator20.normalizeMatchInstructions(selectedInstructions) : selectedInstructions,
+    sectorStyles:selectedSectorStyles
   });
   const errors = validateTactic(nextTactic);
   if(errors.length){
     $('tacticErrors').textContent = errors.join(' ');
-    showNotice('La táctica no se guardó. Corregí titulares, suplentes o jugadores no disponibles.');
+    showNotice('Equipo no confirmado. Corregí titulares, suplentes o jugadores no disponibles.');
     return;
   }
   game.tactic = nextTactic;
   game.mustReviewTactics = false;
   game.lastOwnProblems = [];
   saveLocal(true);
-  showNotice('Táctica guardada. Ya podés avanzar cuando termine el bloqueo.');
+  showNotice('Equipo confirmado. Ya podés avanzar cuando termine el bloqueo.');
   renderAll();
 }
 function validateCurrentTactic(showErrors=true){

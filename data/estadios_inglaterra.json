@@ -1,0 +1,180 @@
+{
+  "version": "V3.79",
+  "pais": "Inglaterra",
+  "sistema": "estadios_inglaterra",
+  "descripcion": "Estadios base para clubes de Inglaterra.",
+  "notas": [
+    "Capacidades redondeadas para balance jugable cuando corresponde.",
+    "Los estadios ficticios se marcan explícitamente."
+  ],
+  "leagues": [
+    {
+      "name": "Premier League",
+      "country": "Inglaterra",
+      "teams": [
+        {
+          "name": "Manchester City",
+          "city": "Manchester",
+          "country": "Inglaterra",
+          "reputation": 96,
+          "stadium": "Etihad Stadium",
+          "stadiumCapacity": 53400,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Liverpool",
+          "city": "Liverpool",
+          "country": "Inglaterra",
+          "reputation": 95,
+          "stadium": "Anfield",
+          "stadiumCapacity": 61276,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Manchester United",
+          "city": "Manchester",
+          "country": "Inglaterra",
+          "reputation": 92,
+          "stadium": "Old Trafford",
+          "stadiumCapacity": 74310,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Arsenal",
+          "city": "Londres",
+          "country": "Inglaterra",
+          "reputation": 91,
+          "stadium": "Emirates Stadium",
+          "stadiumCapacity": 60704,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Chelsea",
+          "city": "Londres",
+          "country": "Inglaterra",
+          "reputation": 90,
+          "stadium": "Stamford Bridge",
+          "stadiumCapacity": 40173,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Tottenham",
+          "city": "Londres",
+          "country": "Inglaterra",
+          "reputation": 88,
+          "stadium": "Tottenham Hotspur Stadium",
+          "stadiumCapacity": 62850,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Newcastle United",
+          "city": "Newcastle upon Tyne",
+          "country": "Inglaterra",
+          "reputation": 84,
+          "stadium": "St James' Park",
+          "stadiumCapacity": 52305,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Aston Villa",
+          "city": "Birmingham",
+          "country": "Inglaterra",
+          "reputation": 82,
+          "stadium": "Villa Park",
+          "stadiumCapacity": 42657,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Everton",
+          "city": "Liverpool",
+          "country": "Inglaterra",
+          "reputation": 78,
+          "stadium": "Everton Stadium",
+          "stadiumCapacity": 52888,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "West Ham",
+          "city": "Londres",
+          "country": "Inglaterra",
+          "reputation": 77,
+          "stadium": "London Stadium",
+          "stadiumCapacity": 62500,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Nottingham Forest",
+          "city": "Nottingham",
+          "country": "Inglaterra",
+          "reputation": 76,
+          "stadium": "City Ground",
+          "stadiumCapacity": 30445,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Leeds United",
+          "city": "Leeds",
+          "country": "Inglaterra",
+          "reputation": 74,
+          "stadium": "Elland Road",
+          "stadiumCapacity": 37792,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Leicester City",
+          "city": "Leicester",
+          "country": "Inglaterra",
+          "reputation": 73,
+          "stadium": "King Power Stadium",
+          "stadiumCapacity": 32262,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Brighton",
+          "city": "Brighton and Hove",
+          "country": "Inglaterra",
+          "reputation": 73,
+          "stadium": "American Express Stadium",
+          "stadiumCapacity": 31800,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Wolverhampton",
+          "city": "Wolverhampton",
+          "country": "Inglaterra",
+          "reputation": 72,
+          "stadium": "Molineux",
+          "stadiumCapacity": 32050,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Crystal Palace",
+          "city": "Londres",
+          "country": "Inglaterra",
+          "reputation": 70,
+          "stadium": "Selhurst Park",
+          "stadiumCapacity": 25486,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Fulham",
+          "city": "Londres",
+          "country": "Inglaterra",
+          "reputation": 69,
+          "stadium": "Craven Cottage",
+          "stadiumCapacity": 29000,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Sunderland",
+          "city": "Sunderland",
+          "country": "Inglaterra",
+          "reputation": 67,
+          "stadium": "Stadium of Light",
+          "stadiumCapacity": 49000,
+          "stadiumIsFictional": false
+        }
+      ]
+    }
+  ]
+}

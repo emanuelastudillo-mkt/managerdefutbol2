@@ -1,0 +1,141 @@
+{
+  "version": "V3.84",
+  "pais": "Chile",
+  "descripcion": "Estructura jugable de Chile con 1 liga de 18 clubes.",
+  "criterio": "Formato normalizado para el juego: cada club incluye nombre, ciudad, prestigio, color principal y ruta de escudo.",
+  "escala_prestigio": "Global: 99 élite mundial, 70-84 grandes regionales/europeos fuertes, 20 o menos clubes libres para managers nuevos.",
+  "leagues": [
+    {
+      "name": "Primera División Chile",
+      "country": "Chile",
+      "teams": [
+        {
+          "name": "Colo-Colo",
+          "city": "Santiago",
+          "reputation": 68,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/colo-colo.png"
+        },
+        {
+          "name": "Universidad de Chile",
+          "city": "Santiago",
+          "reputation": 65,
+          "primaryColor": "#0033A0",
+          "crestPath": "img/escudos/universidad-de-chile.png"
+        },
+        {
+          "name": "Universidad Católica",
+          "city": "Santiago",
+          "reputation": 64,
+          "primaryColor": "#0057A6",
+          "crestPath": "img/escudos/universidad-catolica.png"
+        },
+        {
+          "name": "Cobreloa",
+          "city": "Calama",
+          "reputation": 57,
+          "primaryColor": "#F28C28",
+          "crestPath": "img/escudos/cobreloa.png"
+        },
+        {
+          "name": "Unión Española",
+          "city": "Santiago",
+          "reputation": 52,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/union-espanola.png"
+        },
+        {
+          "name": "Santiago Wanderers",
+          "city": "Valparaíso",
+          "reputation": 51,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/santiago-wanderers.png"
+        },
+        {
+          "name": "Everton",
+          "city": "Viña del Mar",
+          "reputation": 49,
+          "primaryColor": "#003A70",
+          "crestPath": "img/escudos/everton-chi.png"
+        },
+        {
+          "name": "O'Higgins",
+          "city": "Rancagua",
+          "reputation": 48,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/o-higgins.png"
+        },
+        {
+          "name": "Palestino",
+          "city": "Santiago",
+          "reputation": 47,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/palestino.png"
+        },
+        {
+          "name": "Audax Italiano",
+          "city": "La Florida",
+          "reputation": 45,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/audax-italiano.png"
+        },
+        {
+          "name": "Huachipato",
+          "city": "Talcahuano",
+          "reputation": 44,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/huachipato.png"
+        },
+        {
+          "name": "Deportes Iquique",
+          "city": "Iquique",
+          "reputation": 42,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/deportes-iquique.png"
+        },
+        {
+          "name": "Coquimbo Unido",
+          "city": "Coquimbo",
+          "reputation": 41,
+          "primaryColor": "#F5D328",
+          "crestPath": "img/escudos/coquimbo-unido.png"
+        },
+        {
+          "name": "Cobresal",
+          "city": "El Salvador",
+          "reputation": 39,
+          "primaryColor": "#F28C28",
+          "crestPath": "img/escudos/cobresal.png"
+        },
+        {
+          "name": "Deportes La Serena",
+          "city": "La Serena",
+          "reputation": 38,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/deportes-la-serena.png"
+        },
+        {
+          "name": "Ñublense",
+          "city": "Chillán",
+          "reputation": 37,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/nublense.png"
+        },
+        {
+          "name": "Rangers",
+          "city": "Talca",
+          "reputation": 36,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/rangers.png"
+        },
+        {
+          "name": "Magallanes",
+          "city": "Santiago",
+          "reputation": 18,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/magallanes.png"
+        }
+      ]
+    }
+  ]
+}

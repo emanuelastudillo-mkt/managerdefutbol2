@@ -1,0 +1,281 @@
+{
+  "version": "V3.84",
+  "pais": "Chile",
+  "sistema": "hinchas_chile",
+  "descripcion": "Cantidad base de hinchas por equipo en Chile, calculada desde prestigio global, capacidad de estadio y liga.",
+  "formula": {
+    "descripcion": "Se normaliza el prestigio dentro de cada liga y se aplica un porcentaje de ocupación base a la capacidad del estadio.",
+    "variables": {
+      "prestigio_normalizado": "(prestigio - prestigio_min_liga) / (prestigio_max_liga - prestigio_min_liga)",
+      "ocupacion_base": "ocupacion_min_liga + prestigio_normalizado * (ocupacion_max_liga - ocupacion_min_liga)",
+      "hinchas_base": "capacidad_estadio * ocupacion_base, redondeado hacia abajo a centenas"
+    },
+    "rangos_por_liga": {
+      "Liga Profesional": {
+        "minPct": 0.6,
+        "maxPct": 0.91
+      },
+      "Primera Nacional": {
+        "minPct": 0.42,
+        "maxPct": 0.7
+      },
+      "Federal A": {
+        "minPct": 0.18,
+        "maxPct": 0.5
+      },
+      "Primera División Chile": {
+        "minPct": 0.45,
+        "maxPct": 0.84
+      },
+      "Brasileirão": {
+        "minPct": 0.58,
+        "maxPct": 0.93
+      },
+      "Premier League": {
+        "minPct": 0.68,
+        "maxPct": 0.97
+      },
+      "LaLiga España": {
+        "minPct": 0.62,
+        "maxPct": 0.96
+      },
+      "Serie A Italia": {
+        "minPct": 0.58,
+        "maxPct": 0.94
+      },
+      "SuperLiga Rumania": {
+        "minPct": 0.32,
+        "maxPct": 0.76
+      }
+    }
+  },
+  "totales": {
+    "equipos": 18,
+    "hinchas_base_total": 211800,
+    "promedio_hinchas_base": 11766.67,
+    "hinchas_base_min": 700,
+    "hinchas_base_max": 39400
+  },
+  "hinchadas": [
+    {
+      "equipo": "Colo-Colo",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 68,
+      "estadio": "Monumental David Arellano",
+      "capacidad_estadio": 47000,
+      "estadio_ficticio": false,
+      "hinchas_base": 39400,
+      "ocupacion_base_porcentaje": 84.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Universidad de Chile",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 65,
+      "estadio": "Nacional Julio Martínez Prádanos",
+      "capacidad_estadio": 48665,
+      "estadio_ficticio": false,
+      "hinchas_base": 39100,
+      "ocupacion_base_porcentaje": 80.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga",
+      "nota_estadio": "Usa estadio nacional como escenario principal jugable."
+    },
+    {
+      "equipo": "Universidad Católica",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 64,
+      "estadio": "San Carlos de Apoquindo",
+      "capacidad_estadio": 20000,
+      "estadio_ficticio": false,
+      "hinchas_base": 15800,
+      "ocupacion_base_porcentaje": 79.3,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Cobreloa",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 57,
+      "estadio": "Zorros del Desierto",
+      "capacidad_estadio": 12000,
+      "estadio_ficticio": false,
+      "hinchas_base": 8500,
+      "ocupacion_base_porcentaje": 71.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Unión Española",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 52,
+      "estadio": "Santa Laura",
+      "capacidad_estadio": 19887,
+      "estadio_ficticio": false,
+      "hinchas_base": 12900,
+      "ocupacion_base_porcentaje": 65.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Santiago Wanderers",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 51,
+      "estadio": "Elías Figueroa Brander",
+      "capacidad_estadio": 21000,
+      "estadio_ficticio": false,
+      "hinchas_base": 13400,
+      "ocupacion_base_porcentaje": 63.9,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Everton",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 49,
+      "estadio": "Sausalito",
+      "capacidad_estadio": 23000,
+      "estadio_ficticio": false,
+      "hinchas_base": 14100,
+      "ocupacion_base_porcentaje": 61.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "O'Higgins",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 48,
+      "estadio": "El Teniente",
+      "capacidad_estadio": 14450,
+      "estadio_ficticio": false,
+      "hinchas_base": 8700,
+      "ocupacion_base_porcentaje": 60.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Palestino",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 47,
+      "estadio": "Municipal de La Cisterna",
+      "capacidad_estadio": 12000,
+      "estadio_ficticio": false,
+      "hinchas_base": 7100,
+      "ocupacion_base_porcentaje": 59.2,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Audax Italiano",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 45,
+      "estadio": "Bicentenario de La Florida",
+      "capacidad_estadio": 12000,
+      "estadio_ficticio": false,
+      "hinchas_base": 6800,
+      "ocupacion_base_porcentaje": 56.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Huachipato",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 44,
+      "estadio": "CAP",
+      "capacidad_estadio": 10500,
+      "estadio_ficticio": false,
+      "hinchas_base": 5800,
+      "ocupacion_base_porcentaje": 55.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Deportes Iquique",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 42,
+      "estadio": "Tierra de Campeones",
+      "capacidad_estadio": 12000,
+      "estadio_ficticio": false,
+      "hinchas_base": 6300,
+      "ocupacion_base_porcentaje": 53.3,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Coquimbo Unido",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 41,
+      "estadio": "Francisco Sánchez Rumoroso",
+      "capacidad_estadio": 18750,
+      "estadio_ficticio": false,
+      "hinchas_base": 9700,
+      "ocupacion_base_porcentaje": 52.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Cobresal",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 39,
+      "estadio": "El Cobre",
+      "capacidad_estadio": 11240,
+      "estadio_ficticio": false,
+      "hinchas_base": 5500,
+      "ocupacion_base_porcentaje": 49.7,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Deportes La Serena",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 38,
+      "estadio": "La Portada",
+      "capacidad_estadio": 18000,
+      "estadio_ficticio": false,
+      "hinchas_base": 8700,
+      "ocupacion_base_porcentaje": 48.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Ñublense",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 37,
+      "estadio": "Nelson Oyarzún",
+      "capacidad_estadio": 12000,
+      "estadio_ficticio": false,
+      "hinchas_base": 5600,
+      "ocupacion_base_porcentaje": 47.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Rangers",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 36,
+      "estadio": "Fiscal de Talca",
+      "capacidad_estadio": 8200,
+      "estadio_ficticio": false,
+      "hinchas_base": 3700,
+      "ocupacion_base_porcentaje": 46.2,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Magallanes",
+      "liga": "Primera División Chile",
+      "pais": "Chile",
+      "prestigio": 18,
+      "estadio": "Municipal de San Bernardo",
+      "capacidad_estadio": 3500,
+      "estadio_ficticio": false,
+      "hinchas_base": 700,
+      "ocupacion_base_porcentaje": 20.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    }
+  ],
+  "notas": [
+    "Base jugable de asistencia/hinchada inicial; no representa padrón real de simpatizantes."
+  ]
+}

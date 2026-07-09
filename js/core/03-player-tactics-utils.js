@@ -1,4 +1,4 @@
-/* V3.17 · Estado de jugadores, disponibilidad, calendario anual, habilidades y utilidades tácticas. */
+/* V5.00 · Estado de jugadores, disponibilidad, calendario anual, habilidades y utilidades tácticas. */
 
 function playerById(id){ return seed.players.find(p => p.id === Number(id)); }
 function playersByClub(clubId){ return seed.players.filter(p => p.clubId === clubId); }
@@ -21,10 +21,15 @@ function showRosterMinimumNotice(){
   showNotice(`Plantel mínimo. Debés mantener al menos ${MIN_PLAYERS_PER_CLUB} jugadores.`);
 }
 function playerStatus(playerId){ return game?.playerStatus?.[playerId] || {}; }
+function injuryActiveFromStatus(st){
+  if(!game || !st) return false;
+  if(Number.isFinite(Number(st.injuredUntilTurn))) return currentTurnIndex() < Number(st.injuredUntilTurn || 0);
+  return st.injuredThrough !== undefined && game.matchdayIndex <= st.injuredThrough;
+}
 function isUnavailable(playerId){
   if(!game) return false;
   const st = playerStatus(playerId);
-  return Boolean((st.injuredThrough !== undefined && game.matchdayIndex <= st.injuredThrough) || (st.suspendedThrough !== undefined && game.matchdayIndex <= st.suspendedThrough));
+  return Boolean(injuryActiveFromStatus(st) || (st.suspendedThrough !== undefined && game.matchdayIndex <= st.suspendedThrough));
 }
 function isSuspended(playerId){
   const st = playerStatus(playerId);
@@ -32,11 +37,15 @@ function isSuspended(playerId){
 }
 function isInjured(playerId){
   const st = playerStatus(playerId);
-  return Boolean(st.injuredThrough !== undefined && game && game.matchdayIndex <= st.injuredThrough);
+  return Boolean(injuryActiveFromStatus(st));
 }
 function turnsRemaining(playerId){
   const st = playerStatus(playerId);
-  if(st.injuredThrough === undefined || !game || game.matchdayIndex > st.injuredThrough) return 0;
+  if(!game || !st) return 0;
+  if(Number.isFinite(Number(st.injuredUntilTurn))){
+    return Math.max(0, Math.ceil(Number(st.injuredUntilTurn || 0) - currentTurnIndex()));
+  }
+  if(st.injuredThrough === undefined || game.matchdayIndex > st.injuredThrough) return 0;
   return Math.max(1, st.injuredThrough - game.matchdayIndex + 1);
 }
 function canUseInjuredAsSub(playerId){
@@ -82,6 +91,9 @@ function advanceGlobalTurn(){
 }
 function turnsToDays(value){
   return Math.max(0, Math.round((Number(value) || 0) * DAYS_PER_ADVANCE));
+}
+function daysToTurns(value){
+  return Math.max(0, Math.round((Number(value) || 0) / Math.max(1, DAYS_PER_ADVANCE)));
 }
 function formatDays(value){
   const days = Math.max(0, Math.round(Number(value) || 0));
@@ -130,25 +142,74 @@ function firstSundayOnOrAfterIso(iso){
   return isoDateFromUtc(date);
 }
 function firstAdvanceDateForSeason(year=currentSeasonYear()){
-  return firstSundayOnOrAfterIso(seasonStartDateForYear(year));
+  return seasonStartDateForYear(year);
 }
 function leagueStartDateForSeason(year=currentSeasonYear()){
   return firstSundayOnOrAfterIso(addDaysToIsoDate(seasonStartDateForYear(year), PRESEASON_TURNS * DAYS_PER_ADVANCE));
+}
+function midseasonBreakStartsForSeason(year=currentSeasonYear()){
+  const first = leagueStartDateForSeason(year);
+  const afterRound = Math.max(0, Math.round(Number(MIDSEASON_BREAK_AFTER_ROUND || 0)));
+  if(afterRound <= 0 || MIDSEASON_BREAK_DAYS <= 0) return '';
+  return addDaysToIsoDate(first, afterRound * LEAGUE_ROUND_INTERVAL_DAYS);
+}
+function midseasonBreakEndsForSeason(year=currentSeasonYear()){
+  const start = midseasonBreakStartsForSeason(year);
+  return start ? addDaysToIsoDate(start, Math.max(0, MIDSEASON_BREAK_DAYS - 1)) : '';
+}
+function isMidseasonVacationDate(iso, year=currentSeasonYear()){
+  const start = midseasonBreakStartsForSeason(year);
+  const end = midseasonBreakEndsForSeason(year);
+  if(!validIsoDate(iso) || !start || !end) return false;
+  return daysBetweenIsoDates(start, iso) >= 0 && daysBetweenIsoDates(iso, end) >= 0;
 }
 function seasonDayFromDate(iso, year=currentSeasonYear()){
   const start = seasonStartDateForYear(year);
   const raw = daysBetweenIsoDates(start, validIsoDate(iso) ? iso : start) + 1;
   return clamp(raw, 1, daysInSeasonYear(year));
 }
+function nextUnplayedMatchDateForClub(state=game, clubId=null){
+  if(!state || !Array.isArray(state.fixtures)) return '';
+  const ownId = Number(clubId || state.selectedClubId || 0);
+  if(!ownId) return '';
+  for(let roundIndex=Math.max(0, Number(state.matchdayIndex || 0)); roundIndex<state.fixtures.length; roundIndex++){
+    const round = state.fixtures[roundIndex];
+    const match = (round.matches || []).find(m => !m.played && (Number(m.homeId) === ownId || Number(m.awayId) === ownId));
+    if(match) return validIsoDate(match.date) ? match.date : (round.date || '');
+  }
+  return '';
+}
+function nextUnplayedMatchDate(state=game){
+  if(!state || !Array.isArray(state.fixtures)) return '';
+  let found = '';
+  for(let roundIndex=Math.max(0, Number(state.matchdayIndex || 0)); roundIndex<state.fixtures.length; roundIndex++){
+    const round = state.fixtures[roundIndex];
+    (round.matches || []).forEach(match => {
+      if(match.played) return;
+      const date = validIsoDate(match.date) ? match.date : (round.date || '');
+      if(validIsoDate(date) && (!found || daysBetweenIsoDates(found, date) < 0)) found = date;
+    });
+    if(found) return found;
+  }
+  return '';
+}
+function lastFixtureMatchDate(state=game){
+  const fixtures = state?.fixtures || [];
+  for(let i=fixtures.length-1; i>=0; i--){
+    const dates = (fixtures[i].matches || []).map(m => validIsoDate(m.date) ? m.date : fixtures[i].date).filter(validIsoDate);
+    if(dates.length){ const sortedDates = dates.sort((a,b)=>daysBetweenIsoDates(b,a)); return sortedDates[sortedDates.length - 1]; }
+    if(validIsoDate(fixtures[i].date)) return fixtures[i].date;
+  }
+  return '';
+}
 function dateForSeasonState(state=game){
   const year = Math.round(Number(state?.seasonYear || 0)) || seasonYearForNumber(state?.seasonNumber || 1);
   if(!state) return firstAdvanceDateForSeason(year);
   if(state.seasonFinalized || state.seasonPhase === 'finalized') return seasonEndDateForYear(year);
-  if(state.seasonPhase === 'regular') return state.fixtures?.[state.matchdayIndex || 0]?.date || leagueStartDateForSeason(year);
+  if(state.seasonPhase === 'regular') return nextUnplayedMatchDateForClub(state, state.selectedClubId) || nextUnplayedMatchDate(state) || state.fixtures?.[state.matchdayIndex || 0]?.date || leagueStartDateForSeason(year);
   if(state.seasonPhase === 'postseason'){
-    const afterLastRound = state.fixtures?.length
-      ? addDaysToIsoDate(state.fixtures[state.fixtures.length - 1].date, DAYS_PER_ADVANCE)
-      : leagueStartDateForSeason(year);
+    const lastMatchDate = lastFixtureMatchDate(state);
+    const afterLastRound = lastMatchDate ? addDaysToIsoDate(lastMatchDate, DAYS_PER_ADVANCE) : leagueStartDateForSeason(year);
     return addDaysToIsoDate(afterLastRound, Math.max(0, Number(state.phaseTurn || 0)) * DAYS_PER_ADVANCE);
   }
   if(state.seasonPhase === 'preseason'){
@@ -167,7 +228,9 @@ function postseasonTurnsForSeason(seasonOrYear=null, fixtureCount=null){
   const year = Number(seasonOrYear || 0) > 1900 ? Math.round(Number(seasonOrYear)) : seasonYearForNumber(seasonOrYear || game?.seasonNumber || 1);
   if(POSTSEASON_TURNS_CONFIG > 0) return POSTSEASON_TURNS_CONFIG;
   const fixtures = Number.isFinite(Number(fixtureCount)) ? Math.max(0, Number(fixtureCount)) : currentSeasonFixtureCount();
-  const usedDays = (PRESEASON_TURNS * DAYS_PER_ADVANCE) + (fixtures * DAYS_PER_ADVANCE);
+  const lastDate = lastFixtureMatchDate(game);
+  const start = seasonStartDateForYear(year);
+  const usedDays = lastDate ? seasonDayFromDate(lastDate, year) : ((PRESEASON_TURNS * DAYS_PER_ADVANCE) + (fixtures * LEAGUE_ROUND_INTERVAL_DAYS));
   const remainingDays = Math.max(0, daysInSeasonYear(year) - usedDays);
   return Math.ceil(remainingDays / DAYS_PER_ADVANCE);
 }
@@ -202,7 +265,9 @@ function phaseLabel(){
   if(game.seasonFinalized || seasonPhase() === 'finalized') return `Día ${totalDays} / ${totalDays} · ${yearStatusLabel(year)} · Temporada finalizada`;
   if(isPreseason()) return `Día ${currentDay} / ${totalDays} · ${yearStatusLabel(year)} · Pretemporada ${phaseDayRangeLabel(game.phaseTurn || 0, PRESEASON_TURNS)}`;
   if(isPostseason()) return `Día ${currentDay} / ${totalDays} · ${yearStatusLabel(year)} · Postemporada ${phaseDayRangeLabel(game.phaseTurn || 0, postseasonTurnsForCurrentSeason())}`;
-  return `Día ${currentDay} / ${totalDays} · ${yearStatusLabel(year)} · Liga ${Math.min((game.matchdayIndex || 0) + 1, game.fixtures?.length || seed.fixtures.length)} / ${game.fixtures?.length || seed.fixtures.length}`;
+  const nextDate = nextUnplayedMatchDateForClub(game, game.selectedClubId) || nextUnplayedMatchDate(game);
+  const vacation = isMidseasonVacationDate(game.currentDate || nextDate || '', year) ? ' · Vacaciones' : '';
+  return `Día ${currentDay} / ${totalDays} · ${yearStatusLabel(year)} · Liga ${Math.min((game.matchdayIndex || 0) + 1, game.fixtures?.length || seed.fixtures.length)} / ${game.fixtures?.length || seed.fixtures.length}${vacation}`;
 }
 function preseasonFriendliesPlayed(){ return Number(game?.preseasonFriendliesPlayed || 0); }
 function canPlayPreseasonFriendly(){ return isPreseason() && preseasonFriendliesPlayed() < MAX_PRESEASON_FRIENDLIES; }
@@ -286,18 +351,46 @@ function effectiveOverall(p){
   };
   return clamp(Math.round(avg(Object.values(simulated))), 1, 99);
 }
+function ensurePlayerWearState(){
+  if(!game) return {};
+  if(!game.playerWear || typeof game.playerWear !== 'object' || Array.isArray(game.playerWear)) game.playerWear = {};
+  return game.playerWear;
+}
+function currentPlayerWear(playerId){
+  if(!game || !PLAYER_WEAR_ENABLED) return 0;
+  const wear = ensurePlayerWearState();
+  const value = Number(wear[playerId] || 0);
+  if(!Number.isFinite(value)) wear[playerId] = 0;
+  return clamp(Math.round(Number(wear[playerId] || 0)), 0, PLAYER_WEAR_MAX);
+}
+function maxConditionForPlayer(playerId){
+  return clamp(99 - currentPlayerWear(playerId), 1, 99);
+}
+function adjustPlayerWear(playerId, delta){
+  if(!game || !PLAYER_WEAR_ENABLED || !playerId) return 0;
+  const wear = ensurePlayerWearState();
+  const before = currentPlayerWear(playerId);
+  const next = clamp(Math.round(before + Number(delta || 0)), 0, PLAYER_WEAR_MAX);
+  wear[playerId] = next;
+  if(game.playerCondition && Number.isFinite(Number(game.playerCondition[playerId]))){
+    game.playerCondition[playerId] = Math.min(Math.round(Number(game.playerCondition[playerId] || 0)), maxConditionForPlayer(playerId));
+  }
+  return next - before;
+}
 function currentCondition(playerId){
   if(!game) return 99;
   if(!game.playerCondition) game.playerCondition = {};
-  if(!Number.isFinite(game.playerCondition[playerId])) game.playerCondition[playerId] = 99;
-  return clamp(Math.round(game.playerCondition[playerId]), 0, 99);
+  if(!Number.isFinite(game.playerCondition[playerId])) game.playerCondition[playerId] = maxConditionForPlayer(playerId);
+  const raw = Math.round(Number(game.playerCondition[playerId] || 0));
+  return clamp(Math.min(raw, maxConditionForPlayer(playerId)), 0, 99);
 }
 function fatiguePoints(playerId){
   return clamp(99 - currentCondition(playerId), 0, 99);
 }
 function injuryChanceForPlayer(playerId, pitchCondition='Normal'){
   const pitch = PITCH_CONDITIONS[pitchCondition] || PITCH_CONDITIONS.Normal;
-  return clamp(BASE_INJURY_CHANCE + Math.floor(fatiguePoints(playerId) / FATIGUE_INJURY_STEP) * FATIGUE_INJURY_BONUS + pitch.injuryBonus, 0, 0.65);
+  const rawChance = BASE_INJURY_CHANCE + Math.floor(fatiguePoints(playerId) / FATIGUE_INJURY_STEP) * FATIGUE_INJURY_BONUS + pitch.injuryBonus;
+  return clamp(rawChance * INJURY_CHANCE_MULTIPLIER, 0, 0.65);
 }
 function tacticStatusIcon(playerId){
   if(isInjured(playerId)) return '<span class="injury-cross" title="Lesionado">✚</span>';
@@ -354,8 +447,7 @@ function mainBannerForLastMatch(){
   const match = lastOwnMatch();
   if(!match){
     return {
-      src:'img/principales/banner_bienvenido',
-      fallbackSrc:'img/principales/banner_bienvenido.jpg',
+      src:'img/principales/banner_bienvenido.jpg',
       label:'Bienvenido al club'
     };
   }
@@ -402,7 +494,12 @@ function compactValueCircle(value, kind, label){
   return `<span class="value-circle ${kind}-circle ${colorClass}" style="--value-deg:${deg}deg" title="${escapeHtml(label)} ${clean}/99"><strong>${clean}</strong></span>`;
 }
 function conditionBar(playerId){
-  return compactValueCircle(currentCondition(playerId), 'condition', 'Estado físico');
+  const condition = currentCondition(playerId);
+  const wear = currentPlayerWear(playerId);
+  const maxCondition = maxConditionForPlayer(playerId);
+  if(!wear) return compactValueCircle(condition, 'condition', 'Estado físico');
+  const degMax = Math.round((maxCondition / 99) * 360);
+  return `<span class="condition-wear-wrap" title="Estado físico ${condition}/99 · Máximo por desgaste ${maxCondition}/99 · Desgaste ${wear}">${compactValueCircle(condition, 'condition', 'Estado físico')}<span class="condition-wear-max" style="--wear-max-deg:${degMax}deg"></span><small>Desg. ${wear}</small></span>`;
 }
 
 function currentMorale(playerId){
@@ -604,9 +701,28 @@ function pickMediaRangeWithAudit(context, seedKey, constraints={}){
   if(lower) return lower;
   return weightedRulePick(allowed, `${seedKey}-range-fallback`) || PLAYER_GENERATION_MEDIA_RANGES[PLAYER_GENERATION_MEDIA_RANGES.length - 1];
 }
-function pickNationalityForGeneration(id, label, context=null){
+function localNationalityForCountry(country='Argentina'){
+  const clean = String(country || '').trim() || 'Argentina';
+  const mapped = PLAYER_NATIONALITY_BY_COUNTRY && PLAYER_NATIONALITY_BY_COUNTRY[clean] ? String(PLAYER_NATIONALITY_BY_COUNTRY[clean]) : clean;
+  return mapped || 'Argentina';
+}
+function allConfiguredNationalities(){
+  const locals = Array.from(new Set((seed?.clubs || []).map(club => localNationalityForCountry(clubCountry(club))).filter(Boolean)));
+  const pool = locals.concat(SOUTH_AMERICAN_NATIONALITIES || []).concat(WORLD_NATIONALITIES || []);
+  return Array.from(new Set(pool.filter(Boolean)));
+}
+function freeAgentNationalityForIndex(index=0, seedKey='free-agent'){
+  const pool = allConfiguredNationalities();
+  if(!pool.length) return 'Argentina';
+  const offset = hashNumber(`free-nationality-offset-${seedKey}`, pool.length);
+  return pool[(Math.max(0, Math.round(Number(index || 0))) + offset) % pool.length];
+}
+function pickNationalityForGeneration(id, label, context=null, options={}){
   const group = pickRuleWithAudit(PLAYER_GENERATION_NATIONALITY_GROUPS, player => nationalityGroupId(player.nationality), context, `${label}-${id}-nat-group`);
-  const countries = group?.countries?.length ? group.countries : ['Argentina'];
+  let countries = group?.countries?.length ? group.countries : ['Argentina'];
+  if(group?.id === 'local'){
+    countries = [localNationalityForCountry(options.localCountry || 'Argentina')];
+  }
   return countries[hashNumber(`${label}-${id}-nat-country`, countries.length)];
 }
 function pickPositionGroupForGeneration(id, label, context=null){
@@ -670,7 +786,7 @@ function ensurePlayerEconomics(player, salaryFactor=1){
   refreshPlayerClause(player);
   return player;
 }
-function generatedPlayerFactory({ id, position, clubId=0, age=18, prestige=50, nameContext='Jugador', divisionName='', divisionOrder=null, generationContext=null, salaryFactor=1, freeAgent=false, youthFreeAgent=false, mediaMin=null, mediaMax=null }){
+function generatedPlayerFactory({ id, position, clubId=0, age=18, prestige=50, nameContext='Jugador', divisionName='', divisionOrder=null, generationContext=null, salaryFactor=1, freeAgent=false, youthFreeAgent=false, mediaMin=null, mediaMax=null, nationalityOverride=null, localCountry=null }){
   const cleanPosition = normalizePlayerPosition(position, id);
   const group = playerRoleGroup(cleanPosition);
   const generationDivision = Number.isFinite(Number(divisionOrder)) ? Number(divisionOrder) : generationDivisionOrder(clubId, divisionName);
@@ -692,7 +808,7 @@ function generatedPlayerFactory({ id, position, clubId=0, age=18, prestige=50, n
     clubId,
     freeAgent:Boolean(freeAgent),
     youthFreeAgent:Boolean(youthFreeAgent),
-    nationality:pickNationalityForGeneration(id, divisionName || nameContext, generationContext),
+    nationality:nationalityOverride || pickNationalityForGeneration(id, divisionName || nameContext, generationContext, { localCountry:localCountry || (Number(clubId || 0) > 0 ? clubCountry(seed?.clubs?.find(c => Number(c.id) === Number(clubId))) : null) }),
     overall:visible,
     skills,
     salary:initialAnnualSalaryForMedia(visible, salaryFactor),
@@ -705,7 +821,7 @@ function generatedPlayerFactory({ id, position, clubId=0, age=18, prestige=50, n
   return player;
 }
 function generationRosterBlueprint(){
-  return ['POR','POR','POR','LD','LI','DFC','DFC','DFC','LD','LI','MCD','MCD','MC','MC','MC','MCO','MCO','MCO','ED','EI','ED','EI','DC','DC','DC'];
+  return ['POR','POR','POR','LD','LI','DFC','DFC','DFC','LD','LI','MCD','MCD','MC','MC','MCO','MCO','MI','MD','ED','EI','ED','EI','DC','DC','DC'];
 }
 function nationalityRegion(nationality){
   const value = String(nationality || '').toLowerCase();
@@ -760,11 +876,50 @@ function playerGroupClass(position){
 function slotGroup(slot){
   if(slot === 'POR') return 'gk';
   if(['LD','LI','DFC'].includes(slot)) return 'def';
-  if(['MCD','MC','MCO'].includes(slot)) return 'mid';
+  if(['MCD','MC','MCO','MI','MD'].includes(slot)) return 'mid';
   return 'att';
 }
+function roleMirrorSide(role){
+  const map = { LD:'LI', LI:'LD', ED:'EI', EI:'ED', MD:'MI', MI:'MD' };
+  return map[role] || '';
+}
+function sideEquivalentRole(playerPosition, slot){
+  const position = String(playerPosition || '').toUpperCase();
+  const target = String(slot || '').toUpperCase();
+  if(position === target) return true;
+  if(roleMirrorSide(position) === target) return true;
+  const widePairs = { ED:['MD'], MD:['ED'], EI:['MI'], MI:['EI'] };
+  return (widePairs[position] || []).includes(target);
+}
 function playerFitsSlot(player, slot){
-  return playerGroup(player.position) === slotGroup(slot);
+  return playerGroup(player.position) === slotGroup(slot) || sideEquivalentRole(player.position, slot);
+}
+function playerExactRoleFitsSlot(player, slot){
+  return String(player?.position || '').toUpperCase() === String(slot || '').toUpperCase();
+}
+function playerTacticFitLevel(player, slot){
+  if(!player) return 'empty';
+  if(playerExactRoleFitsSlot(player, slot)) return 'exact';
+  if(playerFitsSlot(player, slot)) return 'role';
+  return 'zone';
+}
+function playerTacticFitFactor(player, slot){
+  const level = playerTacticFitLevel(player, slot);
+  if(level === 'exact') return 1;
+  if(level === 'role') return 0.75;
+  return 0.5;
+}
+function playerTacticFitLabel(player, slot){
+  const level = playerTacticFitLevel(player, slot);
+  if(level === 'exact') return 'OK';
+  if(level === 'role') return '75%';
+  return '50%';
+}
+function playerTacticFitTitle(player, slot){
+  const level = playerTacticFitLevel(player, slot);
+  if(level === 'exact') return 'Rol exacto: rinde al 100%';
+  if(level === 'role') return 'Fuera de rol exacto, pero compatible: rinde al 75%';
+  return 'Fuera de zona natural: rinde al 50%';
 }
 function isGoalkeeperSlot(slot){
   return slot === 'POR';
@@ -778,11 +933,11 @@ function canAssignPlayerToSlot(player, slot){
   return !isGoalkeeperPlayer(player);
 }
 function zoneFactor(player, slot){
-  return playerFitsSlot(player, slot) ? 1 : 0.5;
+  return playerTacticFitFactor(player, slot);
 }
 function conditionLossForPlayer(player){
-  const loss = rnd(15,20);
-  return player?.position === 'POR' ? loss * 0.5 : loss;
+  const loss = rnd(MATCH_CONDITION_LOSS_MIN, MATCH_CONDITION_LOSS_MAX);
+  return player?.position === 'POR' ? loss * GOALKEEPER_CONDITION_LOSS_FACTOR : loss;
 }
 function rosterGroupCounts(squad=[]){
   const counts = { POR:0, DEF:0, MID:0, ATT:0 };
@@ -944,26 +1099,79 @@ function repairBotRosters(options={}){
   }
   return report;
 }
+function normalizeMentality(mode){
+  const value = String(mode || '').trim();
+  const legacy = { posicional:'normal', ataque:'ofensivo', defensiva:'defensivo' };
+  const normalized = legacy[value] || value;
+  return MENTALITIES.includes(normalized) ? normalized : 'normal';
+}
+function mentalityLabel(mode){
+  const labels = {
+    muy_defensivo:'Muy defensivo',
+    defensivo:'Defensivo',
+    normal:'Normal',
+    ofensivo:'Ofensivo',
+    muy_ofensivo:'Muy ofensivo'
+  };
+  return labels[normalizeMentality(mode)] || 'Normal';
+}
 function mentalityMarker(mode){
-  if(mode === 'ataque') return '<span class="mentality-marker attack" title="Ataque">→</span>';
-  if(mode === 'defensiva') return '<span class="mentality-marker defense" title="Defensiva">←</span>';
-  return '<span class="mentality-marker positional" title="Posicional">—</span>';
+  const normalized = normalizeMentality(mode);
+  const meta = {
+    muy_defensivo:{ cls:'very-defense', text:'←←', title:'Muy defensivo' },
+    defensivo:{ cls:'defense', text:'←', title:'Defensivo' },
+    normal:{ cls:'normal', text:'•', title:'Normal' },
+    ofensivo:{ cls:'attack', text:'→', title:'Ofensivo' },
+    muy_ofensivo:{ cls:'very-attack', text:'→→', title:'Muy ofensivo' }
+  }[normalized] || { cls:'normal', text:'•', title:'Normal' };
+  return `<span class="mentality-marker ${meta.cls}" title="${meta.title}" aria-label="${meta.title}"><span class="mentality-marker-symbol">${meta.text}</span></span>`;
 }
 function nextMentality(current){
-  const idx = MENTALITIES.indexOf(current);
-  return MENTALITIES[(idx + 1) % MENTALITIES.length] || 'posicional';
+  const idx = MENTALITIES.indexOf(normalizeMentality(current));
+  return MENTALITIES[(idx + 1) % MENTALITIES.length] || 'normal';
+}
+function ensurePlayerMentalitiesStore(targetGame=game){
+  if(!targetGame) return {};
+  targetGame.playerMentalities = (targetGame.playerMentalities && typeof targetGame.playerMentalities === 'object' && !Array.isArray(targetGame.playerMentalities)) ? targetGame.playerMentalities : {};
+  Object.keys(targetGame.playerMentalities).forEach(id => {
+    const cleanId = Number(id);
+    if(!cleanId) delete targetGame.playerMentalities[id];
+    else targetGame.playerMentalities[cleanId] = normalizeMentality(targetGame.playerMentalities[id]);
+  });
+  return targetGame.playerMentalities;
 }
 function playerMentality(playerId, tactic = game?.tactic){
-  return tactic?.playerMentalities?.[playerId] || 'posicional';
+  const id = Number(playerId || 0);
+  const globalStore = game?.playerMentalities || {};
+  return normalizeMentality(globalStore[id] || tactic?.playerMentalities?.[id]);
+}
+function setPlayerMentality(playerId, mode, tactic = game?.tactic){
+  const id = Number(playerId || 0);
+  if(!id) return 'normal';
+  const normalized = normalizeMentality(mode);
+  if(game){
+    const store = ensurePlayerMentalitiesStore(game);
+    store[id] = normalized;
+  }
+  if(tactic){
+    tactic.playerMentalities = (tactic.playerMentalities && typeof tactic.playerMentalities === 'object' && !Array.isArray(tactic.playerMentalities)) ? tactic.playerMentalities : {};
+    tactic.playerMentalities[id] = normalized;
+  }
+  return normalized;
 }
 function applyStarterMentalities(tactic){
+  tactic = tactic || {};
+  const globalStore = game ? ensurePlayerMentalitiesStore(game) : {};
   const next = { ...(tactic.playerMentalities || {}) };
-  (tactic.starters || []).filter(Boolean).forEach(id => {
-    if(!MENTALITIES.includes(next[id])) next[id] = 'posicional';
-  });
   Object.keys(next).forEach(id => {
     const cleanId = Number(id);
-    if(!cleanId || !(tactic.starters || []).includes(cleanId)) delete next[id];
+    if(!cleanId) delete next[id];
+    else next[cleanId] = normalizeMentality(next[id]);
+  });
+  (tactic.starters || []).filter(Boolean).forEach(id => {
+    const cleanId = Number(id);
+    next[cleanId] = normalizeMentality(globalStore[cleanId] || next[cleanId]);
+    if(game) globalStore[cleanId] = next[cleanId];
   });
   tactic.playerMentalities = next;
   return tactic;
@@ -972,37 +1180,81 @@ function formationLayout(formation){
   return FORMATION_VISUALS[formation] || [4,0,4,0,2];
 }
 function slotVisualColumn(slot){
-  if(slot === 'POR') return { key:'gk', x:8 };
-  if(['LD','LI','DFC'].includes(slot)) return { key:'def', x:22 };
-  if(slot === 'MCD') return { key:'dm', x:38 };
-  if(slot === 'MC') return { key:'mid', x:52 };
-  if(slot === 'MCO') return { key:'am', x:68 };
-  return { key:'att', x:84 };
+  const map = {
+    POR:{ key:'POR', x:8 },
+    DFC:{ key:'DFC', x:23 }, LD:{ key:'LD', x:23 }, LI:{ key:'LI', x:23 },
+    MCD:{ key:'MCD', x:38 },
+    MC:{ key:'MC', x:52 }, MI:{ key:'MI', x:56 }, MD:{ key:'MD', x:56 },
+    MCO:{ key:'MCO', x:66 },
+    EI:{ key:'EI', x:72 }, ED:{ key:'ED', x:72 },
+    DC:{ key:'DC', x:84 }
+  };
+  return map[slot] || { key:String(slot || 'MC'), x:52 };
+}
+function roleBaseY(slot){
+  const map = {
+    POR:50,
+    LI:18, LD:82,
+    MI:18, MD:82,
+    EI:18, ED:82
+  };
+  return map[slot] || 50;
+}
+function distributedRoleY(slot, count, rowIndex){
+  if(count <= 1) return roleBaseY(slot);
+  const compactPresets = {
+    DFC:{
+      2:[42,58],
+      3:[36,50,64]
+    },
+    MC:{
+      2:[42,58],
+      3:[36,50,64],
+      4:[30,43,57,70]
+    },
+    DC:{
+      2:[40,60],
+      3:[32,50,68]
+    }
+  };
+  const preset = compactPresets[slot]?.[count];
+  if(preset) return preset[Math.max(0, Math.min(rowIndex, preset.length - 1))];
+  const centerRoles = ['DFC','MCD','MC','MCO','DC'];
+  if(centerRoles.includes(slot)){
+    const minY = count >= 4 ? 24 : 34;
+    const maxY = count >= 4 ? 76 : 66;
+    return minY + ((maxY - minY) * rowIndex / Math.max(1, count - 1));
+  }
+  const base = roleBaseY(slot);
+  const spread = Math.min(14, 6 + count * 2);
+  const start = base - spread * (count - 1) / 2;
+  return clamp(start + spread * rowIndex, 10, 90);
 }
 function formationCoordinates(formation){
   const slots = FORMATIONS[formation] || FORMATIONS['4-4-2'];
-  const columns = {};
+  const roleGroups = {};
   slots.forEach((slot, index) => {
     const column = slotVisualColumn(slot);
-    if(!columns[column.key]) columns[column.key] = { x:column.x, items:[] };
-    columns[column.key].items.push(index);
+    if(!roleGroups[column.key]) roleGroups[column.key] = { slot, x:column.x, items:[] };
+    roleGroups[column.key].items.push(index);
   });
   const coords = Array(slots.length).fill(null);
-  Object.values(columns).forEach(column => {
-    const count = column.items.length;
-    column.items.forEach((slotIndex, rowIndex) => {
-      const y = count === 1 ? 50 : 6 + (88 * (rowIndex + 1) / (count + 1));
-      coords[slotIndex] = { x:column.x, y };
+  Object.values(roleGroups).forEach(group => {
+    const count = group.items.length;
+    group.items.forEach((slotIndex, rowIndex) => {
+      coords[slotIndex] = { x:group.x, y:distributedRoleY(group.slot, count, rowIndex) };
     });
   });
   return coords;
 }
 function roleCompatibility(position, slot){
   if(position === slot) return 16;
+  if(sideEquivalentRole(position, slot)) return 10;
   const near = {
     LD:['LI','DFC'], LI:['LD','DFC'], DFC:['LD','LI'],
-    MCD:['MC','VOL'], MC:['MCD','VOL','MCO'], VOL:['MC','MCD','MCO'], MCO:['MC','VOL','ED','EI'],
-    ED:['EI','DC','MCO'], EI:['ED','DC','MCO'],
+    MCD:['MC','VOL'], MC:['MCD','VOL','MCO','MI','MD'], VOL:['MC','MCD','MCO'], MCO:['MC','VOL'],
+    MI:['EI','MC','MCO','MD'], MD:['ED','MC','MCO','MI'],
+    ED:['MD','EI','DC','MCO'], EI:['MI','ED','DC','MCO'],
     DC:['ED','EI','MCO'], POR:[]
   };
   return (near[slot] || []).includes(position) ? 6 : -10;

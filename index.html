@@ -3,29 +3,29 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fútbol Manager MVP V3.19</title>
-  <meta name="description" content="MVP de juego manager de fútbol en navegador con datos JSON y guardado local." />
-  <link rel="icon" type="image/png" sizes="50x50" href="favicon.png?v=3.16" />
-  <link rel="shortcut icon" type="image/png" href="favicon.png?v=3.16" />
-  <link rel="stylesheet" href="style.css" />
+  <title>Fútbol Manager V5.27</title>
+  <meta name="description" content="Juego manager de fútbol en navegador con datos JSON, guardado local y ranking online." />
+  <link rel="icon" type="image/png" sizes="50x50" href="favicon.png?v=5.27" />
+  <link rel="shortcut icon" type="image/png" href="favicon.png?v=5.27" />
+  <link rel="stylesheet" href="style.css?v=5.27" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">MVP local · V3.19</p>
+      <p class="eyebrow">MVP local · V5.27</p>
       <h1>Fútbol Manager</h1>
     </div>
-    <div class="top-actions">
-      <button id="btnSave" class="ghost">Guardar</button>
-      <button id="btnLoad" class="ghost">Cargar</button>
-      <button id="btnReset" class="danger ghost">Reset</button>
+    <div class="top-actions top-actions-compact">
+      <button id="btnSave" class="ghost small-btn">Guardar</button>
+      <button id="btnLoad" class="ghost small-btn">Cargar</button>
+      <button id="topResignClubBtn" class="ghost danger small-btn top-resign-club-btn" disabled>Renunciar</button>
     </div>
   </header>
 
   <main class="shell">
     <aside class="panel side">
       <section id="newGameBox" class="new-game new-game-collapsed">
-        <button id="btnOpenNewGame" class="new-game-toggle" type="button"><span>Nueva partida</span><span aria-hidden="true">▾</span></button>
+        <button id="btnOpenNewGame" class="new-game-toggle" type="button"><span>Buscar club</span><span aria-hidden="true">▾</span></button>
       </section>
 
       <section class="status-card">
@@ -39,18 +39,28 @@
       <nav class="tabs" aria-label="Secciones del juego">
         <button data-tab="home" class="active">Inicio</button>
         <button data-tab="messages">Mensajes</button>
-        <button data-tab="market">Mercado</button>
-        <button data-tab="academy">Academia</button>
-        <button data-tab="finance">Finanzas</button>
+        <button data-tab="special">ESPECIAL</button>
         <button data-tab="firstTeam">Primer Equipo</button>
-        <button data-tab="stadium">Estadio</button>
+        <button data-tab="academy">Academia</button>
         <button data-tab="employees">Empleados</button>
+        <button data-tab="scouting">Centro de Ojeo</button>
+        <button data-tab="stadium">Estadio</button>
+        <button data-tab="market">Mercado</button>
+        <button data-tab="finance">Finanzas</button>
         <button data-tab="fixture">Calendario</button>
         <button data-tab="standings">Tabla</button>
         <button data-tab="stats">Estadísticas</button>
         <button data-tab="mystats">Tus estadísticas</button>
         <button data-tab="ranking">Ranking Online</button>
       </nav>
+      <section class="reset-zone">
+        <p class="small muted">Chequeo seguro de estructura y datos guardados.</p>
+        <button id="btnVerifyIntegrity" class="ghost verify-bottom-btn">Verificar que todo esté bien</button>
+        <p class="small muted recovery-warning-copy">Recuperación segura: no borra manager, prestigio, experiencia ni puntos de habilidad.</p>
+        <button id="btnForceNewSeason" class="ghost recovery-bottom-btn">Desbloquear y nueva temporada</button>
+        <p class="small muted reset-warning-copy">Zona de riesgo. Borra la partida local del navegador.</p>
+        <button id="btnReset" class="danger ghost reset-bottom-btn">Reset de partida</button>
+      </section>
     </aside>
 
     <section class="content">
@@ -61,26 +71,30 @@
 
   <template id="emptyState">
     <div class="empty">
-      <h2>Creá una partida para empezar</h2>
-      <p>Elegí tu nombre de manager, país, liga y equipo para iniciar una nueva carrera.</p>
+      <h2>Bienvenido a Manager de Fútbol</h2>
+      <p>Cargando clubes disponibles, estadios, hinchadas y presupuestos iniciales.</p>
     </div>
   </template>
 
-  <script src="config.js"></script>
-  <script src="simulador-2.0.js"></script>
-  <script src="js/core/01-config-constants.js"></script>
-  <script src="js/core/02-ui-utils.js"></script>
-  <script src="js/core/03-player-tactics-utils.js"></script>
-  <script src="js/data/04-data-storage.js"></script>
-  <script src="js/game/05-state-season.js"></script>
-  <script src="js/ui/06-render-home-messages.js"></script>
-  <script src="js/ui/07-render-team-market.js"></script>
-  <script src="js/game/08-sponsors-stadium-stats.js"></script>
-  <script src="js/game/09-simulation-economy-training.js"></script>
-  <script src="js/game/10-academy-employees.js"></script>
-  <script src="js/game/11-match-engine.js"></script>
-  <script src="js/ui/12-modals.js"></script>
-  <script src="js/game/13-ranking-online.js"></script>
-  <script src="app.js"></script>
+  <script src="config.js?v=5.27"></script>
+  <script src="simulador-2.0.js?v=5.27"></script>
+  <script src="js/game/17-live-match.js?v=5.27"></script>
+  <script src="js/core/01-config-constants.js?v=5.27"></script>
+  <script src="js/core/02-ui-utils.js?v=5.27"></script>
+  <script src="js/core/03-player-tactics-utils.js?v=5.27"></script>
+  <script src="js/data/04-data-storage.js?v=5.27"></script>
+  <script src="js/game/05-state-season.js?v=5.27"></script>
+  <script src="js/ui/06-render-home-messages.js?v=5.27"></script>
+  <script src="js/ui/07-render-team-market.js?v=5.27"></script>
+  <script src="js/game/08-sponsors-stadium-stats.js?v=5.27"></script>
+  <script src="js/game/09-simulation-economy-training.js?v=5.27"></script>
+  <script src="js/game/10-academy-employees.js?v=5.27"></script>
+  <script src="js/game/11-match-engine.js?v=5.27"></script>
+  <script src="js/ui/12-modals.js?v=5.27"></script>
+  <script src="js/game/13-ranking-online.js?v=5.27"></script>
+  <script src="js/game/14-eventos.js?v=5.27"></script>
+  <script src="js/game/15-especial.js?v=5.27"></script>
+  <script src="js/game/16-scouting-center.js?v=5.27"></script>
+  <script src="app.js?v=5.27"></script>
 </body>
 </html>

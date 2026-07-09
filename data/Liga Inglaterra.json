@@ -1,0 +1,141 @@
+{
+  "version": "V3.82",
+  "pais": "Inglaterra",
+  "descripcion": "Estructura jugable de Inglaterra con 1 liga de 18 clubes.",
+  "criterio": "Formato normalizado para el juego: cada club incluye nombre, ciudad, prestigio, color principal y ruta de escudo.",
+  "escala_prestigio": "Global: 99 élite mundial, 70-84 grandes regionales/europeos fuertes, 20 o menos clubes libres para managers nuevos.",
+  "leagues": [
+    {
+      "name": "Premier League",
+      "country": "Inglaterra",
+      "teams": [
+        {
+          "name": "Manchester City",
+          "city": "Manchester",
+          "reputation": 96,
+          "primaryColor": "#6CABDD",
+          "crestPath": "img/escudos/manchester-city.png"
+        },
+        {
+          "name": "Liverpool",
+          "city": "Liverpool",
+          "reputation": 95,
+          "primaryColor": "#C8102E",
+          "crestPath": "img/escudos/liverpool.png"
+        },
+        {
+          "name": "Manchester United",
+          "city": "Manchester",
+          "reputation": 92,
+          "primaryColor": "#DA291C",
+          "crestPath": "img/escudos/manchester-united.png"
+        },
+        {
+          "name": "Arsenal",
+          "city": "Londres",
+          "reputation": 91,
+          "primaryColor": "#EF0107",
+          "crestPath": "img/escudos/arsenal.png"
+        },
+        {
+          "name": "Chelsea",
+          "city": "Londres",
+          "reputation": 90,
+          "primaryColor": "#034694",
+          "crestPath": "img/escudos/chelsea.png"
+        },
+        {
+          "name": "Tottenham",
+          "city": "Londres",
+          "reputation": 88,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/tottenham.png"
+        },
+        {
+          "name": "Newcastle United",
+          "city": "Newcastle upon Tyne",
+          "reputation": 84,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/newcastle-united.png"
+        },
+        {
+          "name": "Aston Villa",
+          "city": "Birmingham",
+          "reputation": 82,
+          "primaryColor": "#95BFE5",
+          "crestPath": "img/escudos/aston-villa.png"
+        },
+        {
+          "name": "Everton",
+          "city": "Liverpool",
+          "reputation": 78,
+          "primaryColor": "#003399",
+          "crestPath": "img/escudos/everton-eng.png"
+        },
+        {
+          "name": "West Ham",
+          "city": "Londres",
+          "reputation": 77,
+          "primaryColor": "#7A263A",
+          "crestPath": "img/escudos/west-ham.png"
+        },
+        {
+          "name": "Nottingham Forest",
+          "city": "Nottingham",
+          "reputation": 76,
+          "primaryColor": "#DD0000",
+          "crestPath": "img/escudos/nottingham-forest.png"
+        },
+        {
+          "name": "Leeds United",
+          "city": "Leeds",
+          "reputation": 74,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/leeds-united.png"
+        },
+        {
+          "name": "Leicester City",
+          "city": "Leicester",
+          "reputation": 73,
+          "primaryColor": "#003090",
+          "crestPath": "img/escudos/leicester-city.png"
+        },
+        {
+          "name": "Brighton",
+          "city": "Brighton and Hove",
+          "reputation": 73,
+          "primaryColor": "#0057B8",
+          "crestPath": "img/escudos/brighton.png"
+        },
+        {
+          "name": "Wolverhampton",
+          "city": "Wolverhampton",
+          "reputation": 72,
+          "primaryColor": "#FDB913",
+          "crestPath": "img/escudos/wolverhampton.png"
+        },
+        {
+          "name": "Crystal Palace",
+          "city": "Londres",
+          "reputation": 70,
+          "primaryColor": "#1B458F",
+          "crestPath": "img/escudos/crystal-palace.png"
+        },
+        {
+          "name": "Fulham",
+          "city": "Londres",
+          "reputation": 69,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/fulham.png"
+        },
+        {
+          "name": "Sunderland",
+          "city": "Sunderland",
+          "reputation": 67,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/sunderland.png"
+        }
+      ]
+    }
+  ]
+}

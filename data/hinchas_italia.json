@@ -1,0 +1,280 @@
+{
+  "version": "V3.79",
+  "pais": "Italia",
+  "sistema": "hinchas_italia",
+  "descripcion": "Cantidad base de hinchas por equipo en Italia, calculada desde prestigio global, capacidad de estadio y liga.",
+  "formula": {
+    "descripcion": "Se normaliza el prestigio dentro de cada liga y se aplica un porcentaje de ocupación base a la capacidad del estadio.",
+    "variables": {
+      "prestigio_normalizado": "(prestigio - prestigio_min_liga) / (prestigio_max_liga - prestigio_min_liga)",
+      "ocupacion_base": "ocupacion_min_liga + prestigio_normalizado * (ocupacion_max_liga - ocupacion_min_liga)",
+      "hinchas_base": "capacidad_estadio * ocupacion_base, redondeado hacia abajo a centenas"
+    },
+    "rangos_por_liga": {
+      "Liga Profesional": {
+        "minPct": 0.6,
+        "maxPct": 0.91
+      },
+      "Primera Nacional": {
+        "minPct": 0.42,
+        "maxPct": 0.7
+      },
+      "Federal A": {
+        "minPct": 0.18,
+        "maxPct": 0.5
+      },
+      "Primera División Chile": {
+        "minPct": 0.45,
+        "maxPct": 0.84
+      },
+      "Brasileirão": {
+        "minPct": 0.58,
+        "maxPct": 0.93
+      },
+      "Premier League": {
+        "minPct": 0.68,
+        "maxPct": 0.97
+      },
+      "LaLiga España": {
+        "minPct": 0.62,
+        "maxPct": 0.96
+      },
+      "Serie A Italia": {
+        "minPct": 0.58,
+        "maxPct": 0.94
+      },
+      "SuperLiga Rumania": {
+        "minPct": 0.32,
+        "maxPct": 0.76
+      }
+    }
+  },
+  "totales": {
+    "equipos": 18,
+    "hinchas_base_total": 595500,
+    "promedio_hinchas_base": 33083.33,
+    "hinchas_base_min": 9900,
+    "hinchas_base_max": 70200
+  },
+  "hinchadas": [
+    {
+      "equipo": "Juventus",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 91,
+      "estadio": "Allianz Stadium",
+      "capacidad_estadio": 41507,
+      "estadio_ficticio": false,
+      "hinchas_base": 39000,
+      "ocupacion_base_porcentaje": 94.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Inter",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 90,
+      "estadio": "San Siro",
+      "capacidad_estadio": 75817,
+      "estadio_ficticio": false,
+      "hinchas_base": 70200,
+      "ocupacion_base_porcentaje": 92.7,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Milan",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 89,
+      "estadio": "San Siro",
+      "capacidad_estadio": 75817,
+      "estadio_ficticio": false,
+      "hinchas_base": 69300,
+      "ocupacion_base_porcentaje": 91.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Napoli",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 88,
+      "estadio": "Diego Armando Maradona",
+      "capacidad_estadio": 54726,
+      "estadio_ficticio": false,
+      "hinchas_base": 49300,
+      "ocupacion_base_porcentaje": 90.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Roma",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 84,
+      "estadio": "Olimpico",
+      "capacidad_estadio": 70634,
+      "estadio_ficticio": false,
+      "hinchas_base": 60000,
+      "ocupacion_base_porcentaje": 85.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Lazio",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 82,
+      "estadio": "Olimpico",
+      "capacidad_estadio": 70634,
+      "estadio_ficticio": false,
+      "hinchas_base": 58200,
+      "ocupacion_base_porcentaje": 82.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Atalanta",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 81,
+      "estadio": "Gewiss Stadium",
+      "capacidad_estadio": 24950,
+      "estadio_ficticio": false,
+      "hinchas_base": 20200,
+      "ocupacion_base_porcentaje": 81.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Fiorentina",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 79,
+      "estadio": "Artemio Franchi",
+      "capacidad_estadio": 43147,
+      "estadio_ficticio": false,
+      "hinchas_base": 33900,
+      "ocupacion_base_porcentaje": 78.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Torino",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 75,
+      "estadio": "Olimpico Grande Torino",
+      "capacidad_estadio": 27994,
+      "estadio_ficticio": false,
+      "hinchas_base": 20500,
+      "ocupacion_base_porcentaje": 73.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Bologna",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 75,
+      "estadio": "Renato Dall'Ara",
+      "capacidad_estadio": 36532,
+      "estadio_ficticio": false,
+      "hinchas_base": 26800,
+      "ocupacion_base_porcentaje": 73.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Genoa",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 72,
+      "estadio": "Luigi Ferraris",
+      "capacidad_estadio": 36599,
+      "estadio_ficticio": false,
+      "hinchas_base": 25400,
+      "ocupacion_base_porcentaje": 69.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Sampdoria",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 70,
+      "estadio": "Luigi Ferraris",
+      "capacidad_estadio": 36599,
+      "estadio_ficticio": false,
+      "hinchas_base": 24500,
+      "ocupacion_base_porcentaje": 67.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Parma",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 68,
+      "estadio": "Ennio Tardini",
+      "capacidad_estadio": 22352,
+      "estadio_ficticio": false,
+      "hinchas_base": 14400,
+      "ocupacion_base_porcentaje": 64.4,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Udinese",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 67,
+      "estadio": "Bluenergy Stadium",
+      "capacidad_estadio": 25144,
+      "estadio_ficticio": false,
+      "hinchas_base": 15800,
+      "ocupacion_base_porcentaje": 63.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Palermo",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 66,
+      "estadio": "Renzo Barbera",
+      "capacidad_estadio": 36365,
+      "estadio_ficticio": false,
+      "hinchas_base": 22400,
+      "ocupacion_base_porcentaje": 61.9,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Cagliari",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 65,
+      "estadio": "Unipol Domus",
+      "capacidad_estadio": 16416,
+      "estadio_ficticio": false,
+      "hinchas_base": 9900,
+      "ocupacion_base_porcentaje": 60.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Hellas Verona",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 64,
+      "estadio": "Marcantonio Bentegodi",
+      "capacidad_estadio": 39211,
+      "estadio_ficticio": false,
+      "hinchas_base": 23200,
+      "ocupacion_base_porcentaje": 59.3,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Sassuolo",
+      "liga": "Serie A Italia",
+      "pais": "Italia",
+      "prestigio": 63,
+      "estadio": "Mapei Stadium",
+      "capacidad_estadio": 21584,
+      "estadio_ficticio": false,
+      "hinchas_base": 12500,
+      "ocupacion_base_porcentaje": 58.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    }
+  ],
+  "notas": [
+    "Base jugable de asistencia/hinchada inicial; no representa padrón real de simpatizantes."
+  ]
+}

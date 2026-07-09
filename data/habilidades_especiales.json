@@ -1,0 +1,473 @@
+{
+  "version": "V4.16",
+  "sistema": "habilidades_especiales",
+  "descripcion": "Sistema de cartas especiales para managers. Permite acumular puntos ocultos, abrir sobres, activar cartas y destruir cartas sobrantes.",
+  "caracteristicas_version": "Agrega cartas de objetivo más bajo y aumento de socios ganados.",
+  "menu": {
+    "nombre": "Habilidades especiales",
+    "mostrar_nombre_manager": true,
+    "mostrar_puntos_manager": true,
+    "mostrar_origen_puntos_al_manager": false,
+    "secciones": [
+      "cartas_activas",
+      "cartas_reserva",
+      "abrir_sobres",
+      "destruir_cartas",
+      "historial_ultimas_cartas"
+    ]
+  },
+  "limites": {
+    "cartas_activas_max": 5,
+    "cartas_reserva_max": 50,
+    "dias_bloqueo_cambio_cartas": 100,
+    "permitir_abrir_sobres_con_reserva_llena": false,
+    "permitir_cartas_repetidas_activas": true,
+    "bonus_se_apilan": true
+  },
+  "rareza_orden_visual": [
+    "inutil",
+    "comun",
+    "rara",
+    "epica",
+    "legendaria"
+  ],
+  "rareza_orden_apertura": {
+    "mostrar_raras_epicas_legendarias_al_final": true,
+    "orden": [
+      "inutil",
+      "comun",
+      "rara",
+      "epica",
+      "legendaria"
+    ]
+  },
+  "puntos_ocultos": {
+    "moneda": "puntos_habilidad",
+    "acciones": {
+      "ganar_partido": {
+        "puntos": 125,
+        "visible_para_manager": false
+      },
+      "empatar_partido": {
+        "puntos": 100,
+        "visible_para_manager": false
+      },
+      "salir_campeon_division_3": {
+        "puntos": 1000,
+        "visible_para_manager": false
+      },
+      "salir_campeon_division_2": {
+        "puntos": 2000,
+        "visible_para_manager": false
+      },
+      "salir_campeon_division_1": {
+        "puntos": 3000,
+        "visible_para_manager": false
+      },
+      "tratar_jugador_lesionado": {
+        "puntos": 50,
+        "visible_para_manager": false
+      },
+      "meter_mas_de_5_goles_en_un_partido": {
+        "puntos": 250,
+        "visible_para_manager": false
+      },
+      "regar_o_parchar_campo_de_juego": {
+        "puntos": 50,
+        "visible_para_manager": false
+      },
+      "consultar_juveniles": {
+        "puntos": 100,
+        "visible_para_manager": false
+      }
+    }
+  },
+  "sobres": {
+    "comun": {
+      "nombre": "Sobre Común",
+      "costo_puntos": 200,
+      "cantidad_cartas": 6,
+      "probabilidades": {
+        "inutil": 48,
+        "comun": 44,
+        "rara": 5,
+        "epica": 2.8,
+        "legendaria": 0.2
+      }
+    },
+    "raro": {
+      "nombre": "Sobre Raro",
+      "costo_puntos": 1000,
+      "cantidad_cartas": 6,
+      "probabilidades": {
+        "inutil": 39,
+        "comun": 40,
+        "rara": 13.5,
+        "epica": 6,
+        "legendaria": 1.5
+      }
+    },
+    "epico": {
+      "nombre": "Sobre Épico",
+      "costo_puntos": 5000,
+      "cantidad_cartas": 6,
+      "probabilidades": {
+        "inutil": 20,
+        "comun": 25,
+        "rara": 35,
+        "epica": 15,
+        "legendaria": 5
+      }
+    }
+  },
+  "destruir_cartas": {
+    "permitido": true,
+    "recuperacion_puntos": {
+      "inutil": 5,
+      "comun": 20,
+      "rara": 50,
+      "epica": 250,
+      "legendaria": 1000
+    }
+  },
+  "apilamiento_bonus": {
+    "sponsors_extra": {
+      "se_apila": true,
+      "metodo": "suma_directa",
+      "tope_porcentaje": null,
+      "aplica_a": "nuevos_sponsors_firmados",
+      "descripcion": "Aumenta el pago de los sponsors nuevos que firme el manager."
+    },
+    "deterioro_campo": {
+      "se_apila": true,
+      "metodo": "suma_directa_con_tope",
+      "tope_porcentaje": 95,
+      "aplica_a": "deterioro_del_campo_por_turno",
+      "descripcion": "Reduce el deterioro del campo de juego."
+    },
+    "probabilidad_legendaria": {
+      "se_apila": true,
+      "metodo": "suma_relativa_sobre_probabilidad_base",
+      "tope_porcentaje": null,
+      "aplica_a": "apertura_de_sobres",
+      "descripcion": "Aumenta de forma relativa la probabilidad base de obtener cartas legendarias."
+    }
+  },
+  "bonus_por_rareza": {
+    "sponsors_extra": {
+      "comun": 10,
+      "rara": 20,
+      "epica": 30,
+      "legendaria": 100
+    },
+    "deterioro_campo": {
+      "comun": 20,
+      "rara": 30,
+      "epica": 40,
+      "legendaria": 80
+    },
+    "probabilidad_legendaria": {
+      "comun": 5,
+      "rara": 10,
+      "epica": 15,
+      "legendaria": 25
+    }
+  },
+  "cartas_base": [
+    {
+      "id_base": "INUTIL_001",
+      "nombre": "Recibo arrugado",
+      "rareza": "inutil",
+      "tipo_bonus": null,
+      "valor_bonus": 0,
+      "activable": false,
+      "texto": "Esta carta puede valer mucho en otro momento, pero por las dudas no la guardes."
+    },
+    {
+      "id_base": "INUTIL_002",
+      "nombre": "Media invisible",
+      "rareza": "inutil",
+      "tipo_bonus": null,
+      "valor_bonus": 0,
+      "activable": false,
+      "texto": "Tuviste suerte, pudo ser peor."
+    },
+    {
+      "id_base": "INUTIL_003",
+      "nombre": "Silencio dirigencial",
+      "rareza": "inutil",
+      "tipo_bonus": null,
+      "valor_bonus": 0,
+      "activable": false,
+      "texto": "No hay nada que decir."
+    },
+    {
+      "id_base": "INUTIL_004",
+      "nombre": "Papel sin firma",
+      "rareza": "inutil",
+      "tipo_bonus": null,
+      "valor_bonus": 0,
+      "activable": false,
+      "texto": "No sirve para nada, pero parece importante."
+    },
+    {
+      "id_base": "INUTIL_005",
+      "nombre": "Carpeta vacía",
+      "rareza": "inutil",
+      "tipo_bonus": null,
+      "valor_bonus": 0,
+      "activable": false,
+      "texto": "Contiene todo lo necesario para no hacer nada."
+    },
+    {
+      "id_base": "INUTIL_006",
+      "nombre": "Informe incompleto",
+      "rareza": "inutil",
+      "tipo_bonus": null,
+      "valor_bonus": 0,
+      "activable": false,
+      "texto": "Faltan datos, contexto y ganas."
+    },
+    {
+      "id_base": "INUTIL_007",
+      "nombre": "Botín izquierdo",
+      "rareza": "inutil",
+      "tipo_bonus": null,
+      "valor_bonus": 0,
+      "activable": false,
+      "texto": "Nadie sabe dónde está el derecho."
+    },
+    {
+      "id_base": "INUTIL_008",
+      "nombre": "Mate lavado",
+      "rareza": "inutil",
+      "tipo_bonus": null,
+      "valor_bonus": 0,
+      "activable": false,
+      "texto": "Acompaña reuniones largas sin resolver problemas."
+    },
+    {
+      "id_base": "SPONSOR_COMUN_001",
+      "nombre": "Negociador local",
+      "rareza": "comun",
+      "tipo_bonus": "sponsors_extra",
+      "valor_bonus": 10,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Los sponsors que firmes pagan un 10% extra."
+    },
+    {
+      "id_base": "SPONSOR_RARA_001",
+      "nombre": "Acuerdo comercial sólido",
+      "rareza": "rara",
+      "tipo_bonus": "sponsors_extra",
+      "valor_bonus": 20,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Los sponsors que firmes pagan un 20% extra."
+    },
+    {
+      "id_base": "SPONSOR_EPICA_001",
+      "nombre": "Gerente de marketing brillante",
+      "rareza": "epica",
+      "tipo_bonus": "sponsors_extra",
+      "valor_bonus": 30,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Los sponsors que firmes pagan un 30% extra."
+    },
+    {
+      "id_base": "SPONSOR_LEGENDARIA_001",
+      "nombre": "Magnate del fútbol regional",
+      "rareza": "legendaria",
+      "tipo_bonus": "sponsors_extra",
+      "valor_bonus": 100,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Los sponsors que firmes pagan un 100% extra."
+    },
+    {
+      "id_base": "CAMPO_COMUN_001",
+      "nombre": "Canchero responsable",
+      "rareza": "comun",
+      "tipo_bonus": "deterioro_campo",
+      "valor_bonus": 20,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Tu campo de juego se deteriora un 20% menos."
+    },
+    {
+      "id_base": "CAMPO_RARA_001",
+      "nombre": "Mantenimiento profesional",
+      "rareza": "rara",
+      "tipo_bonus": "deterioro_campo",
+      "valor_bonus": 30,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Tu campo de juego se deteriora un 30% menos."
+    },
+    {
+      "id_base": "CAMPO_EPICA_001",
+      "nombre": "Césped reforzado",
+      "rareza": "epica",
+      "tipo_bonus": "deterioro_campo",
+      "valor_bonus": 40,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Tu campo de juego se deteriora un 40% menos."
+    },
+    {
+      "id_base": "CAMPO_LEGENDARIA_001",
+      "nombre": "Campo blindado",
+      "rareza": "legendaria",
+      "tipo_bonus": "deterioro_campo",
+      "valor_bonus": 80,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Tu campo de juego se deteriora un 80% menos."
+    },
+    {
+      "id_base": "SUERTE_COMUN_001",
+      "nombre": "Presentimiento extraño",
+      "rareza": "comun",
+      "tipo_bonus": "probabilidad_legendaria",
+      "valor_bonus": 5,
+      "unidad": "porcentaje_relativo",
+      "activable": true,
+      "texto": "Tus posibilidades de obtener una carta legendaria aumentan un 5% relativo."
+    },
+    {
+      "id_base": "SUERTE_RARA_001",
+      "nombre": "Ojeador supersticioso",
+      "rareza": "rara",
+      "tipo_bonus": "probabilidad_legendaria",
+      "valor_bonus": 10,
+      "unidad": "porcentaje_relativo",
+      "activable": true,
+      "texto": "Tus posibilidades de obtener una carta legendaria aumentan un 10% relativo."
+    },
+    {
+      "id_base": "SUERTE_EPICA_001",
+      "nombre": "Ritual de vestuario",
+      "rareza": "epica",
+      "tipo_bonus": "probabilidad_legendaria",
+      "valor_bonus": 15,
+      "unidad": "porcentaje_relativo",
+      "activable": true,
+      "texto": "Tus posibilidades de obtener una carta legendaria aumentan un 15% relativo."
+    },
+    {
+      "id_base": "SUERTE_LEGENDARIA_001",
+      "nombre": "Bendición del manager eterno",
+      "rareza": "legendaria",
+      "tipo_bonus": "probabilidad_legendaria",
+      "valor_bonus": 25,
+      "unidad": "porcentaje_relativo",
+      "activable": true,
+      "texto": "Tus posibilidades de obtener una carta legendaria aumentan un 25% relativo."
+    },
+    {
+      "id_base": "OBJETIVO_COMUN_001",
+      "nombre": "Directiva paciente",
+      "rareza": "comun",
+      "tipo_bonus": "objetivo_mas_bajo",
+      "valor_bonus": 1,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Reduce el objetivo de puntos de la directiva un 1% mientras esté activa."
+    },
+    {
+      "id_base": "OBJETIVO_RARA_001",
+      "nombre": "Margen de gestión",
+      "rareza": "rara",
+      "tipo_bonus": "objetivo_mas_bajo",
+      "valor_bonus": 2,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Reduce el objetivo de puntos de la directiva un 2% mientras esté activa."
+    },
+    {
+      "id_base": "OBJETIVO_EPICA_001",
+      "nombre": "Proyecto respaldado",
+      "rareza": "epica",
+      "tipo_bonus": "objetivo_mas_bajo",
+      "valor_bonus": 3,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Reduce el objetivo de puntos de la directiva un 3% mientras esté activa."
+    },
+    {
+      "id_base": "OBJETIVO_LEGENDARIA_001",
+      "nombre": "Cheque en blanco deportivo",
+      "rareza": "legendaria",
+      "tipo_bonus": "objetivo_mas_bajo",
+      "valor_bonus": 10,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Reduce el objetivo de puntos de la directiva un 10% mientras esté activa."
+    },
+    {
+      "id_base": "SOCIOS_COMUN_001",
+      "nombre": "Campaña de barrio",
+      "rareza": "comun",
+      "tipo_bonus": "socios_extra",
+      "valor_bonus": 10,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 10% los socios ganados por resultados y posición."
+    },
+    {
+      "id_base": "SOCIOS_RARA_001",
+      "nombre": "Movida popular",
+      "rareza": "rara",
+      "tipo_bonus": "socios_extra",
+      "valor_bonus": 15,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 15% los socios ganados por resultados y posición."
+    },
+    {
+      "id_base": "SOCIOS_EPICA_001",
+      "nombre": "Explosión de tribuna",
+      "rareza": "epica",
+      "tipo_bonus": "socios_extra",
+      "valor_bonus": 20,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 20% los socios ganados por resultados y posición."
+    },
+    {
+      "id_base": "SOCIOS_LEGENDARIA_001",
+      "nombre": "Fiebre de socios",
+      "rareza": "legendaria",
+      "tipo_bonus": "socios_extra",
+      "valor_bonus": 50,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 50% los socios ganados por resultados y posición."
+    }
+  ],
+  "estructura_datos_manager": {
+    "manager_id": "",
+    "nombre_manager": "",
+    "puntos_habilidad": 0,
+    "cartas_activas": [],
+    "cartas_reserva": [],
+    "fecha_ultimo_cambio_cartas": null,
+    "bloqueado_hasta": null
+  },
+  "estructura_carta_obtenida": {
+    "id_carta": "",
+    "id_base": "",
+    "manager_id": "",
+    "nombre": "",
+    "rareza": "",
+    "tipo_bonus": null,
+    "valor_bonus": 0,
+    "unidad": "",
+    "activa": false,
+    "destruida": false,
+    "obtenida_en_turno": null,
+    "obtenida_desde_sobre": ""
+  }
+}

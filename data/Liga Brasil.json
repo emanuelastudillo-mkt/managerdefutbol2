@@ -1,0 +1,141 @@
+{
+  "version": "V3.82",
+  "pais": "Brasil",
+  "descripcion": "Estructura jugable de Brasil con 1 liga de 18 clubes.",
+  "criterio": "Formato normalizado para el juego: cada club incluye nombre, ciudad, prestigio, color principal y ruta de escudo.",
+  "escala_prestigio": "Global: 99 élite mundial, 70-84 grandes regionales/europeos fuertes, 20 o menos clubes libres para managers nuevos.",
+  "leagues": [
+    {
+      "name": "Brasileirão",
+      "country": "Brasil",
+      "teams": [
+        {
+          "name": "Flamengo",
+          "city": "Rio de Janeiro",
+          "reputation": 84,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/flamengo.png"
+        },
+        {
+          "name": "Palmeiras",
+          "city": "São Paulo",
+          "reputation": 83,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/palmeiras.png"
+        },
+        {
+          "name": "Corinthians",
+          "city": "São Paulo",
+          "reputation": 81,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/corinthians.png"
+        },
+        {
+          "name": "São Paulo",
+          "city": "São Paulo",
+          "reputation": 80,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/sao-paulo.png"
+        },
+        {
+          "name": "Santos",
+          "city": "Santos",
+          "reputation": 78,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/santos.png"
+        },
+        {
+          "name": "Grêmio",
+          "city": "Porto Alegre",
+          "reputation": 77,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/gremio.png"
+        },
+        {
+          "name": "Internacional",
+          "city": "Porto Alegre",
+          "reputation": 76,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/internacional.png"
+        },
+        {
+          "name": "Atlético Mineiro",
+          "city": "Belo Horizonte",
+          "reputation": 76,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/atletico-mineiro.png"
+        },
+        {
+          "name": "Cruzeiro",
+          "city": "Belo Horizonte",
+          "reputation": 75,
+          "primaryColor": "#0033A0",
+          "crestPath": "img/escudos/cruzeiro.png"
+        },
+        {
+          "name": "Fluminense",
+          "city": "Rio de Janeiro",
+          "reputation": 74,
+          "primaryColor": "#7B003A",
+          "crestPath": "img/escudos/fluminense.png"
+        },
+        {
+          "name": "Botafogo",
+          "city": "Rio de Janeiro",
+          "reputation": 74,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/botafogo.png"
+        },
+        {
+          "name": "Vasco da Gama",
+          "city": "Rio de Janeiro",
+          "reputation": 73,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/vasco-da-gama.png"
+        },
+        {
+          "name": "Athletico Paranaense",
+          "city": "Curitiba",
+          "reputation": 70,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/athletico-paranaense.png"
+        },
+        {
+          "name": "Bahia",
+          "city": "Salvador",
+          "reputation": 68,
+          "primaryColor": "#0057A6",
+          "crestPath": "img/escudos/bahia.png"
+        },
+        {
+          "name": "Fortaleza",
+          "city": "Fortaleza",
+          "reputation": 67,
+          "primaryColor": "#003A70",
+          "crestPath": "img/escudos/fortaleza.png"
+        },
+        {
+          "name": "Sport Recife",
+          "city": "Recife",
+          "reputation": 64,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/sport-recife.png"
+        },
+        {
+          "name": "Vitória",
+          "city": "Salvador",
+          "reputation": 62,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/vitoria.png"
+        },
+        {
+          "name": "Ceará",
+          "city": "Fortaleza",
+          "reputation": 61,
+          "primaryColor": "#111111",
+          "crestPath": "img/escudos/ceara.png"
+        }
+      ]
+    }
+  ]
+}

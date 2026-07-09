@@ -1,0 +1,141 @@
+{
+  "version": "V3.82",
+  "pais": "España",
+  "descripcion": "Estructura jugable de España con 1 liga de 18 clubes.",
+  "criterio": "Formato normalizado para el juego: cada club incluye nombre, ciudad, prestigio, color principal y ruta de escudo.",
+  "escala_prestigio": "Global: 99 élite mundial, 70-84 grandes regionales/europeos fuertes, 20 o menos clubes libres para managers nuevos.",
+  "leagues": [
+    {
+      "name": "LaLiga España",
+      "country": "España",
+      "teams": [
+        {
+          "name": "Real Madrid",
+          "city": "Madrid",
+          "reputation": 99,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/real-madrid.png"
+        },
+        {
+          "name": "Barcelona",
+          "city": "Barcelona",
+          "reputation": 97,
+          "primaryColor": "#A50044",
+          "crestPath": "img/escudos/barcelona.png"
+        },
+        {
+          "name": "Atlético Madrid",
+          "city": "Madrid",
+          "reputation": 92,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/atletico-madrid.png"
+        },
+        {
+          "name": "Sevilla",
+          "city": "Sevilla",
+          "reputation": 82,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/sevilla.png"
+        },
+        {
+          "name": "Valencia",
+          "city": "Valencia",
+          "reputation": 80,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/valencia.png"
+        },
+        {
+          "name": "Athletic Club",
+          "city": "Bilbao",
+          "reputation": 79,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/athletic-club.png"
+        },
+        {
+          "name": "Real Betis",
+          "city": "Sevilla",
+          "reputation": 78,
+          "primaryColor": "#008542",
+          "crestPath": "img/escudos/real-betis.png"
+        },
+        {
+          "name": "Villarreal",
+          "city": "Villarreal",
+          "reputation": 77,
+          "primaryColor": "#F5D328",
+          "crestPath": "img/escudos/villarreal.png"
+        },
+        {
+          "name": "Real Sociedad",
+          "city": "San Sebastián",
+          "reputation": 77,
+          "primaryColor": "#005BAC",
+          "crestPath": "img/escudos/real-sociedad.png"
+        },
+        {
+          "name": "Celta",
+          "city": "Vigo",
+          "reputation": 70,
+          "primaryColor": "#66B3FF",
+          "crestPath": "img/escudos/celta.png"
+        },
+        {
+          "name": "Espanyol",
+          "city": "Barcelona",
+          "reputation": 69,
+          "primaryColor": "#005BAC",
+          "crestPath": "img/escudos/espanyol.png"
+        },
+        {
+          "name": "Deportivo La Coruña",
+          "city": "A Coruña",
+          "reputation": 67,
+          "primaryColor": "#005BAC",
+          "crestPath": "img/escudos/deportivo-la-coruna.png"
+        },
+        {
+          "name": "Mallorca",
+          "city": "Palma",
+          "reputation": 66,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/mallorca.png"
+        },
+        {
+          "name": "Osasuna",
+          "city": "Pamplona",
+          "reputation": 66,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/osasuna.png"
+        },
+        {
+          "name": "Zaragoza",
+          "city": "Zaragoza",
+          "reputation": 65,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/zaragoza.png"
+        },
+        {
+          "name": "Sporting Gijón",
+          "city": "Gijón",
+          "reputation": 64,
+          "primaryColor": "#D71920",
+          "crestPath": "img/escudos/sporting-gijon.png"
+        },
+        {
+          "name": "Getafe",
+          "city": "Getafe",
+          "reputation": 63,
+          "primaryColor": "#005BAC",
+          "crestPath": "img/escudos/getafe.png"
+        },
+        {
+          "name": "Rayo Vallecano",
+          "city": "Madrid",
+          "reputation": 62,
+          "primaryColor": "#FFFFFF",
+          "crestPath": "img/escudos/rayo-vallecano.png"
+        }
+      ]
+    }
+  ]
+}

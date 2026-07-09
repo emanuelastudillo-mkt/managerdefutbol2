@@ -1,0 +1,280 @@
+{
+  "version": "V3.81",
+  "pais": "Rumania",
+  "sistema": "hinchas_rumania",
+  "descripcion": "Cantidad base de hinchas por equipo en Rumania, calculada desde prestigio global, capacidad de estadio y liga.",
+  "formula": {
+    "descripcion": "Se normaliza el prestigio dentro de cada liga y se aplica un porcentaje de ocupación base a la capacidad del estadio.",
+    "variables": {
+      "prestigio_normalizado": "(prestigio - prestigio_min_liga) / (prestigio_max_liga - prestigio_min_liga)",
+      "ocupacion_base": "ocupacion_min_liga + prestigio_normalizado * (ocupacion_max_liga - ocupacion_min_liga)",
+      "hinchas_base": "capacidad_estadio * ocupacion_base, redondeado hacia abajo a centenas"
+    },
+    "rangos_por_liga": {
+      "Liga Profesional": {
+        "minPct": 0.6,
+        "maxPct": 0.91
+      },
+      "Primera Nacional": {
+        "minPct": 0.42,
+        "maxPct": 0.7
+      },
+      "Federal A": {
+        "minPct": 0.18,
+        "maxPct": 0.5
+      },
+      "Primera División Chile": {
+        "minPct": 0.45,
+        "maxPct": 0.84
+      },
+      "Brasileirão": {
+        "minPct": 0.58,
+        "maxPct": 0.93
+      },
+      "Premier League": {
+        "minPct": 0.68,
+        "maxPct": 0.97
+      },
+      "LaLiga España": {
+        "minPct": 0.62,
+        "maxPct": 0.96
+      },
+      "Serie A Italia": {
+        "minPct": 0.58,
+        "maxPct": 0.94
+      },
+      "SuperLiga Rumania": {
+        "minPct": 0.32,
+        "maxPct": 0.76
+      }
+    }
+  },
+  "totales": {
+    "equipos": 18,
+    "hinchas_base_total": 166300,
+    "promedio_hinchas_base": 9238.89,
+    "hinchas_base_min": 900,
+    "hinchas_base_max": 42200
+  },
+  "hinchadas": [
+    {
+      "equipo": "FCSB",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 58,
+      "estadio": "Arena Națională",
+      "capacidad_estadio": 55634,
+      "estadio_ficticio": false,
+      "hinchas_base": 42200,
+      "ocupacion_base_porcentaje": 76.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "CFR Cluj",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 56,
+      "estadio": "Dr. Constantin Rădulescu",
+      "capacidad_estadio": 23500,
+      "estadio_ficticio": false,
+      "hinchas_base": 17100,
+      "ocupacion_base_porcentaje": 73.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Universitatea Craiova",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 54,
+      "estadio": "Ion Oblemenco",
+      "capacidad_estadio": 30983,
+      "estadio_ficticio": false,
+      "hinchas_base": 21700,
+      "ocupacion_base_porcentaje": 70.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Dinamo București",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 52,
+      "estadio": "Arcul de Triumf",
+      "capacidad_estadio": 8207,
+      "estadio_ficticio": false,
+      "hinchas_base": 5500,
+      "ocupacion_base_porcentaje": 67.2,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Rapid București",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 52,
+      "estadio": "Giulești",
+      "capacidad_estadio": 14047,
+      "estadio_ficticio": false,
+      "hinchas_base": 9400,
+      "ocupacion_base_porcentaje": 67.2,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Farul Constanța",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 49,
+      "estadio": "Central Academia Gheorghe Hagi",
+      "capacidad_estadio": 4554,
+      "estadio_ficticio": false,
+      "hinchas_base": 2800,
+      "ocupacion_base_porcentaje": 62.8,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Petrolul Ploiești",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 47,
+      "estadio": "Ilie Oană",
+      "capacidad_estadio": 15073,
+      "estadio_ficticio": false,
+      "hinchas_base": 9000,
+      "ocupacion_base_porcentaje": 59.9,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "UTA Arad",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 45,
+      "estadio": "Francisc von Neuman",
+      "capacidad_estadio": 12700,
+      "estadio_ficticio": false,
+      "hinchas_base": 7200,
+      "ocupacion_base_porcentaje": 56.9,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Sepsi OSK",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 44,
+      "estadio": "Sepsi Arena",
+      "capacidad_estadio": 8400,
+      "estadio_ficticio": false,
+      "hinchas_base": 4600,
+      "ocupacion_base_porcentaje": 55.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Hermannstadt",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 42,
+      "estadio": "Municipal Sibiu",
+      "capacidad_estadio": 12900,
+      "estadio_ficticio": false,
+      "hinchas_base": 6700,
+      "ocupacion_base_porcentaje": 52.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Universitatea Cluj",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 42,
+      "estadio": "Cluj Arena",
+      "capacidad_estadio": 30335,
+      "estadio_ficticio": false,
+      "hinchas_base": 15900,
+      "ocupacion_base_porcentaje": 52.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Oțelul Galați",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 40,
+      "estadio": "Oțelul",
+      "capacidad_estadio": 13630,
+      "estadio_ficticio": false,
+      "hinchas_base": 6700,
+      "ocupacion_base_porcentaje": 49.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "FC Argeș",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 39,
+      "estadio": "Nicolae Dobrin",
+      "capacidad_estadio": 15000,
+      "estadio_ficticio": false,
+      "hinchas_base": 7200,
+      "ocupacion_base_porcentaje": 48.1,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Poli Iași",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 37,
+      "estadio": "Emil Alexandrescu",
+      "capacidad_estadio": 11390,
+      "estadio_ficticio": false,
+      "hinchas_base": 5100,
+      "ocupacion_base_porcentaje": 45.2,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Botoșani",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 20,
+      "estadio": "Municipal Botoșani",
+      "capacidad_estadio": 7782,
+      "estadio_ficticio": false,
+      "hinchas_base": 1600,
+      "ocupacion_base_porcentaje": 20.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Voluntari",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 19,
+      "estadio": "Anghel Iordănescu",
+      "capacidad_estadio": 4600,
+      "estadio_ficticio": false,
+      "hinchas_base": 900,
+      "ocupacion_base_porcentaje": 19.6,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Gloria Bistrița",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 18,
+      "estadio": "Jean Pădureanu",
+      "capacidad_estadio": 7800,
+      "estadio_ficticio": false,
+      "hinchas_base": 1400,
+      "ocupacion_base_porcentaje": 17.9,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Chindia Târgoviște",
+      "liga": "SuperLiga Rumania",
+      "pais": "Rumania",
+      "prestigio": 17,
+      "estadio": "Eugen Popescu",
+      "capacidad_estadio": 8400,
+      "estadio_ficticio": false,
+      "hinchas_base": 1300,
+      "ocupacion_base_porcentaje": 15.5,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    }
+  ],
+  "notas": [
+    "Base jugable de asistencia/hinchada inicial; no representa padrón real de simpatizantes."
+  ]
+}

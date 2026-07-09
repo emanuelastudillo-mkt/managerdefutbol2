@@ -1,0 +1,180 @@
+{
+  "version": "V3.79",
+  "pais": "Italia",
+  "sistema": "estadios_italia",
+  "descripcion": "Estadios base para clubes de Italia.",
+  "notas": [
+    "Capacidades redondeadas para balance jugable cuando corresponde.",
+    "Los estadios ficticios se marcan explícitamente."
+  ],
+  "leagues": [
+    {
+      "name": "Serie A Italia",
+      "country": "Italia",
+      "teams": [
+        {
+          "name": "Juventus",
+          "city": "Turín",
+          "country": "Italia",
+          "reputation": 91,
+          "stadium": "Allianz Stadium",
+          "stadiumCapacity": 41507,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Inter",
+          "city": "Milán",
+          "country": "Italia",
+          "reputation": 90,
+          "stadium": "San Siro",
+          "stadiumCapacity": 75817,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Milan",
+          "city": "Milán",
+          "country": "Italia",
+          "reputation": 89,
+          "stadium": "San Siro",
+          "stadiumCapacity": 75817,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Napoli",
+          "city": "Nápoles",
+          "country": "Italia",
+          "reputation": 88,
+          "stadium": "Diego Armando Maradona",
+          "stadiumCapacity": 54726,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Roma",
+          "city": "Roma",
+          "country": "Italia",
+          "reputation": 84,
+          "stadium": "Olimpico",
+          "stadiumCapacity": 70634,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Lazio",
+          "city": "Roma",
+          "country": "Italia",
+          "reputation": 82,
+          "stadium": "Olimpico",
+          "stadiumCapacity": 70634,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Atalanta",
+          "city": "Bérgamo",
+          "country": "Italia",
+          "reputation": 81,
+          "stadium": "Gewiss Stadium",
+          "stadiumCapacity": 24950,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Fiorentina",
+          "city": "Florencia",
+          "country": "Italia",
+          "reputation": 79,
+          "stadium": "Artemio Franchi",
+          "stadiumCapacity": 43147,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Torino",
+          "city": "Turín",
+          "country": "Italia",
+          "reputation": 75,
+          "stadium": "Olimpico Grande Torino",
+          "stadiumCapacity": 27994,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Bologna",
+          "city": "Bolonia",
+          "country": "Italia",
+          "reputation": 75,
+          "stadium": "Renato Dall'Ara",
+          "stadiumCapacity": 36532,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Genoa",
+          "city": "Génova",
+          "country": "Italia",
+          "reputation": 72,
+          "stadium": "Luigi Ferraris",
+          "stadiumCapacity": 36599,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Sampdoria",
+          "city": "Génova",
+          "country": "Italia",
+          "reputation": 70,
+          "stadium": "Luigi Ferraris",
+          "stadiumCapacity": 36599,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Parma",
+          "city": "Parma",
+          "country": "Italia",
+          "reputation": 68,
+          "stadium": "Ennio Tardini",
+          "stadiumCapacity": 22352,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Udinese",
+          "city": "Udine",
+          "country": "Italia",
+          "reputation": 67,
+          "stadium": "Bluenergy Stadium",
+          "stadiumCapacity": 25144,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Palermo",
+          "city": "Palermo",
+          "country": "Italia",
+          "reputation": 66,
+          "stadium": "Renzo Barbera",
+          "stadiumCapacity": 36365,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Cagliari",
+          "city": "Cagliari",
+          "country": "Italia",
+          "reputation": 65,
+          "stadium": "Unipol Domus",
+          "stadiumCapacity": 16416,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Hellas Verona",
+          "city": "Verona",
+          "country": "Italia",
+          "reputation": 64,
+          "stadium": "Marcantonio Bentegodi",
+          "stadiumCapacity": 39211,
+          "stadiumIsFictional": false
+        },
+        {
+          "name": "Sassuolo",
+          "city": "Sassuolo",
+          "country": "Italia",
+          "reputation": 63,
+          "stadium": "Mapei Stadium",
+          "stadiumCapacity": 21584,
+          "stadiumIsFictional": false
+        }
+      ]
+    }
+  ]
+}

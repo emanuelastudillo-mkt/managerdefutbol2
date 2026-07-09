@@ -1,0 +1,85 @@
+{
+  "metadata": {
+    "version": "V3.27",
+    "descripcion": "Planilla editable de eventos condicionales del manager. Cada evento puede activarse por fase, condición, probabilidad y efectos.",
+    "nota": "Los tipos de condición y efecto deben existir en js/game/14-eventos.js. Se pueden activar/desactivar eventos con activo true/false."
+  },
+  "eventos": [
+    {
+      "id": "afa_disculpas_lesiones_visitante",
+      "activo": true,
+      "nombre": "Disculpas AFA por exceso de lesiones de visitante",
+      "fase": "post_matchday",
+      "probabilidad": 1,
+      "condiciones": [
+        {
+          "tipo": "temporada_regular"
+        },
+        {
+          "tipo": "partido_propio_visitante"
+        },
+        {
+          "tipo": "lesiones_propias_mayor_a",
+          "valor": 3
+        }
+      ],
+      "efectos": [
+        {
+          "tipo": "compensacion_sueldos_lesionados",
+          "concepto": "Compensación AFA por lesiones de visitante"
+        },
+        {
+          "tipo": "mensaje",
+          "mensajeTipo": "afa",
+          "prioridad": "high",
+          "titulo": "Comunicado de AFA por el estado del campo",
+          "cuerpo": "AFA envió un pedido formal de disculpas en nombre de {{rival}} por la cantidad de lesionados sufridos como visitante. Se acreditó una compensación de {{monto}} equivalente a la suma del sueldo de los jugadores afectados: {{jugadores}}."
+        }
+      ]
+    },
+    {
+      "id": "apoyo_hinchas_moral_baja",
+      "activo": true,
+      "nombre": "Apoyo de hinchas cuando la moral está baja",
+      "fase": "post_matchday",
+      "probabilidad": 0.3,
+      "condiciones": [
+        {
+          "tipo": "temporada_regular"
+        },
+        {
+          "tipo": "moral_media_menor_a",
+          "valor": 50
+        }
+      ],
+      "efectos": [
+        {
+          "tipo": "moral_plantel",
+          "valor": 10
+        },
+        {
+          "tipo": "cohesion_equipo",
+          "valor": 10
+        },
+        {
+          "tipo": "forma_plantel",
+          "valor": 10
+        },
+        {
+          "tipo": "mensaje",
+          "mensajeTipo": "directiva",
+          "prioridad": "high",
+          "titulo": "Los hinchas se acercaron al entrenamiento",
+          "cuerpo": "La directiva informa que cientos de hinchas se acercaron a ver el entrenamiento y a mostrar su apoyo al equipo. El gesto levantó el ánimo del plantel: moral +10, cohesión +10 y forma física +10."
+        },
+        {
+          "tipo": "mensaje",
+          "mensajeTipo": "asistente",
+          "prioridad": "normal",
+          "titulo": "Informe del asistente tras el entrenamiento",
+          "cuerpo": "Luego del entrenamiento noté que el ánimo del equipo, los datos del GPS y las jugadas trabajadas indican que el plantel sintió el apoyo y quiere devolverlo dentro del campo."
+        }
+      ]
+    }
+  ]
+}

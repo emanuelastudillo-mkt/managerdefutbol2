@@ -1,0 +1,280 @@
+{
+  "version": "V3.79",
+  "pais": "Inglaterra",
+  "sistema": "hinchas_inglaterra",
+  "descripcion": "Cantidad base de hinchas por equipo en Inglaterra, calculada desde prestigio global, capacidad de estadio y liga.",
+  "formula": {
+    "descripcion": "Se normaliza el prestigio dentro de cada liga y se aplica un porcentaje de ocupación base a la capacidad del estadio.",
+    "variables": {
+      "prestigio_normalizado": "(prestigio - prestigio_min_liga) / (prestigio_max_liga - prestigio_min_liga)",
+      "ocupacion_base": "ocupacion_min_liga + prestigio_normalizado * (ocupacion_max_liga - ocupacion_min_liga)",
+      "hinchas_base": "capacidad_estadio * ocupacion_base, redondeado hacia abajo a centenas"
+    },
+    "rangos_por_liga": {
+      "Liga Profesional": {
+        "minPct": 0.6,
+        "maxPct": 0.91
+      },
+      "Primera Nacional": {
+        "minPct": 0.42,
+        "maxPct": 0.7
+      },
+      "Federal A": {
+        "minPct": 0.18,
+        "maxPct": 0.5
+      },
+      "Primera División Chile": {
+        "minPct": 0.45,
+        "maxPct": 0.84
+      },
+      "Brasileirão": {
+        "minPct": 0.58,
+        "maxPct": 0.93
+      },
+      "Premier League": {
+        "minPct": 0.68,
+        "maxPct": 0.97
+      },
+      "LaLiga España": {
+        "minPct": 0.62,
+        "maxPct": 0.96
+      },
+      "Serie A Italia": {
+        "minPct": 0.58,
+        "maxPct": 0.94
+      },
+      "SuperLiga Rumania": {
+        "minPct": 0.32,
+        "maxPct": 0.76
+      }
+    }
+  },
+  "totales": {
+    "equipos": 18,
+    "hinchas_base_total": 691900,
+    "promedio_hinchas_base": 38438.89,
+    "hinchas_base_min": 18000,
+    "hinchas_base_max": 69100
+  },
+  "hinchadas": [
+    {
+      "equipo": "Manchester City",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 96,
+      "estadio": "Etihad Stadium",
+      "capacidad_estadio": 53400,
+      "estadio_ficticio": false,
+      "hinchas_base": 51700,
+      "ocupacion_base_porcentaje": 97.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Liverpool",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 95,
+      "estadio": "Anfield",
+      "capacidad_estadio": 61276,
+      "estadio_ficticio": false,
+      "hinchas_base": 58800,
+      "ocupacion_base_porcentaje": 96.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Manchester United",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 92,
+      "estadio": "Old Trafford",
+      "capacidad_estadio": 74310,
+      "estadio_ficticio": false,
+      "hinchas_base": 69100,
+      "ocupacion_base_porcentaje": 93.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Arsenal",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 91,
+      "estadio": "Emirates Stadium",
+      "capacidad_estadio": 60704,
+      "estadio_ficticio": false,
+      "hinchas_base": 55800,
+      "ocupacion_base_porcentaje": 92.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Chelsea",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 90,
+      "estadio": "Stamford Bridge",
+      "capacidad_estadio": 40173,
+      "estadio_ficticio": false,
+      "hinchas_base": 36500,
+      "ocupacion_base_porcentaje": 91.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Tottenham",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 88,
+      "estadio": "Tottenham Hotspur Stadium",
+      "capacidad_estadio": 62850,
+      "estadio_ficticio": false,
+      "hinchas_base": 55900,
+      "ocupacion_base_porcentaje": 89.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Newcastle United",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 84,
+      "estadio": "St James' Park",
+      "capacidad_estadio": 52305,
+      "estadio_ficticio": false,
+      "hinchas_base": 44400,
+      "ocupacion_base_porcentaje": 85.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Aston Villa",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 82,
+      "estadio": "Villa Park",
+      "capacidad_estadio": 42657,
+      "estadio_ficticio": false,
+      "hinchas_base": 35400,
+      "ocupacion_base_porcentaje": 83.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Everton",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 78,
+      "estadio": "Everton Stadium",
+      "capacidad_estadio": 52888,
+      "estadio_ficticio": false,
+      "hinchas_base": 41700,
+      "ocupacion_base_porcentaje": 79.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "West Ham",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 77,
+      "estadio": "London Stadium",
+      "capacidad_estadio": 62500,
+      "estadio_ficticio": false,
+      "hinchas_base": 48700,
+      "ocupacion_base_porcentaje": 78.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Nottingham Forest",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 76,
+      "estadio": "City Ground",
+      "capacidad_estadio": 30445,
+      "estadio_ficticio": false,
+      "hinchas_base": 23400,
+      "ocupacion_base_porcentaje": 77.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Leeds United",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 74,
+      "estadio": "Elland Road",
+      "capacidad_estadio": 37792,
+      "estadio_ficticio": false,
+      "hinchas_base": 28300,
+      "ocupacion_base_porcentaje": 75.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Leicester City",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 73,
+      "estadio": "King Power Stadium",
+      "capacidad_estadio": 32262,
+      "estadio_ficticio": false,
+      "hinchas_base": 23800,
+      "ocupacion_base_porcentaje": 74.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Brighton",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 73,
+      "estadio": "American Express Stadium",
+      "capacidad_estadio": 31800,
+      "estadio_ficticio": false,
+      "hinchas_base": 23500,
+      "ocupacion_base_porcentaje": 74.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Wolverhampton",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 72,
+      "estadio": "Molineux",
+      "capacidad_estadio": 32050,
+      "estadio_ficticio": false,
+      "hinchas_base": 23300,
+      "ocupacion_base_porcentaje": 73.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Crystal Palace",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 70,
+      "estadio": "Selhurst Park",
+      "capacidad_estadio": 25486,
+      "estadio_ficticio": false,
+      "hinchas_base": 18000,
+      "ocupacion_base_porcentaje": 71.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Fulham",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 69,
+      "estadio": "Craven Cottage",
+      "capacidad_estadio": 29000,
+      "estadio_ficticio": false,
+      "hinchas_base": 20300,
+      "ocupacion_base_porcentaje": 70.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    },
+    {
+      "equipo": "Sunderland",
+      "liga": "Premier League",
+      "pais": "Inglaterra",
+      "prestigio": 67,
+      "estadio": "Stadium of Light",
+      "capacidad_estadio": 49000,
+      "estadio_ficticio": false,
+      "hinchas_base": 33300,
+      "ocupacion_base_porcentaje": 68.0,
+      "criterio": "capacidad_estadio * porcentaje_por_prestigio_y_liga"
+    }
+  ],
+  "notas": [
+    "Base jugable de asistencia/hinchada inicial; no representa padrón real de simpatizantes."
+  ]
+}
