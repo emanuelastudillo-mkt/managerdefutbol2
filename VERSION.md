@@ -1,7 +1,7 @@
 # Versión actual
 
-V5.28
+V5.29
 
 ## Último cambio
 
-Revisión y limpieza de código heredado sin cambiar reglas de juego ni compatibilidad de partidas.
+Pulido visual del menú de Táctica: cuadrícula compacta, panel derecho de acciones, visores junto a instrucciones zonales e indicadores circulares sin números para físico/moral.

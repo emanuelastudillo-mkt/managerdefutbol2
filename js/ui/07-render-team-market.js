@@ -599,13 +599,17 @@ function bindSquadTopScrollbar(){
 function tacticSelectionClass(playerId){
   return tacticClickSelection && Number(tacticClickSelection.playerId) === Number(playerId) ? ' tactic-selected' : '';
 }
+function tacticMetricCircle(markup){
+  return `<span class="tactic-metric-circle">${markup || ''}</span>`;
+}
 function tacticPlayerCard(p, extra='', zone='reserve', index=-1){
   const statusIcons = availabilityIcons(p.id);
   const unavailableClass = isUnavailable(p.id) ? 'injured-card' : '';
   const playableInjuredClass = canUseInjuredAsSub(p.id) ? 'playable-injured-card' : '';
   return `<button type="button" class="drag-player tactic-click-player ${playerGroupClass(p.position)} ${extra} ${unavailableClass} ${playableInjuredClass}${tacticSelectionClass(p.id)}" data-tactic-player="${p.id}" data-tactic-zone="${zone}" data-tactic-index="${index}" title="Click para seleccionar o intercambiar">
     ${faceImg(p, 'drag-face')}
-    <span class="tactic-card-text"><strong>${statusIcons}${escapeHtml(playerLastName(p.name))}</strong><span>#${jerseyNumber(p.id)} · ${roleBadge(p.position)} · ${Number(p.age || 0) || '—'} años · ${visibleOverall(p)} · Fís. ${currentCondition(p.id)}/99 · Mor. ${currentMorale(p.id)}/99</span></span>
+    <span class="tactic-card-text"><strong>${statusIcons}${escapeHtml(playerLastName(p.name))}</strong><span class="tactic-card-meta">#${jerseyNumber(p.id)} · ${roleBadge(p.position)} · ${Number(p.age || 0) || '—'} años · Media ${visibleOverall(p)}</span></span>
+    <span class="tactic-card-meters" aria-label="Estado físico y moral">${tacticMetricCircle(conditionBar(p.id))}${tacticMetricCircle(moraleBar(p.id))}</span>
   </button>`;
 }
 function playerDragCard(p, extra=''){
@@ -741,56 +745,65 @@ function renderTactics(){
       <span>${p ? `<strong>${typeof playerNameWithStar === 'function' ? playerNameWithStar(p) : escapeHtml(p.name)}</strong>` : '<span class="muted">Vacío</span>'}</span>
       <span class="age-cell lineup-center-cell">${p ? `${Number(p.age || 0) || '—'} años` : '—'}</span>
       <span class="lineup-center-cell">${p ? `<strong>${visibleOverall(p)}</strong>` : '—'}</span>
-      <span class="lineup-center-cell">${p ? conditionBar(p.id) : ''}</span>
-      <span class="lineup-center-cell">${p ? moraleBar(p.id) : ''}</span>
+      <span class="lineup-center-cell metric-only">${p ? tacticMetricCircle(conditionBar(p.id)) : ''}</span>
+      <span class="lineup-center-cell metric-only">${p ? tacticMetricCircle(moraleBar(p.id)) : ''}</span>
       <strong class="lineup-center-cell">${p ? (isInjured(p.id) ? tacticStatusIcon(p.id) : playerTacticFitLabel(p, slot.slot)) : 'Click'}</strong>
     </div>`;
   }).join('');
   view.innerHTML = `
-    <div class="section-title"><h2>Táctica y convocatoria</h2></div>
-    <div class="card tactic-board-card">
-      <div class="row tactic-top-row"><div><h3>Cancha táctica</h3><p class="muted small">Formación ${game.tactic.formation}</p></div><div class="formation-box"><label>Formación</label><select id="formation">${formationOptions}</select></div><div class="tactic-autopick-row"><button id="autoPickBestBtn" class="ghost">Mejor once</button><button id="autoPickConditionBtn" class="ghost">Mejor condición física</button></div></div>
-      <div class="tactic-click-help">${tacticSelectionHint()}</div>
-      <div class="tactic-board-layout">
-        <aside class="tactic-board-side tactic-board-left tactic-board-visors" aria-label="Visores tácticos">
-          ${tacticSectorSkillVisors()}
-        </aside>
-        <div class="pitch-board-wrap">
-          <div class="pitch-board centered">${pitch}</div>
-          <div class="tactic-state-legend">
-            <span>${mentalityMarker('muy_defensivo')} Muy defensivo</span>
-            <span>${mentalityMarker('defensivo')} Defensivo</span>
-            <span>${mentalityMarker('normal')} Normal</span>
-            <span>${mentalityMarker('ofensivo')} Ofensivo</span>
-            <span>${mentalityMarker('muy_ofensivo')} Muy ofensivo</span>
+    <div class="section-title tactic-section-title"><h2>Táctica y convocatoria</h2></div>
+    <div class="tactic-workspace">
+      <main class="tactic-left-stack">
+        <div class="card tactic-board-card tactic-grid-card">
+          <div class="tactic-board-headline"><div><h3>Cancha táctica</h3><p class="muted small">Formación ${game.tactic.formation}</p></div></div>
+          <div class="tactic-click-help">${tacticSelectionHint()}</div>
+          <div class="pitch-board-wrap">
+            <div class="pitch-board centered">${pitch}</div>
+            <div class="tactic-state-legend">
+              <span>${mentalityMarker('muy_defensivo')} Muy defensivo</span>
+              <span>${mentalityMarker('defensivo')} Defensivo</span>
+              <span>${mentalityMarker('normal')} Normal</span>
+              <span>${mentalityMarker('ofensivo')} Ofensivo</span>
+              <span>${mentalityMarker('muy_ofensivo')} Muy ofensivo</span>
+            </div>
           </div>
         </div>
-        <aside class="tactic-board-side tactic-board-right">
+        <div class="grid cols-2 tactic-lists tactic-grid-card">
+          <div class="card tactic-lineup-card">
+            <h3>Titulares</h3>
+            <div class="lineup-row lineup-head tactic-lineup-head"><span>Pos.</span><span>Jugador</span><span class="lineup-center-cell">Edad</span><span class="lineup-center-cell">Media</span><span class="lineup-center-cell">Físico</span><span class="lineup-center-cell">Moral</span><span class="lineup-center-cell">Estado</span></div>
+            <div class="lineup-list">${starterList}</div>
+          </div>
+          <div class="card tactic-roster-card">
+            <h3>Suplentes / reservas</h3>
+            <div class="drop-pool" data-drop-pool="bench"><h4>Suplentes (${bench.length}/10)</h4><div class="drag-list">${bench.length ? bench.map((p,i)=>tacticPlayerCard(p,'bench-card','bench',i)).join('') : '<p class="muted small">Sin suplentes.</p>'}</div></div>
+            <div class="drop-pool" data-drop-pool="reserve"><h4>Reservas</h4><div class="drag-list">${reserves.length ? reserves.map((p,i)=>tacticPlayerCard(p,'reserve-card','reserve',i)).join('') : '<p class="muted small">Sin reservas.</p>'}</div></div>
+          </div>
+        </div>
+        <div class="card tactic-autosub-card tactic-grid-card">
+          <h3>Cambios automáticos</h3>
+          <p class="muted small">Elegí reglas simples: cansados, mejores suplentes o sólo cambios obligados por lesión.</p>
+          <div class="autosub-grid">${[0,1,2,3,4].map(i => autoSubRow(i)).join('')}</div>
+        </div>
+      </main>
+      <aside class="tactic-right-rail">
+        <div class="card tactic-actions-card tactic-grid-card">
+          <h3>Acciones</h3>
+          <div class="formation-box"><label>Formación</label><select id="formation">${formationOptions}</select></div>
+          <div class="tactic-autopick-row"><button id="autoPickBestBtn" class="ghost">Mejor once</button><button id="autoPickConditionBtn" class="ghost">Mejor condición física</button></div>
+          <button id="saveTactic" class="primary full">Confirmar equipo</button>
+          <span id="tacticErrors" class="bad small"></span>
+        </div>
+        <div class="card tactic-board-side tactic-board-right tactic-sector-card tactic-grid-card">
+          <h3>Visores tácticos</h3>
+          <div class="tactic-board-visors" aria-label="Visores tácticos">${tacticSectorSkillVisors()}</div>
           <h3>Instrucciones zonales</h3>
           <p class="muted small">Defensa, medios y delanteros. Pueden contraponerse o no con la mentalidad individual de cada jugador.</p>
           <div class="sector-style-grid vertical">${sectorStyleControls()}</div>
-        </aside>
-      </div>
+        </div>
+        ${savedTacticsPanelMarkup()}
+      </aside>
     </div>
-    ${savedTacticsPanelMarkup()}
-    <div class="grid cols-2 tactic-lists" style="margin-top:14px">
-      <div class="card">
-        <h3>Titulares</h3>
-        <div class="lineup-row lineup-head"><span>Pos.</span><span>Jugador</span><span class="lineup-center-cell">Edad</span><span class="lineup-center-cell">Media</span><span class="lineup-center-cell">Físico</span><span class="lineup-center-cell">Moral</span><span class="lineup-center-cell">Estado</span></div>
-        <div class="lineup-list">${starterList}</div>
-      </div>
-      <div class="card">
-        <h3>Suplentes / reservas</h3>
-        <div class="drop-pool" data-drop-pool="bench"><h4>Suplentes (${bench.length}/10)</h4><div class="drag-list">${bench.length ? bench.map((p,i)=>tacticPlayerCard(p,'bench-card','bench',i)).join('') : '<p class="muted small">Sin suplentes.</p>'}</div></div>
-        <div class="drop-pool" data-drop-pool="reserve"><h4>Reservas</h4><div class="drag-list">${reserves.length ? reserves.map((p,i)=>tacticPlayerCard(p,'reserve-card','reserve',i)).join('') : '<p class="muted small">Sin reservas.</p>'}</div></div>
-      </div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <h3>Cambios automáticos</h3>
-      <p class="muted small">Elegí reglas simples: cansados, mejores suplentes o sólo cambios obligados por lesión.</p>
-      <div class="autosub-grid">${[0,1,2,3,4].map(i => autoSubRow(i)).join('')}</div>
-    </div>
-    <div class="row sticky-actions"><button id="saveTactic" class="primary">Confirmar equipo</button><span id="tacticErrors" class="bad small"></span></div>
   `;
   prependFirstTeamTabs('tactics');
   $('formation').addEventListener('change', () => {

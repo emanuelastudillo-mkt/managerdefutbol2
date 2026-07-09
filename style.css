@@ -3737,3 +3737,295 @@ th{
 @media (max-width:700px){
   .tactic-board-visors .tactic-skill-visor-list{grid-template-columns:1fr}
 }
+
+/* V5.29 · Táctica en cuadrícula compacta */
+.tactic-section-title{margin-bottom:12px}
+.tactic-workspace{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(280px,330px);
+  gap:12px;
+  align-items:start;
+}
+.tactic-left-stack,
+.tactic-right-rail{
+  display:grid;
+  gap:12px;
+  align-items:start;
+}
+.tactic-grid-card{
+  border-radius:16px;
+  padding:14px;
+}
+.tactic-board-card{
+  gap:10px;
+}
+.tactic-board-headline{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+.tactic-board-headline h3,
+.tactic-actions-card h3,
+.tactic-sector-card h3,
+.tactic-lineup-card h3,
+.tactic-roster-card h3,
+.tactic-autosub-card h3{
+  margin-bottom:6px;
+}
+.tactic-board-headline .small{
+  margin:0;
+}
+.tactic-workspace .pitch-board.centered{
+  width:100%;
+  max-width:920px!important;
+  min-width:0!important;
+  margin:0;
+}
+.tactic-workspace .pitch-board-wrap{
+  width:100%;
+  min-width:0;
+}
+.tactic-workspace .tactic-state-legend{
+  margin-top:8px;
+  padding:8px 10px;
+  gap:7px;
+  border-radius:12px;
+}
+.tactic-workspace .tactic-state-legend span{
+  font-size:11px;
+  gap:5px;
+}
+.tactic-workspace .tactic-click-help{
+  padding:8px 10px;
+  border-radius:12px;
+  font-size:12px;
+}
+.tactic-actions-card{
+  display:grid;
+  gap:9px;
+}
+.tactic-actions-card .formation-box{
+  min-width:0;
+  width:100%;
+}
+.tactic-actions-card label{
+  margin-bottom:5px;
+}
+.tactic-actions-card select{
+  margin-bottom:0;
+}
+.tactic-actions-card .tactic-autopick-row{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  justify-content:stretch;
+}
+.tactic-actions-card .tactic-autopick-row button{
+  width:100%;
+  padding:9px 10px;
+  border-radius:11px;
+}
+.tactic-actions-card .primary{
+  margin-top:2px;
+}
+.tactic-sector-card{
+  display:grid;
+  gap:10px;
+  align-self:start;
+}
+.tactic-sector-card.tactic-board-side{
+  padding:14px;
+}
+.tactic-sector-card .tactic-board-visors{
+  display:block;
+  align-self:auto;
+}
+.tactic-sector-card .tactic-skill-visor-list{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  margin:0;
+}
+.tactic-sector-card .tactic-skill-visor{
+  padding:8px 9px;
+  border-radius:12px;
+}
+.tactic-sector-card .tactic-skill-visor strong{
+  font-size:20px;
+}
+.tactic-sector-card .sector-style-grid.vertical{
+  gap:7px;
+}
+.tactic-sector-card .sector-style-control{
+  padding:9px;
+  border-radius:12px;
+}
+.tactic-right-rail .saved-tactics-card{
+  margin-top:0!important;
+}
+.tactic-right-rail .saved-tactics-grid{
+  grid-template-columns:1fr;
+  gap:8px;
+}
+.tactic-right-rail .saved-tactic-slot{
+  min-height:0;
+  padding:10px;
+  border-radius:12px;
+}
+.tactic-right-rail .saved-tactic-actions button{
+  padding:8px 10px;
+  border-radius:10px;
+}
+.tactic-left-stack .tactic-lists{
+  margin-top:0!important;
+  gap:12px;
+}
+.tactic-lineup-card,
+.tactic-roster-card{
+  min-width:0;
+}
+.tactic-lineup-row,
+.tactic-lineup-head{
+  grid-template-columns:58px minmax(118px,1.35fr) 48px 48px 42px 42px 70px!important;
+  gap:6px;
+  padding:7px 8px;
+  min-height:38px;
+  border-radius:12px;
+}
+.tactic-lineup-head{
+  min-height:0;
+  padding:4px 8px;
+}
+.tactic-lineup-row .pill{
+  padding:3px 6px;
+  font-size:11px;
+}
+.tactic-lineup-row strong,
+.tactic-lineup-row span{
+  min-width:0;
+}
+.tactic-lineup-row .lineup-center-cell{
+  font-size:11px;
+}
+.tactic-lineup-row .metric-only{
+  min-width:34px;
+}
+.tactic-metric-circle{
+  display:inline-grid;
+  place-items:center;
+  width:30px;
+  min-width:30px;
+  height:30px;
+  line-height:1;
+}
+.tactic-metric-circle .value-circle{
+  width:28px;
+  height:28px;
+  min-width:28px;
+}
+.tactic-metric-circle .value-circle::after{
+  inset:6px;
+}
+.tactic-metric-circle .value-circle strong{
+  display:none;
+}
+.tactic-metric-circle .condition-wear-wrap{
+  min-width:28px;
+  width:28px;
+  height:28px;
+  gap:0;
+}
+.tactic-metric-circle .condition-wear-wrap small{
+  display:none;
+}
+.tactic-metric-circle .condition-wear-max{
+  width:28px;
+  height:28px;
+  left:0;
+}
+.drag-player.tactic-click-player{
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:7px;
+  padding:7px;
+  border-radius:12px;
+}
+.drag-player.tactic-click-player .drag-face{
+  width:32px;
+  height:32px;
+  border-radius:9px;
+}
+.tactic-card-text strong{
+  font-size:12px;
+}
+.tactic-card-text .tactic-card-meta{
+  font-size:10px;
+}
+.tactic-card-meters{
+  display:flex!important;
+  align-items:center;
+  gap:3px;
+  color:inherit!important;
+  overflow:visible!important;
+  white-space:nowrap!important;
+}
+.tactic-card-meters .tactic-metric-circle{
+  width:26px;
+  min-width:26px;
+  height:26px;
+}
+.tactic-card-meters .value-circle,
+.tactic-card-meters .condition-wear-wrap,
+.tactic-card-meters .condition-wear-max{
+  width:24px;
+  min-width:24px;
+  height:24px;
+}
+.tactic-card-meters .value-circle::after{
+  inset:5px;
+}
+.tactic-roster-card .drop-pool{
+  margin-top:8px;
+  padding:10px;
+  border-radius:13px;
+}
+.tactic-roster-card .drop-pool h4{
+  margin-bottom:8px;
+  font-size:12px;
+}
+.tactic-roster-card .drag-list{
+  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  gap:7px;
+}
+.tactic-autosub-card{
+  margin-top:0!important;
+}
+.tactic-autosub-card .autosub-row{
+  padding:9px;
+  border-radius:12px;
+  gap:8px;
+}
+.tactic-autosub-card select{
+  padding:9px 10px;
+  border-radius:11px;
+}
+@media (max-width:1380px){
+  .tactic-workspace{grid-template-columns:minmax(0,1fr) minmax(260px,300px)}
+  .tactic-left-stack .tactic-lists{grid-template-columns:1fr}
+}
+@media (max-width:1050px){
+  .tactic-workspace{grid-template-columns:1fr}
+  .tactic-right-rail{grid-template-columns:1fr}
+  .tactic-actions-card .tactic-autopick-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:720px){
+  .tactic-actions-card .tactic-autopick-row{grid-template-columns:1fr}
+  .tactic-lineup-head{display:none}
+  .tactic-lineup-row{grid-template-columns:52px minmax(0,1fr) 42px 42px!important}
+  .tactic-lineup-row .age-cell,
+  .tactic-lineup-row .metric-only,
+  .tactic-lineup-row .lineup-center-cell:nth-child(4){grid-column:auto}
+  .tactic-lineup-row .lineup-center-cell:last-child{grid-column:1 / -1;justify-content:flex-start}
+  .drag-player.tactic-click-player{grid-template-columns:auto minmax(0,1fr)}
+  .tactic-card-meters{grid-column:1 / -1;justify-content:flex-start;padding-left:39px}
+}

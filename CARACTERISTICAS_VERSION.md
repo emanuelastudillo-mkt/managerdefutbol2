@@ -1,14 +1,20 @@
-# V5.28 - Revisión y limpieza de código
+# V5.29 - Pulido visual del menú de Táctica
 
 ## Cambios principales
 
-- Actualizada la base de versión de V5.27 a V5.28, incluyendo `config.js`, `index.html`, cache-busting, `VERSION.md`, `CARACTERISTICAS_VERSION.md` y `app.js`.
-- Limpieza del puente de simulación en `js/game/11-match-engine.js`: se retiraron helpers antiguos del motor alternativo que ya no eran llamados por el flujo actual.
-- Se conservó `pitchEffect()` porque todavía es usado por economía, entrenamiento, desgaste y efectos de campo.
-- Se conservaron los helpers compartidos que usa `Simulator20`: cambios, estadísticas, sanciones, lesiones, aplicación de resultados y limpieza de táctica.
-- Eliminados wrappers heredados `advanceOneDay()` y `goToNextMatch()` porque el flujo actual usa directamente `advanceCalendarOneStep()` desde el botón unificado.
-- Agregado informe `REVISION_CODIGO_V5.28.md` con hallazgos de código eliminable, contradicciones y mejoras posibles.
+- Reorganizada la pantalla de **Táctica y convocatoria** en una cuadrícula de dos zonas: bloque principal a la izquierda y panel de acciones/controles a la derecha.
+- La pizarra táctica vuelve a quedar alineada como bloque principal, sin depender de una columna izquierda de visores.
+- Los visores de **Defensa**, **Medios** y **Delantera** ahora están en el mismo panel que las **Instrucciones zonales**.
+- Los botones de mayor uso (**Formación**, **Mejor once**, **Mejor condición física** y **Confirmar equipo**) pasan al panel derecho.
+- En la lista de titulares, **Estado físico** y **Moral** se muestran como círculos compactos tipo reloj/torta, sin número interno.
+- En suplentes y reservas se quitaron los textos numéricos de físico/moral y se reemplazaron por indicadores circulares compactos.
+- Se ajustaron paddings, radios, columnas y gaps para que la pantalla se sienta más cercana a una cuadrícula de bloques conectados.
+
+## Alcance técnico
+
+- Se modificó únicamente la estructura visual del render de Táctica y estilos CSS asociados.
+- No se cambiaron reglas de simulación, formación, selección, guardado de tácticas, cambios automáticos ni validación de alineación.
 
 ## Compatibilidad
 
-Se implementa solo. No requiere reiniciar partida. Es una limpieza de código y documentación; no cambia reglas de simulación, planteles, calendario ni datos guardados.
+Se implementa solo. No requiere reiniciar partida. Los cambios son visuales y mantienen los mismos IDs/eventos funcionales de formación, autoselección, guardado y selección de jugadores.

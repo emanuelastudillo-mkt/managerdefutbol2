@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## V5.29 - Pulido visual del menú de Táctica
+
+- Reorganiza la pantalla de Táctica en una cuadrícula más compacta: contenido principal a la izquierda y acciones/controles a la derecha.
+- Mueve los visores de Defensa, Medios y Delantera al mismo panel de Instrucciones zonales.
+- Alinea la pizarra como bloque principal y elimina la columna izquierda de visores que reducía el espacio útil.
+- Reemplaza los números de Estado físico y Moral por indicadores circulares compactos en titulares, suplentes y reservas.
+- Compacta filas, tarjetas y bloques para que la pantalla se lea más como una grilla de módulos conectados.
+- Mantiene sin cambios la lógica de formación, selección, guardado de tácticas, autoselección y validación de alineación.
+- Compatibilidad: se implementa solo. No requiere reiniciar partida.
+
 ## V5.28 - Revisión y limpieza de código
 
 - Se actualiza la línea de versiones a V5.28 como incremental posterior a V5.27.
@@ -23,8 +33,6 @@
 - Reduce al 50% las tarjetas generadas por el simulador.
 - Agrega suspensión automática por 5 expulsiones de un mismo equipo, con derrota 0-3.
 - Elimina textos explicativos redundantes del apartado Tácticas.
-
-# Fútbol Manager MVP
 
 ## V5.25 - Texto dirigir partido
 
