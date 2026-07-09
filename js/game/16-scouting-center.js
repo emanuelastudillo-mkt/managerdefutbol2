@@ -288,6 +288,29 @@ function resetScoutingCenterForNewClub(){
   // La información ojeada es progreso del manager y debe seguir disponible en las fichas.
   game.scoutingCenter = { ...createInitialScoutingCenterState(), reports: previous.reports || {} };
 }
+
+function scoutingRepeatedIcons(icon, active=0, total=null, className=''){
+  const safeActive = Math.max(0, Math.round(Number(active || 0)));
+  const safeTotal = total === null ? safeActive : Math.max(0, Math.round(Number(total || 0)));
+  const limit = Math.min(Math.max(safeTotal, safeActive), 24);
+  const items = [];
+  for(let i=0; i<limit; i++){
+    const filled = i < safeActive;
+    items.push(`<span class="${filled ? 'filled' : 'empty'}" aria-hidden="true">${icon}</span>`);
+  }
+  if(Math.max(safeTotal, safeActive) > limit) items.push(`<span class="more">+${Math.max(safeTotal, safeActive) - limit}</span>`);
+  return `<div class="scouting-icon-stack ${className}">${items.join('')}</div>`;
+}
+function scoutingBinocularsIcon(extraClass=''){
+  return `<span class="scouting-binoculars-icon ${extraClass}" aria-hidden="true"><span></span></span>`;
+}
+function scoutingSummaryTile({ label, value, hint='', icon='', extra='' }){
+  return `<div class="card scouting-summary-tile ${extra}">
+    <div class="scouting-summary-icon">${icon}</div>
+    <div><p class="label">${escapeHtml(label)}</p><strong>${value}</strong>${hint ? `<small class="muted">${hint}</small>` : ''}</div>
+  </div>`;
+}
+
 function scoutingPlayerSkillRows(player, map){
   const known = scoutingKnownSet(player.id);
   return Object.entries(map || {}).map(([key,value]) => {
@@ -326,10 +349,30 @@ function scoutingChiefMarkup(){
   const state = ensureScoutingCenterState();
   if(state.chief){
     const type = scoutingChiefType(state.chief.type);
-    return `<div class="card scouting-chief-card"><div class="row"><div><p class="label">Jefe de ojeadores</p><h3>${escapeHtml(type?.name || state.chief.type)}</h3><p class="muted small">Sueldo mensual ${formatMoney(type?.monthlySalary || 0)} · controla hasta ${type?.maxOffices || 0} oficina(s) · se va al finalizar la temporada.</p></div><span class="pill">Activo</span></div></div>`;
+    const officeIcons = scoutingRepeatedIcons('🏢', state.offices, type?.maxOffices || 0, 'building-icons');
+    return `<div class="card scouting-chief-card scouting-control-card">
+      <div class="scouting-card-head">
+        <div class="scouting-card-icon">${scoutingBinocularsIcon('small')}</div>
+        <div><p class="label">Jefe de ojeadores</p><h3>${escapeHtml(type?.name || state.chief.type)}</h3></div>
+        <span class="pill ok">Activo</span>
+      </div>
+      <p class="muted small">Sueldo mensual ${formatMoney(type?.monthlySalary || 0)} · controla hasta ${type?.maxOffices || 0} oficina(s) · se va al finalizar la temporada.</p>
+      <div class="scouting-asset-strip"><span>Control de oficinas</span>${officeIcons}</div>
+    </div>`;
   }
-  const cards = (SCOUTING_CHIEF_TYPES || []).map(type => `<div class="card inner scouting-chief-option"><h3>${escapeHtml(type.name)}</h3><p class="muted small">${formatMoney(type.monthlySalary)} por mes · hasta ${type.maxOffices} oficina(s) · revela ${type.revealMin}-${type.revealMax} habilidad(es)/día.</p><button class="primary small-btn" data-hire-scouting-chief="${escapeHtml(type.key)}">Contratar</button></div>`).join('');
-  return `<div class="card scouting-chief-card"><div class="row"><div><p class="label">Empleado contratable</p><h3>Jefe de ojeadores</h3><p class="muted small">No puede despedirse. Finaliza contrato al terminar la temporada.</p></div></div><div class="grid cols-3">${cards}</div></div>`;
+  const cards = (SCOUTING_CHIEF_TYPES || []).map(type => `<div class="card inner scouting-chief-option">
+    <div class="scouting-chief-option-head"><strong>${escapeHtml(type.name)}</strong><span>${type.maxOffices} 🏢</span></div>
+    <p class="muted small">${formatMoney(type.monthlySalary)} por mes · revela ${type.revealMin}-${type.revealMax} habilidad(es)/día.</p>
+    <button class="primary small-btn" data-hire-scouting-chief="${escapeHtml(type.key)}">Contratar</button>
+  </div>`).join('');
+  return `<div class="card scouting-chief-card scouting-control-card">
+    <div class="scouting-card-head">
+      <div class="scouting-card-icon">${scoutingBinocularsIcon('small')}</div>
+      <div><p class="label">Empleado contratable</p><h3>Jefe de ojeadores</h3></div>
+    </div>
+    <p class="muted small">No puede despedirse. Finaliza contrato al terminar la temporada.</p>
+    <div class="scouting-chief-options">${cards}</div>
+  </div>`;
 }
 function renderScoutingCenter(){
   if(!SCOUTING_CENTER_ENABLED){ view.innerHTML = '<div class="card"><h2>Centro de Ojeo</h2><p class="muted">El Centro de Ojeo está desactivado en config.js.</p></div>'; return; }
@@ -338,23 +381,65 @@ function renderScoutingCenter(){
   const maxOffices = scoutingChiefMaxOffices();
   const listed = state.listedPlayerIds.map(playerById).filter(Boolean);
   const archivedReports = Object.keys(state.reports || {}).filter(id => !state.listedPlayerIds.map(Number).includes(Number(id))).length;
+  const reportCount = Object.keys(state.reports || {}).length;
   const lastProcess = game?.lastScoutingDailyResult;
   const lastProcessText = lastProcess?.date ? `Último proceso: ${escapeHtml(lastProcess.date)} · intentos ${Number(lastProcess.attempts || 0)} · reveladas ${Number(lastProcess.reveals || 0)}` : 'Todavía no se procesó ningún día de ojeo.';
+  const officeCost = state.offices > 0 ? `${formatMoney(SCOUTING_OFFICE_MONTHLY_COST)}/mes` : 'Sin alquileres activos';
+  const scoutCost = state.scouts > 0 ? `${formatMoney(state.scouts * SCOUTING_SCOUT_DAILY_COST)}/día` : 'Sin ojeadores activos';
   view.innerHTML = `
-    <div class="row section-title"><div><h2>Centro de Ojeo</h2><p class="tagline">Agregá jugadores externos o propios desde su ficha individual. En jugadores propios las habilidades visibles ya están desbloqueadas y el ojeo avanza directo sobre las ocultas.</p></div></div>
-    <div class="grid cols-4 compact-team-stats scouting-summary-grid">
-      <div class="card"><p class="label">Jugadores listados</p><strong>${listed.length}/${caps.playerCapacity}</strong></div>
-      <div class="card"><p class="label">Ojeadores</p><strong>${state.scouts}/${caps.scoutCapacity}</strong></div>
-      <div class="card"><p class="label">Oficinas</p><strong>${state.offices}/${maxOffices}</strong></div>
-      <div class="card"><p class="label">Costo ojeadores/día</p><strong class="bad">${formatMoney(state.scouts * SCOUTING_SCOUT_DAILY_COST)}</strong></div>
-      <div class="card"><p class="label">Informes guardados</p><strong>${Object.keys(state.reports || {}).length}</strong><small class="muted">${archivedReports} archivado(s)</small></div>
-    </div>
-    ${scoutingChiefMarkup()}
-    <div class="card scouting-office-card" style="margin-top:14px">
-      <div class="row"><div><h3>Oficinas y ojeadores</h3><p class="muted small">Base: ${SCOUTING_BASE_SCOUTS} ojeadores y ${SCOUTING_BASE_PLAYER_SLOTS} jugadores listados. Cada oficina agrega ${SCOUTING_SCOUTS_PER_OFFICE} ojeadores y ${SCOUTING_PLAYERS_PER_OFFICE} jugadores listados. Oficina: ${formatMoney(SCOUTING_OFFICE_MONTHLY_COST)}/mes. Ojeador: ${formatMoney(SCOUTING_SCOUT_DAILY_COST)}/día.</p></div></div>
-      <div class="row message-actions"><button class="primary" data-rent-scouting-office ${state.offices >= maxOffices ? 'disabled' : ''}>Alquilar oficina</button><button class="ghost" data-cancel-scouting-office ${state.offices <= 0 ? 'disabled' : ''}>Cancelar oficina</button><button class="primary" data-hire-scouting-scout ${state.scouts >= caps.scoutCapacity ? 'disabled' : ''}>Contratar ojeador</button><button class="ghost danger" data-dismiss-scouting-scout ${state.scouts <= 0 ? 'disabled' : ''}>Despedir ojeador</button></div>
-    </div>
-    <div class="card" style="margin-top:14px"><div class="row"><div><h3>Lista de ojeo</h3><p class="muted small">Los datos conocidos quedan guardados aunque quites al jugador de la lista activa. Fuera del Centro de Ojeo no se revelan habilidades nuevas.</p><p class="muted small">${lastProcessText}</p></div></div><div class="scouting-player-list">${listed.length ? listed.map(scoutingPlayerCard).join('') : '<p class="muted">Todavía no agregaste jugadores. Abrí la ficha de cualquier jugador y usá “Ojear”.</p>'}</div></div>`;
+    <div class="scouting-shell">
+      <div class="card scouting-hero">
+        <div class="scouting-hero-icon">${scoutingBinocularsIcon()}</div>
+        <div>
+          <p class="eyebrow">Departamento deportivo</p>
+          <h2>Centro de Ojeo</h2>
+          <p class="tagline">Agregá jugadores externos o propios desde su ficha individual. En jugadores propios las habilidades visibles ya están desbloqueadas y el ojeo avanza directo sobre las ocultas.</p>
+        </div>
+      </div>
+      <div class="scouting-summary-grid">
+        ${scoutingSummaryTile({ label:'Jugadores listados', value:`${listed.length}/${caps.playerCapacity}`, hint:'Cupo activo', icon:scoutingBinocularsIcon('mini') })}
+        ${scoutingSummaryTile({ label:'Ojeadores', value:`${state.scouts}/${caps.scoutCapacity}`, hint:scoutCost, icon:'👤' })}
+        ${scoutingSummaryTile({ label:'Oficinas', value:`${state.offices}/${maxOffices}`, hint:officeCost, icon:'🏢' })}
+        ${scoutingSummaryTile({ label:'Informes guardados', value:reportCount, hint:`${archivedReports} archivado(s)`, icon:'▣' })}
+      </div>
+      <div class="scouting-workspace">
+        <div class="scouting-main-stack">
+          <div class="card scouting-list-card">
+            <div class="scouting-card-head">
+              <div><p class="label">Lista activa</p><h3>Jugadores en seguimiento</h3></div>
+              <span class="pill">${listed.length}/${caps.playerCapacity}</span>
+            </div>
+            <p class="muted small">Los datos conocidos quedan guardados aunque quites al jugador de la lista activa. Fuera del Centro de Ojeo no se revelan habilidades nuevas.</p>
+            <div class="scouting-player-list">${listed.length ? listed.map(scoutingPlayerCard).join('') : '<div class="scouting-empty-list"><div class="scouting-empty-icon">' + scoutingBinocularsIcon('empty') + '</div><p class="muted">Todavía no agregaste jugadores. Abrí la ficha de cualquier jugador y usá “Ojear”.</p></div>'}</div>
+          </div>
+        </div>
+        <aside class="scouting-side-rail">
+          ${scoutingChiefMarkup()}
+          <div class="card scouting-office-card scouting-control-card">
+            <div class="scouting-card-head">
+              <div><p class="label">Infraestructura</p><h3>Oficinas</h3></div>
+              <span class="pill">${state.offices}/${maxOffices}</span>
+            </div>
+            <div class="scouting-asset-strip"><span>Edificios activos</span>${scoutingRepeatedIcons('🏢', state.offices, maxOffices, 'building-icons')}</div>
+            <p class="muted small">Base: ${SCOUTING_BASE_SCOUTS} ojeadores y ${SCOUTING_BASE_PLAYER_SLOTS} jugadores listados. Cada oficina agrega ${SCOUTING_SCOUTS_PER_OFFICE} ojeadores y ${SCOUTING_PLAYERS_PER_OFFICE} jugadores listados.</p>
+            <div class="scouting-action-grid"><button class="primary" data-rent-scouting-office ${state.offices >= maxOffices ? 'disabled' : ''}>Alquilar oficina</button><button class="ghost" data-cancel-scouting-office ${state.offices <= 0 ? 'disabled' : ''}>Cancelar oficina</button></div>
+          </div>
+          <div class="card scouting-office-card scouting-control-card">
+            <div class="scouting-card-head">
+              <div><p class="label">Personal</p><h3>Ojeadores</h3></div>
+              <span class="pill">${state.scouts}/${caps.scoutCapacity}</span>
+            </div>
+            <div class="scouting-asset-strip"><span>Equipo activo</span>${scoutingRepeatedIcons('👤', state.scouts, caps.scoutCapacity, 'person-icons')}</div>
+            <p class="muted small">Ojeador: ${formatMoney(SCOUTING_SCOUT_DAILY_COST)}/día. Costo actual: <strong class="bad">${formatMoney(state.scouts * SCOUTING_SCOUT_DAILY_COST)}</strong>.</p>
+            <div class="scouting-action-grid"><button class="primary" data-hire-scouting-scout ${state.scouts >= caps.scoutCapacity ? 'disabled' : ''}>Contratar ojeador</button><button class="ghost danger" data-dismiss-scouting-scout ${state.scouts <= 0 ? 'disabled' : ''}>Despedir ojeador</button></div>
+          </div>
+          <div class="card scouting-process-card scouting-control-card">
+            <div class="scouting-card-head"><div><p class="label">Actividad diaria</p><h3>Proceso de ojeo</h3></div></div>
+            <p class="muted small">${lastProcessText}</p>
+          </div>
+        </aside>
+      </div>
+    </div>`;
   document.querySelectorAll('[data-hire-scouting-chief]').forEach(btn => btn.addEventListener('click', () => hireScoutingChief(btn.dataset.hireScoutingChief)));
   document.querySelector('[data-rent-scouting-office]')?.addEventListener('click', rentScoutingOffice);
   document.querySelector('[data-cancel-scouting-office]')?.addEventListener('click', cancelScoutingOffice);

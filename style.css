@@ -4029,3 +4029,337 @@ th{
   .drag-player.tactic-click-player{grid-template-columns:auto minmax(0,1fr)}
   .tactic-card-meters{grid-column:1 / -1;justify-content:flex-start;padding-left:39px}
 }
+
+/* V5.30 · Centro de Ojeo enriquecido */
+.scouting-shell{
+  display:grid;
+  gap:12px;
+}
+.scouting-hero{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  gap:14px;
+  padding:16px;
+  border-color:rgba(59,130,246,.20);
+  background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(15,23,42,.72));
+}
+.scouting-hero h2{
+  margin:0 0 3px;
+}
+.scouting-hero .tagline{
+  margin:0;
+  max-width:980px;
+}
+.scouting-hero-icon,
+.scouting-card-icon,
+.scouting-summary-icon,
+.scouting-empty-icon{
+  display:grid;
+  place-items:center;
+}
+.scouting-hero-icon{
+  width:62px;
+  height:62px;
+  border-radius:20px;
+  background:rgba(15,23,42,.70);
+  border:1px solid rgba(147,197,253,.26);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.scouting-binoculars-icon{
+  position:relative;
+  display:inline-block;
+  width:42px;
+  height:30px;
+}
+.scouting-binoculars-icon:before,
+.scouting-binoculars-icon:after{
+  content:'';
+  position:absolute;
+  bottom:0;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  border:3px solid #cfe7ff;
+  background:radial-gradient(circle at 50% 50%,rgba(96,165,250,.38) 0 36%,rgba(15,23,42,.92) 38% 100%);
+  box-shadow:0 0 0 1px rgba(96,165,250,.16);
+}
+.scouting-binoculars-icon:before{left:0}
+.scouting-binoculars-icon:after{right:0}
+.scouting-binoculars-icon span:before,
+.scouting-binoculars-icon span:after{
+  content:'';
+  position:absolute;
+  top:1px;
+  width:14px;
+  height:20px;
+  border-radius:10px 10px 7px 7px;
+  background:linear-gradient(180deg,#dbeafe,#60a5fa);
+  border:1px solid rgba(255,255,255,.32);
+}
+.scouting-binoculars-icon span:before{left:7px;transform:rotate(-8deg)}
+.scouting-binoculars-icon span:after{right:7px;transform:rotate(8deg)}
+.scouting-binoculars-icon.small{width:30px;height:22px}
+.scouting-binoculars-icon.small:before,
+.scouting-binoculars-icon.small:after{width:13px;height:13px;border-width:2px}
+.scouting-binoculars-icon.small span:before,
+.scouting-binoculars-icon.small span:after{width:10px;height:15px;top:0}
+.scouting-binoculars-icon.small span:before{left:5px}
+.scouting-binoculars-icon.small span:after{right:5px}
+.scouting-binoculars-icon.mini{width:26px;height:20px}
+.scouting-binoculars-icon.mini:before,
+.scouting-binoculars-icon.mini:after{width:11px;height:11px;border-width:2px}
+.scouting-binoculars-icon.mini span:before,
+.scouting-binoculars-icon.mini span:after{width:9px;height:14px;top:0}
+.scouting-binoculars-icon.mini span:before{left:4px}
+.scouting-binoculars-icon.mini span:after{right:4px}
+.scouting-binoculars-icon.empty{
+  opacity:.72;
+}
+.scouting-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.scouting-summary-tile{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  min-height:78px;
+}
+.scouting-summary-tile strong{
+  display:block;
+  font-size:1.25rem;
+  line-height:1.05;
+}
+.scouting-summary-tile small{
+  display:block;
+  margin-top:3px;
+  font-size:.72rem;
+}
+.scouting-summary-icon{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  background:rgba(148,163,184,.10);
+  border:1px solid rgba(148,163,184,.16);
+  font-size:21px;
+}
+.scouting-workspace{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(290px,350px);
+  gap:12px;
+  align-items:start;
+}
+.scouting-main-stack,
+.scouting-side-rail{
+  display:grid;
+  gap:12px;
+}
+.scouting-side-rail{
+  position:sticky;
+  top:12px;
+}
+.scouting-list-card,
+.scouting-control-card{
+  padding:13px;
+  border-radius:16px;
+}
+.scouting-card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.scouting-card-head h3,
+.scouting-chief-option h3{
+  margin:0;
+}
+.scouting-card-icon{
+  width:36px;
+  min-width:36px;
+  height:36px;
+  border-radius:13px;
+  background:rgba(59,130,246,.12);
+  border:1px solid rgba(96,165,250,.20);
+}
+.scouting-chief-card,
+.scouting-office-card{
+  margin-top:0;
+}
+.scouting-chief-options{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin-top:10px;
+}
+.scouting-chief-option{
+  display:grid;
+  gap:7px;
+  padding:10px;
+  border-radius:13px;
+}
+.scouting-chief-option button{
+  width:100%;
+}
+.scouting-chief-option-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.scouting-chief-option-head span{
+  color:#9fb0c9;
+  font-size:12px;
+  font-weight:900;
+}
+.scouting-asset-strip{
+  display:grid;
+  gap:7px;
+  padding:9px 10px;
+  margin:9px 0;
+  border-radius:13px;
+  background:rgba(15,23,42,.48);
+  border:1px solid rgba(148,163,184,.12);
+}
+.scouting-asset-strip > span{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#7f8da3;
+  font-weight:900;
+}
+.scouting-icon-stack{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:4px;
+  min-height:24px;
+}
+.scouting-icon-stack span{
+  display:inline-grid;
+  place-items:center;
+  width:22px;
+  height:22px;
+  border-radius:8px;
+  font-size:14px;
+  background:rgba(148,163,184,.10);
+  border:1px solid rgba(148,163,184,.13);
+}
+.scouting-icon-stack span.filled{
+  background:rgba(59,130,246,.14);
+  border-color:rgba(96,165,250,.26);
+}
+.scouting-icon-stack span.empty{
+  opacity:.22;
+  filter:grayscale(1);
+}
+.scouting-icon-stack span.more{
+  width:auto;
+  padding:0 7px;
+  color:#cbd5e1;
+  font-weight:900;
+  font-size:11px;
+}
+.scouting-action-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:10px;
+}
+.scouting-action-grid button{
+  width:100%;
+  min-height:38px;
+  padding:8px 9px;
+  border-radius:12px;
+}
+.scouting-process-card p{
+  margin-bottom:0;
+}
+.scouting-player-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+.scouting-player-card{
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  padding:10px;
+  border-radius:14px;
+}
+.scouting-player-head{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) auto;
+  gap:9px;
+  align-items:center;
+}
+.scouting-player-face{
+  width:48px;
+  height:48px;
+  border-radius:13px;
+  object-fit:cover;
+  background:rgba(255,255,255,.08);
+}
+.scouting-player-head h3{
+  margin:0 0 2px;
+  font-size:1rem;
+}
+.scouting-known-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;
+}
+.scouting-known-grid .stat-rank{
+  padding:6px 7px;
+  border-radius:9px;
+  background:rgba(255,255,255,.04);
+}
+.scouting-known-grid .stat-rank span{
+  font-size:11px;
+}
+.scouting-report-progress{
+  height:7px;
+  margin-top:0;
+}
+.scouting-empty-list{
+  display:grid;
+  place-items:center;
+  gap:8px;
+  min-height:180px;
+  padding:20px;
+  border:1px dashed rgba(148,163,184,.22);
+  border-radius:16px;
+  background:rgba(15,23,42,.34);
+  text-align:center;
+}
+.scouting-empty-icon{
+  width:58px;
+  height:58px;
+  border-radius:19px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(148,163,184,.07);
+}
+@media (max-width:1180px){
+  .scouting-workspace{grid-template-columns:1fr}
+  .scouting-side-rail{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scouting-side-rail .scouting-chief-card{grid-column:1/-1}
+  .scouting-chief-options{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:900px){
+  .scouting-hero{grid-template-columns:1fr}
+  .scouting-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scouting-side-rail{grid-template-columns:1fr}
+  .scouting-chief-options{grid-template-columns:1fr}
+  .scouting-known-grid{grid-template-columns:1fr}
+  .scouting-player-head{grid-template-columns:44px 1fr}
+  .scouting-player-head button{grid-column:1/-1}
+}
+@media (max-width:620px){
+  .scouting-summary-grid{grid-template-columns:1fr}
+  .scouting-action-grid{grid-template-columns:1fr}
+}

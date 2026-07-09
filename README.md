@@ -1,5 +1,16 @@
 # Historial de versiones
 
+## V5.30 - Centro de Ojeo enriquecido
+
+- Rediseña el **Centro de Ojeo** con una estructura más ordenada: bloque principal de jugadores a la izquierda y paneles de gestión a la derecha.
+- Agrega un icono visual de binoculares como identidad principal del menú.
+- Agrega iconos acumulables de edificios para representar oficinas activas y capacidad disponible.
+- Agrega símbolos de personas para representar ojeadores contratados y cupo total.
+- Reorganiza los resúmenes superiores en tarjetas compactas: jugadores listados, ojeadores, oficinas e informes guardados.
+- Compacta las tarjetas de jefe de ojeadores, oficinas, personal y proceso diario.
+- Mantiene sin cambios la lógica de contratación, cancelación de oficinas, despido de ojeadores, informes revelados y lista activa.
+- Compatibilidad: se implementa solo. No requiere reiniciar partida.
+
 ## V5.29 - Pulido visual del menú de Táctica
 
 - Reorganiza la pantalla de Táctica en una cuadrícula más compacta: contenido principal a la izquierda y acciones/controles a la derecha.

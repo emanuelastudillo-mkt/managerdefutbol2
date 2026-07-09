@@ -1,20 +1,21 @@
-# V5.29 - Pulido visual del menú de Táctica
+# V5.30 - Centro de Ojeo enriquecido
 
 ## Cambios principales
 
-- Reorganizada la pantalla de **Táctica y convocatoria** en una cuadrícula de dos zonas: bloque principal a la izquierda y panel de acciones/controles a la derecha.
-- La pizarra táctica vuelve a quedar alineada como bloque principal, sin depender de una columna izquierda de visores.
-- Los visores de **Defensa**, **Medios** y **Delantera** ahora están en el mismo panel que las **Instrucciones zonales**.
-- Los botones de mayor uso (**Formación**, **Mejor once**, **Mejor condición física** y **Confirmar equipo**) pasan al panel derecho.
-- En la lista de titulares, **Estado físico** y **Moral** se muestran como círculos compactos tipo reloj/torta, sin número interno.
-- En suplentes y reservas se quitaron los textos numéricos de físico/moral y se reemplazaron por indicadores circulares compactos.
-- Se ajustaron paddings, radios, columnas y gaps para que la pantalla se sienta más cercana a una cuadrícula de bloques conectados.
+- Reorganizada la pantalla de **Centro de Ojeo** en una estructura de bloques: lista activa como bloque principal y panel lateral para controles.
+- Agregado icono visual de **binoculares** como marca principal del apartado.
+- Agregados iconos acumulables de **edificios** para que las oficinas contratadas se vean progresivamente.
+- Agregados símbolos de **personas** para que los ojeadores contratados se visualicen como equipo acumulado.
+- Reorganizado el resumen superior en tarjetas compactas: jugadores listados, ojeadores, oficinas e informes guardados.
+- El jefe de ojeadores, infraestructura, personal y actividad diaria quedan en tarjetas laterales más claras.
+- Se compactaron tarjetas, paddings, listas y grillas para mejorar lectura y uso del espacio.
 
 ## Alcance técnico
 
-- Se modificó únicamente la estructura visual del render de Táctica y estilos CSS asociados.
-- No se cambiaron reglas de simulación, formación, selección, guardado de tácticas, cambios automáticos ni validación de alineación.
+- Se modificó el render visual del Centro de Ojeo y sus estilos CSS asociados.
+- Se agregaron helpers visuales para iconos repetidos y binoculares dibujados por CSS.
+- No se cambiaron costos, cupos, reglas de revelación, persistencia de informes, contratación ni procesamiento diario.
 
 ## Compatibilidad
 
-Se implementa solo. No requiere reiniciar partida. Los cambios son visuales y mantienen los mismos IDs/eventos funcionales de formación, autoselección, guardado y selección de jugadores.
+Se implementa solo. No requiere reiniciar partida. Los cambios son visuales y mantienen los mismos datos guardados de oficinas, ojeadores, jefe de ojeadores, lista activa e informes.
