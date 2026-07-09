@@ -1,134 +1,18 @@
-/* V3.43 · Motor alternativo de partido, eventos, lesiones, estadísticas y limpieza táctica. */
+/* V5.28 · Puente del simulador 2.0 y helpers compartidos de partido. */
 
 function simulateMatch(match){
   if(window.Simulator20?.simulateMatch) return window.Simulator20.simulateMatch(match);
   throw new Error('Simulador 2.0 no disponible');
 }
-function expectedGoals(attacking, defending, isHome, chances){
-  const attackEdge = (attacking.attack - defending.defense) / 34;
-  const midfieldEdge = (attacking.midfield - defending.midfield) / 70;
-  const keeperEdge = (70 - defending.keeper) / 85;
-  const repEdge = (attacking.reputation - defending.reputation) / 95;
-  const home = isHome ? 0.22 : 0;
-  const chanceFactor = (chances - 5) / 10;
-  return clamp(1.02 + attackEdge + midfieldEdge + keeperEdge + repEdge + home + chanceFactor + rnd(-0.12,0.12), 0.12, 3.8);
-}
 function pitchEffect(pitch){
   return PITCH_CONDITIONS[pitch] || PITCH_CONDITIONS.Normal;
 }
-function makeMatchStats(home, away, context={pitch:'Normal'}){
-  const effect = pitchEffect(context.pitch);
-  const homeMid = clamp(home.midfield + effect.passDelta, 1, 120);
-  const awayMid = clamp(away.midfield + effect.passDelta, 1, 120);
-  const totalMid = Math.max(1, homeMid + awayMid);
-  const homePoss = clamp(Math.round((homeMid / totalMid) * 100 + rnd(-5,5) + 2), 32, 68);
-  const awayPoss = 100 - homePoss;
-  const homeAttacks = clamp(Math.round(29 + home.attack/2.8 + homeMid/5 - away.defense/6 + rnd(-6,7)), 18, 68);
-  const awayAttacks = clamp(Math.round(27 + away.attack/2.8 + awayMid/5 - home.defense/6 + rnd(-6,7)), 18, 68);
-  const rawHomeChances = Math.round(homeAttacks * rnd(0.12,0.23) + (home.attack-away.defense)/17);
-  const rawAwayChances = Math.round(awayAttacks * rnd(0.12,0.23) + (away.attack-home.defense)/17);
-  const homeChances = clamp(Math.round(rawHomeChances * effect.chanceMultiplier), 1, 14);
-  const awayChances = clamp(Math.round(rawAwayChances * effect.chanceMultiplier), 1, 14);
-  const homeFouls = clamp(Math.round(7 + home.aggression/11 + (100-home.discipline)/16 + rnd(-3,4)), 4, 27);
-  const awayFouls = clamp(Math.round(7 + away.aggression/11 + (100-away.discipline)/16 + rnd(-3,4)), 4, 27);
-  return {
-    home: { attacks:homeAttacks, chances:homeChances, possession:homePoss, fouls:homeFouls, passScore:Math.round(homeMid) },
-    away: { attacks:awayAttacks, chances:awayChances, possession:awayPoss, fouls:awayFouls, passScore:Math.round(awayMid) }
-  };
-}
-function makeMatchContext(match, home, away){
-  const weatherOptions = ['Soleado', 'Nublado', 'Lluvia leve', 'Lluvia intensa', 'Viento moderado', 'Calor húmedo'];
-  const weather = weatherOptions[hashNumber(`${match.id}-weather-${game?.matchdayIndex || 0}`, weatherOptions.length)];
-  const homeClub = seed.clubs.find(c=>c.id===match.homeId);
-  const awayClub = seed.clubs.find(c=>c.id===match.awayId);
-  const pitchScore = fieldScoreForClub(match.homeId);
-  const pitch = fieldConditionName(pitchScore);
-  const effect = pitchEffect(pitch);
-  const attendance = typeof attendanceContextForMatch === 'function'
-    ? attendanceContextForMatch(match)
-    : { homeFans:Math.max(800, Math.round((homeClub?.reputation || 60) * rnd(210,360))), awayFans:Math.max(120, Math.round((awayClub?.reputation || 60) * rnd(18,70))), totalFans:0, capacity:0, homeCrowdBonus:0, ticketPrice:0, ticketRevenue:0 };
-  return { weather, pitch, pitchScore, ...attendance, pitchEffect:effect };
-}
-function poisson(lambda){
-  const L = Math.exp(-lambda);
-  let k = 0, p = 1;
-  do { k++; p *= Math.random(); } while (p > L);
-  return clamp(k - 1, 0, 7);
-}
-function weightedPick(items, weightFn){
-  const safeItems = items.filter(Boolean);
-  const weighted = safeItems.map(item=>({item, w:Math.max(1, weightFn(item))}));
-  const total = weighted.reduce((a,x)=>a+x.w,0);
-  let r = Math.random()*total;
-  for(const x of weighted){ r -= x.w; if(r<=0) return x.item; }
-  return weighted[0]?.item;
-}
-function scorerWeight(player){
-  if(!player) return 1;
-  if(player.position === 'POR') return 0.35;
-  const posBonus = player.position === 'DC' ? 125 : ['ED','EI'].includes(player.position) ? 88 : player.position === 'MCO' ? 58 : player.position === 'MC' ? 22 : player.position === 'MCD' ? 10 : 5;
-  return effectiveSkill(player,'remate') * 1.35 + effectiveSkill(player,'posicionamiento') * 1.15 + effectiveSkill(player,'serenidad') * 0.45 + posBonus;
-}
-function cardWeight(player){
-  if(!player) return 1;
-  if(player.position === 'POR') return 0.35;
-  const roleBonus = ['DFC','MCD'].includes(player.position) ? 30 : ['LD','LI'].includes(player.position) ? 20 : player.position === 'MC' ? 12 : 6;
-  return hiddenStats(player).aggression * 0.75 + (100 - effectiveSkill(player,'disciplina')) * 0.30 + roleBonus;
-}
-function makeGoal(clubId, lineup){
-  const outfield = (lineup || []).filter(p => p.position !== 'POR');
-  const scorerPool = outfield.length ? outfield : lineup;
-  const scorer = weightedPick(scorerPool, scorerWeight);
-  const possibleAssisters = lineup.filter(p=>p.id !== scorer.id);
-  const hasAssist = Math.random() < 0.72;
-  const assister = hasAssist ? weightedPick(possibleAssisters, p => p.position === 'POR' ? 0.75 : effectiveSkill(p,'paseCorto') + effectiveSkill(p,'vision') + (['ED','EI','MCO','MC'].includes(p.position)?25:5)) : null;
-  return { clubId, playerId:scorer.id, assistId:assister?.id || null, minute: Math.floor(rnd(2,91)) };
-}
-function makeCards(clubId, power, fouls){
-  const cards = [];
-  const yellowCount = clamp(poisson(fouls / 7.6), 0, 6);
-  const byPlayer = new Map();
-  for(let i=0;i<yellowCount;i++){
-    const p = weightedPick(power.lineup, cardWeight);
-    if(!p) continue;
-    const current = byPlayer.get(p.id) || 0;
-    byPlayer.set(p.id, current + 1);
-    if(current === 0) cards.push({ clubId, playerId:p.id, type:'yellow', minute:Math.floor(rnd(5,88)) });
-    else cards.push({ clubId, playerId:p.id, type:'secondYellowRed', minute:Math.floor(rnd(35,90)) });
-  }
-  const directRedCandidates = power.lineup.filter(p => p.position !== 'POR' && hiddenStats(p).aggression >= 76);
-  const directChance = clamp((power.aggression - 60) / 290, 0.005, 0.13);
-  if(directRedCandidates.length && Math.random() < directChance){
-    const p = weightedPick(directRedCandidates, cardWeight);
-    cards.push({ clubId, playerId:p.id, type:'red', minute:Math.floor(rnd(20,90)) });
-  }
-  return cards.sort((a,b)=>a.minute-b.minute);
-}
-function makeInjuries(clubId, ownPower, rivalPower, context={pitch:'Normal'}){
-  const injuries = [];
-  const candidates = (ownPower.lineup || []).filter(player => !isUnavailable(player.id));
-  candidates.forEach(player => {
-    const chance = injuryChanceForPlayer(player.id, context.pitch);
-    if(Math.random() < chance){
-      const injury = pickInjuryType();
-      const matchesOut = Math.floor(rnd(injury.minTurns, injury.maxTurns + 1));
-      const duringMatch = Math.random() < 0.72;
-      injuries.push({
-        clubId,
-        playerId:player.id,
-        type:'injury',
-        name:injury.name,
-        injuryLabel:injury.name,
-        probability:injury.probability,
-        chance:Math.round(chance * 100),
-        matchesOut,
-        minute:duringMatch ? Math.floor(rnd(8,89)) : 90,
-        phase:duringMatch ? 'durante' : 'final'
-      });
-    }
-  });
-  return injuries.sort((a,b)=>a.minute-b.minute);
-}
+
+/*
+  El cálculo principal del partido vive en simulador-2.0.js.
+  Este archivo conserva sólo los helpers globales que ese motor usa fuera de su IIFE:
+  cambios, aplicación de resultados, estadísticas, sanciones, lesiones y limpieza de táctica.
+*/
 function makeSubstitutions(clubId, tactic, goals){
   if(clubId !== game.selectedClubId || !tactic?.autoSubs?.length) return [];
   const events = [];

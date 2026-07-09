@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## V5.28 - Revisión y limpieza de código
+
+- Se actualiza la línea de versiones a V5.28 como incremental posterior a V5.27.
+- Se retira código muerto del motor viejo de partidos: helpers de cálculo alternativo que ya no eran llamados porque `simulateMatch()` delega en `window.Simulator20.simulateMatch()`.
+- Se conserva `pitchEffect()` por uso activo en entrenamiento, economía y desgaste posterior al partido.
+- Se eliminan wrappers heredados `advanceOneDay()` y `goToNextMatch()`; el flujo actual usa `advanceCalendarOneStep()` desde el botón unificado.
+- Se agrega `REVISION_CODIGO_V5.28.md` con auditoría técnica, código potencialmente eliminable, contradicciones detectadas y sugerencias de optimización.
+- Actualizados `VERSION.md`, `CARACTERISTICAS_VERSION.md`, `config.js`, `index.html`, cache-busting y `app.js`.
+- Compatibilidad: se implementa solo. No requiere reiniciar partida.
+
 ## V5.27 - Pizarra táctica y visores restaurados
 
 - Restaura los visores tácticos de porcentaje en Táctica: Defensa, Medios y Delantera.

@@ -1,7 +1,7 @@
 # Versión actual
 
-V5.27
+V5.28
 
 ## Último cambio
 
-Restaura los visores tácticos de porcentajes y amplía la pizarra de táctica.
+Revisión y limpieza de código heredado sin cambiar reglas de juego ni compatibilidad de partidas.

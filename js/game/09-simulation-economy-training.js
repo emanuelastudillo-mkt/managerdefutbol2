@@ -947,12 +947,6 @@ function advanceCalendarOneStep(){
   else if(dayResult.botResults.length) showNotice(`Avanzaste al ${nextDate}. Se procesaron ${dayResult.botResults.length} partido(s) bot durante el cooldown.`);
   else showNotice(`Avanzaste al ${nextDate}. Verificaciones listas; el botón queda en cooldown.`);
 }
-function advanceOneDay(){
-  return advanceCalendarOneStep();
-}
-function goToNextMatch(){
-  return advanceCalendarOneStep();
-}
 
 function finalizeLiveOwnMatchdayResult(context, ownResult){
   if(!game || !ownResult || !context) return;
