@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## V5.31 - Ajuste menor Centro de Ojeo
+
+- Quita los iconos repetidos de edificios del bloque **Control de oficinas** para evitar que deformen el panel.
+- Quita los iconos repetidos de edificios del bloque **Edificios activos** en Oficinas.
+- Conserva el resumen numérico de oficinas, cupos y acciones de alquiler/cancelación.
+- No modifica costos, contratos, informes, procesamiento diario ni datos guardados del Centro de Ojeo.
+- Compatibilidad: se implementa solo. No requiere reiniciar partida.
+
 ## V5.30 - Centro de Ojeo enriquecido
 
 - Rediseña el **Centro de Ojeo** con una estructura más ordenada: bloque principal de jugadores a la izquierda y paneles de gestión a la derecha.

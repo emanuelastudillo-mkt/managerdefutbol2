@@ -1,21 +1,14 @@
-# V5.30 - Centro de Ojeo enriquecido
+# V5.31 - Ajuste menor Centro de Ojeo
 
-## Cambios principales
+## Cambios
+- Se quitaron los iconos repetidos de edificios del bloque "Control de oficinas" del jefe de ojeadores.
+- Se quitaron los iconos repetidos de edificios del bloque "Edificios activos" en Oficinas.
+- Se mantiene el resumen numérico de oficinas y la lógica completa de alquiler/cancelación.
+- No se modifican costos, cupos, contratos, informes ni procesamiento diario de ojeo.
 
-- Reorganizada la pantalla de **Centro de Ojeo** en una estructura de bloques: lista activa como bloque principal y panel lateral para controles.
-- Agregado icono visual de **binoculares** como marca principal del apartado.
-- Agregados iconos acumulables de **edificios** para que las oficinas contratadas se vean progresivamente.
-- Agregados símbolos de **personas** para que los ojeadores contratados se visualicen como equipo acumulado.
-- Reorganizado el resumen superior en tarjetas compactas: jugadores listados, ojeadores, oficinas e informes guardados.
-- El jefe de ojeadores, infraestructura, personal y actividad diaria quedan en tarjetas laterales más claras.
-- Se compactaron tarjetas, paddings, listas y grillas para mejorar lectura y uso del espacio.
-
-## Alcance técnico
-
-- Se modificó el render visual del Centro de Ojeo y sus estilos CSS asociados.
-- Se agregaron helpers visuales para iconos repetidos y binoculares dibujados por CSS.
-- No se cambiaron costos, cupos, reglas de revelación, persistencia de informes, contratación ni procesamiento diario.
+## Validación
+- `node --check` aplicado sobre todos los archivos JS.
+- JSON de `data/` parseados correctamente.
 
 ## Compatibilidad
-
-Se implementa solo. No requiere reiniciar partida. Los cambios son visuales y mantienen los mismos datos guardados de oficinas, ojeadores, jefe de ojeadores, lista activa e informes.
+Se implementa solo. No requiere reiniciar partida porque es un ajuste visual del Centro de Ojeo.

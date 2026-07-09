@@ -1,7 +1,12 @@
 # Versión actual
 
-V5.30
+V5.31
 
-## Último cambio
+## Nombre
+Ajuste menor Centro de Ojeo
 
-Centro de Ojeo enriquecido: estructura visual más compacta, binoculares como icono central, edificios acumulables para oficinas y personas acumulables para ojeadores.
+## Resumen
+Se retiran los iconos repetidos de edificios en los bloques de oficinas del Centro de Ojeo para evitar que deformen el panel visual.
+
+## Compatibilidad
+Se implementa solo. No requiere reiniciar partida.

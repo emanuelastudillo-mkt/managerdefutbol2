@@ -349,7 +349,6 @@ function scoutingChiefMarkup(){
   const state = ensureScoutingCenterState();
   if(state.chief){
     const type = scoutingChiefType(state.chief.type);
-    const officeIcons = scoutingRepeatedIcons('🏢', state.offices, type?.maxOffices || 0, 'building-icons');
     return `<div class="card scouting-chief-card scouting-control-card">
       <div class="scouting-card-head">
         <div class="scouting-card-icon">${scoutingBinocularsIcon('small')}</div>
@@ -357,7 +356,6 @@ function scoutingChiefMarkup(){
         <span class="pill ok">Activo</span>
       </div>
       <p class="muted small">Sueldo mensual ${formatMoney(type?.monthlySalary || 0)} · controla hasta ${type?.maxOffices || 0} oficina(s) · se va al finalizar la temporada.</p>
-      <div class="scouting-asset-strip"><span>Control de oficinas</span>${officeIcons}</div>
     </div>`;
   }
   const cards = (SCOUTING_CHIEF_TYPES || []).map(type => `<div class="card inner scouting-chief-option">
@@ -420,7 +418,6 @@ function renderScoutingCenter(){
               <div><p class="label">Infraestructura</p><h3>Oficinas</h3></div>
               <span class="pill">${state.offices}/${maxOffices}</span>
             </div>
-            <div class="scouting-asset-strip"><span>Edificios activos</span>${scoutingRepeatedIcons('🏢', state.offices, maxOffices, 'building-icons')}</div>
             <p class="muted small">Base: ${SCOUTING_BASE_SCOUTS} ojeadores y ${SCOUTING_BASE_PLAYER_SLOTS} jugadores listados. Cada oficina agrega ${SCOUTING_SCOUTS_PER_OFFICE} ojeadores y ${SCOUTING_PLAYERS_PER_OFFICE} jugadores listados.</p>
             <div class="scouting-action-grid"><button class="primary" data-rent-scouting-office ${state.offices >= maxOffices ? 'disabled' : ''}>Alquilar oficina</button><button class="ghost" data-cancel-scouting-office ${state.offices <= 0 ? 'disabled' : ''}>Cancelar oficina</button></div>
           </div>
