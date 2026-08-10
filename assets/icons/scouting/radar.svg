@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Búsqueda de talentos</title>
+  <defs>
+    <linearGradient id="accent" x1="9" y1="8" x2="55" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fdba74"/>
+      <stop offset="1" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="24" fill="#18181b" stroke="#e4e4e7" stroke-width="3"/>
+  <circle cx="32" cy="32" r="15" fill="none" stroke="#52525b" stroke-width="2"/>
+  <circle cx="32" cy="32" r="6" fill="none" stroke="#71717a" stroke-width="2"/>
+  <path d="M32 8v48M8 32h48" stroke="#3f3f46" stroke-width="2"/>
+  <path d="m32 32 17-15" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="45.5" cy="20.5" r="4.5" fill="#f4f4f5" stroke="url(#accent)" stroke-width="3"/>
+  <circle cx="23" cy="42" r="3" fill="#fb923c"/>
+</svg>

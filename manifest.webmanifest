@@ -1,0 +1,25 @@
+{
+  "name": "Una vida de manager",
+  "short_name": "Una vida de manager",
+  "description": "Juego de manager de fútbol online para navegador con carrera, tácticas, mercado, academia y competencias online.",
+  "lang": "es-AR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "categories": [
+    "games",
+    "sports",
+    "entertainment"
+  ],
+  "id": "/",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

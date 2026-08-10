@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" role="img" aria-labelledby="title description">
+  <title id="title">Una vida de manager</title>
+  <desc id="description">Escudo con una cancha y el nombre del juego.</desc>
+  <defs>
+    <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#d4d4d8"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset=".52" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#818cf8"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity=".35"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path d="M31 22h98v58c0 31-18 52-49 65C49 132 31 111 31 80Z" fill="url(#shield)"/>
+    <path d="M41 32h78v47c0 25-13 42-39 54-26-12-39-29-39-54Z" fill="#0a0a0d"/>
+    <path d="M49 42h62v35c0 19-9 33-31 44-22-11-31-25-31-44Z" fill="url(#field)" opacity=".92"/>
+    <path d="M80 43v77M49 77h62" fill="none" stroke="#fff" stroke-opacity=".76" stroke-width="3"/>
+    <circle cx="80" cy="77" r="13" fill="none" stroke="#fff" stroke-opacity=".76" stroke-width="3"/>
+    <circle cx="80" cy="77" r="4" fill="#fff"/>
+  </g>
+  <g fill="#fafafa">
+    <text x="158" y="71" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="43" font-weight="850" letter-spacing="-1.7">UNA VIDA DE</text>
+    <text x="156" y="119" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="54" font-weight="900" letter-spacing="-2.4">MANAGER</text>
+  </g>
+  <rect x="158" y="136" width="188" height="5" rx="2.5" fill="url(#field)"/>
+  <text x="362" y="142" fill="#a1a1aa" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="700" letter-spacing="3.2">FÚTBOL · CARRERA · LEGADO</text>
+</svg>

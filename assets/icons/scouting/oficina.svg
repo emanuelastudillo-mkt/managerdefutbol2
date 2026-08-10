@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Oficina de ojeo</title>
+  <defs>
+    <linearGradient id="accent" x1="12" y1="7" x2="53" y2="57" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#c2410c"/>
+    </linearGradient>
+  </defs>
+  <path d="M13 56V11h30v45M43 25h9v31M8 56h48" fill="#18181b" stroke="#e4e4e7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20 19h7v7h-7zM32 19h5v7h-5zM20 32h7v7h-7zM32 32h5v7h-5z" fill="url(#accent)"/>
+  <path d="M25 56V46h8v10" fill="#09090b" stroke="url(#accent)" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M48 33h4M48 42h4" stroke="#a1a1aa" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Binoculares de ojeo</title>
+  <defs>
+    <linearGradient id="body" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f4f4f5"/>
+      <stop offset="1" stop-color="#a1a1aa"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="18" y1="20" x2="46" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <path d="M21 17.5 14.7 38M43 17.5 49.3 38" fill="none" stroke="url(#body)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M24 16h16v21H24z" fill="#18181b" stroke="url(#body)" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M10.5 34.5 15 24h10l3 12.5v7A11.5 11.5 0 1 1 10.5 34.5ZM53.5 34.5 49 24H39l-3 12.5v7a11.5 11.5 0 1 0 17.5-9Z" fill="#27272a" stroke="url(#body)" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="17.5" cy="44.5" r="6.5" fill="#09090b" stroke="url(#accent)" stroke-width="3"/>
+  <circle cx="46.5" cy="44.5" r="6.5" fill="#09090b" stroke="url(#accent)" stroke-width="3"/>
+  <path d="M28 31h8" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+</svg>
