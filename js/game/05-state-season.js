@@ -1,1515 +1,5 @@
-/* V4.05 · Eventos, carrera, ranking automático y limpieza de estado al cambiar de club. */
+/* V8.08 · Estado central, normalización, nueva partida, estadísticas y competiciones nacionales. */
 
-function clubPrestigeValue(clubOrId){
-  const club = typeof clubOrId === 'object' ? clubOrId : seed?.clubs?.find(c => Number(c.id) === Number(clubOrId));
-  const value = Number(club?.managerPrestige ?? club?.reputation ?? club?.prestigio ?? club?.prestige ?? 0);
-  return clamp(Math.round(Number.isFinite(value) ? value : 0), 1, 99);
-}
-function divisionOrderFromName(name=''){
-  const clean = String(name || '').toLowerCase();
-  if(clean.includes('profesional') || clean.includes('primera divisi')) return 1;
-  if(clean.includes('nacional') || clean.includes('segunda')) return 2;
-  return 3;
-}
-function championPrestigeRewardByDivisionOrder(order){
-  const value = Math.round(Number(order || 3));
-  if(value <= 1) return 20;
-  if(value === 2) return 10;
-  return 5;
-}
-function badSeasonPrestigePenaltyByDivisionOrder(order){
-  const value = Math.round(Number(order || 3));
-  if(value <= 1) return 10;
-  if(value === 2) return 10;
-  return 5;
-}
-function managerPrestigeBreakdown(stats=game?.managerStats){
-  const src = stats || {};
-  const totals = src.totals || {};
-  const seasons = Array.isArray(src.seasons) ? src.seasons : [];
-  const career = Array.isArray(src.careerHistory) ? src.careerHistory : [];
-  const adjustments = Array.isArray(src.prestigeAdjustments) ? src.prestigeAdjustments.reduce((sum, item) => sum + Number(item.points || 0), 0) : 0;
-  const experience = Math.max(0, Math.round(Number(src.experience || 0)));
-  const wins = Math.max(0, Math.round(Number(totals.won || 0)));
-  const experiencePrestige = experience * Number(MANAGER_XP_TO_PRESTIGE_RATE || 0.001);
-  const winPrestige = Math.floor(wins / Math.max(1, Number(MANAGER_PRESTIGE_WINS_STEP || 10)));
-  const objectivePrestige = seasons.filter(item => Boolean(item.objectiveAchieved)).length * Number(MANAGER_PRESTIGE_OBJECTIVE_REWARD || 5);
-  const championPrestige = seasons.reduce((sum, item) => {
-    if(!(item.title || item.position === 1)) return sum;
-    return sum + championPrestigeRewardByDivisionOrder(item.divisionOrder || divisionOrderFromName(item.divisionName));
-  }, 0);
-  const badSeasonPenalty = seasons.reduce((sum, item) => sum + Math.max(0, Number(item.managerPrestigeBadSeasonPenalty || item.prestigePenalty || 0)), 0);
-  const dismissalPenalty = career.filter(item => item.type === 'dismissal').length * Number(MANAGER_PRESTIGE_DISMISSAL_PENALTY || 2);
-  const totalRaw = adjustments + experiencePrestige + winPrestige + objectivePrestige + championPrestige - badSeasonPenalty - dismissalPenalty;
-  const total = clamp(totalRaw, 0, 99);
-  return { total, adjustments, experience, experiencePrestige, wins, winPrestige, objectivePrestige, championPrestige, badSeasonPenalty, dismissalPenalty };
-}
-function formatManagerPrestige(value=currentManagerPrestige()){
-  const n = Math.max(0, Math.floor(Number(value || 0)));
-  return n.toLocaleString('es-AR', { maximumFractionDigits:0 });
-}
-function formatManagerPrestigeDecimal(value=0){
-  const n = Math.max(0, Number(value || 0));
-  return n.toLocaleString('es-AR', { minimumFractionDigits:0, maximumFractionDigits:3 });
-}
-function managerClubAccessPrestige(value=currentManagerPrestige()){
-  const n = Number(value || 0);
-  return Math.max(0, Math.floor(Number.isFinite(n) ? n : 0));
-}
-function currentManagerPrestige(){
-  if(game?.managerStats) return managerPrestigeBreakdown(game.managerStats).total;
-  return clamp(Number(MANAGER_PRESTIGE_INITIAL || 0), 0, 99);
-}
-function currentManagerExperience(){
-  return Math.max(0, Math.round(Number(game?.managerStats?.experience || 0)));
-}
-function managerClubRehireBlockInfo(clubOrId){
-  const club = typeof clubOrId === 'object' ? clubOrId : seed?.clubs?.find(c => Number(c.id) === Number(clubOrId));
-  const clubId = Number(club?.id || clubOrId || 0);
-  if(!clubId || !game?.gameOver?.active || MANAGER_REHIRE_BLOCK_SEASONS <= 0) return { blocked:false };
-  const currentSeason = Math.max(1, Number(game?.seasonNumber || 1));
-  const history = Array.isArray(game?.managerStats?.careerHistory) ? game.managerStats.careerHistory : [];
-  const leaves = history
-    .filter(item => Number(item.clubId || 0) === clubId && ['dismissal','resignation'].includes(String(item.type || '')))
-    .map(item => ({
-      type:String(item.type || ''),
-      season:Math.max(1, Number(item.season || 1)),
-      clubName:String(item.clubName || club?.name || 'este club')
-    }))
-    .sort((a,b) => Number(b.season || 0) - Number(a.season || 0));
-  const last = leaves[0];
-  if(!last) return { blocked:false };
-  const untilSeason = Math.max(1, Number(last.season || 1)) + MANAGER_REHIRE_BLOCK_SEASONS;
-  if(currentSeason <= untilSeason){
-    return {
-      blocked:true,
-      clubId,
-      clubName:last.clubName,
-      type:last.type,
-      leftSeason:Number(last.season || 1),
-      untilSeason,
-      availableSeason:untilSeason + 1
-    };
-  }
-  return { blocked:false };
-}
-function managerClubRehireBlockLabel(clubOrId){
-  const info = managerClubRehireBlockInfo(clubOrId);
-  if(!info.blocked) return '';
-  const cause = info.type === 'resignation' ? 'renuncia' : 'despido';
-  return `Bloqueado por ${cause} hasta temporada ${info.untilSeason}`;
-}
-function managerCanSelectClub(clubOrId, prestige=currentManagerPrestige(), options={}){
-  const club = typeof clubOrId === 'object' ? clubOrId : seed?.clubs?.find(c => Number(c.id) === Number(clubOrId));
-  if(!club) return false;
-  if(options.ignoreRehireBlock !== true && managerClubRehireBlockInfo(club).blocked) return false;
-  const clubPrestige = clubPrestigeValue(club);
-  const managerPrestige = managerClubAccessPrestige(prestige);
-  if(clubPrestige <= MANAGER_CLUB_OPEN_PRESTIGE) return true;
-  return clubPrestige <= managerPrestige;
-}
-function clubAvailabilityLabel(clubOrId, prestige=currentManagerPrestige()){
-  const club = typeof clubOrId === 'object' ? clubOrId : seed?.clubs?.find(c => Number(c.id) === Number(clubOrId));
-  if(!club) return 'No disponible';
-  const blockLabel = managerClubRehireBlockLabel(club);
-  if(blockLabel) return blockLabel;
-  const clubPrestige = clubPrestigeValue(club);
-  if(managerCanSelectClub(club, prestige)) return 'Disponible';
-  return `Requiere prestigio ${clubPrestige}`;
-}
-function clubSelectOptionsMarkup(){
-  const divisions = seed.divisions || [{ id:'default', name:'Liga única' }];
-  const prestige = currentManagerPrestige();
-  return divisions.map(division => {
-    const clubs = seed.clubs.filter(c => (c.divisionId || 'default') === division.id);
-    if(!clubs.length) return '';
-    return `<optgroup label="${escapeHtml(division.name)}">${clubs.map(c => {
-      const available = managerCanSelectClub(c, prestige);
-      const label = `${c.name} · Prestigio ${clubPrestigeValue(c)}${available ? '' : ' · No disponible'}`;
-      return `<option value="${c.id}" ${available ? '' : 'disabled'}>${escapeHtml(label)}</option>`;
-    }).join('')}</optgroup>`;
-  }).join('');
-}
-
-function clubCountry(club){
-  return String(club?.country || club?.pais || club?.countryName || 'Argentina').trim() || 'Argentina';
-}
-function availableCountries(){
-  const names = Array.from(new Set((seed?.clubs || []).map(clubCountry).filter(Boolean)));
-  return names.length ? names.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'})) : ['Argentina'];
-}
-function countryOptionsMarkup(selected='Argentina'){
-  const countries = availableCountries();
-  const current = countries.includes(selected) ? selected : countries[0];
-  return countries.map(name => `<option value="${escapeHtml(name)}" ${name===current?'selected':''}>${escapeHtml(name)}</option>`).join('');
-}
-function divisionsByCountry(country='Argentina'){
-  const cleanCountry = String(country || '').trim() || availableCountries()[0] || 'Argentina';
-  const countryClubDivisionIds = new Set((seed?.clubs || [])
-    .filter(club => clubCountry(club) === cleanCountry)
-    .map(club => club.divisionId || 'default'));
-  const divisions = (seed?.divisions || [{ id:'default', name:'Liga única' }])
-    .filter(division => countryClubDivisionIds.has(division.id || 'default'));
-  return divisions.length ? divisions : (seed?.divisions || [{ id:'default', name:'Liga única' }]);
-}
-function leagueOptionsMarkup(country='Argentina', selected=''){
-  const divisions = divisionsByCountry(country);
-  const current = divisions.some(d => d.id === selected) ? selected : divisions[0]?.id;
-  return divisions.map(division => `<option value="${escapeHtml(division.id)}" ${division.id===current?'selected':''}>${escapeHtml(division.name)}</option>`).join('');
-}
-function clubsByCountryLeague(country='Argentina', leagueId=''){
-  const cleanCountry = String(country || '').trim() || availableCountries()[0] || 'Argentina';
-  const divisions = divisionsByCountry(cleanCountry);
-  const currentLeague = divisions.some(d => d.id === leagueId) ? leagueId : divisions[0]?.id;
-  return (seed?.clubs || [])
-    .filter(club => clubCountry(club) === cleanCountry && (club.divisionId || 'default') === currentLeague)
-    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{sensitivity:'base'}));
-}
-function teamOptionsMarkup(country='Argentina', leagueId='', selectedClubId=0){
-  const clubs = clubsByCountryLeague(country, leagueId);
-  const prestige = currentManagerPrestige();
-  const firstAvailable = clubs.find(club => managerCanSelectClub(club, prestige)) || clubs[0];
-  const selected = clubs.some(club => Number(club.id) === Number(selectedClubId) && managerCanSelectClub(club, prestige)) ? Number(selectedClubId) : Number(firstAvailable?.id || 0);
-  return clubs.map(club => {
-    const available = managerCanSelectClub(club, prestige);
-    const status = clubAvailabilityLabel(club, prestige);
-    const label = `${club.name} · Prestigio ${clubPrestigeValue(club)} · ${status}`;
-    return `<option value="${club.id}" ${Number(club.id)===selected?'selected':''} ${available ? '' : 'disabled'}>${escapeHtml(label)}</option>`;
-  }).join('');
-}
-function formatPlainNumber(value){
-  return new Intl.NumberFormat('es-AR', { maximumFractionDigits:0 }).format(Math.max(0, Math.round(Number(value || 0))));
-}
-function formatBudgetMillions(value){
-  const millions = Number(value || 0) / 1000000;
-  const digits = millions >= 100 ? 0 : 1;
-  return `$${millions.toLocaleString('es-AR', { maximumFractionDigits:digits })} M`;
-}
-function clubStarterDetails(club){
-  const id = Number(club?.id || 0);
-  return {
-    country:clubCountry(club),
-    league:clubDivision(id).name,
-    capacity:clubStadiumCapacity(id),
-    fans:clubFansBase(id),
-    budget:Number(club?.budget || 0)
-  };
-}
-function availableManagerClubs(prestige=currentManagerPrestige()){
-  return (seed?.clubs || [])
-    .filter(club => managerCanSelectClub(club, prestige))
-    .sort((a,b)=>{
-      const country = clubCountry(a).localeCompare(clubCountry(b), 'es', { sensitivity:'base' });
-      if(country) return country;
-      const div = (a.divisionOrder || 99) - (b.divisionOrder || 99);
-      if(div) return div;
-      const rep = clubPrestigeValue(b) - clubPrestigeValue(a);
-      if(rep) return rep;
-      return String(a.name || '').localeCompare(String(b.name || ''), 'es', { sensitivity:'base' });
-    });
-}
-function starterClubCardMarkup(club, options={}){
-  const prestige = Number.isFinite(Number(options.prestige)) ? Number(options.prestige) : currentManagerPrestige();
-  const available = managerCanSelectClub(club, prestige);
-  const details = clubStarterDetails(club);
-  const buttonAttr = options.buttonDataAttr || 'data-job-club';
-  const buttonLabel = options.buttonLabel || 'Elegir club';
-  const compact = Boolean(options.compact);
-  const status = clubAvailabilityLabel(club, prestige);
-  if(compact){
-    return `<article class="starter-club-card ${available ? 'available' : 'locked'} compact" style="--starter-club-color:${escapeHtml(clubColor(club.id))}">
-      <div class="starter-club-head compact">
-        ${clubBadge(club.id)}
-        <div>
-          <strong>${escapeHtml(club.name)}</strong>
-          <p class="starter-club-line">${escapeHtml(details.country)} · ${escapeHtml(details.league)}</p>
-          <p class="starter-club-line starter-club-stats"><span>Estadio ${formatPlainNumber(details.capacity)}</span><span>Hinchas ${formatPlainNumber(details.fans)}</span><span>${formatBudgetMillions(details.budget)}</span></p>
-        </div>
-        <span class="pill ok-pill starter-prestige-pill">Prestigio ${clubPrestigeValue(club)}</span>
-      </div>
-      <div class="starter-club-actions compact">
-        <span class="muted small">${escapeHtml(status)}</span>
-        <button type="button" class="primary" ${buttonAttr}="${club.id}" ${available ? '' : 'disabled'}>${escapeHtml(buttonLabel)}</button>
-      </div>
-    </article>`;
-  }
-  return `<article class="starter-club-card ${available ? 'available' : 'locked'}" style="--starter-club-color:${escapeHtml(clubColor(club.id))}">
-    <div class="starter-club-head">
-      ${clubBadge(club.id)}
-      <div>
-        <strong>${escapeHtml(club.name)}</strong>
-        <p class="muted small">${escapeHtml(details.country)} · ${escapeHtml(details.league)}</p>
-      </div>
-      <span class="pill ${available ? 'ok-pill' : 'bad-pill'}">Prestigio ${clubPrestigeValue(club)}</span>
-    </div>
-    <div class="starter-club-meta">
-      <div><span>Capacidad</span><strong>${formatPlainNumber(details.capacity)}</strong></div>
-      <div><span>Hinchas</span><strong>${formatPlainNumber(details.fans)}</strong></div>
-      <div><span>Presupuesto</span><strong>${formatBudgetMillions(details.budget)}</strong></div>
-    </div>
-    <div class="starter-club-actions">
-      <span class="muted small">${escapeHtml(status)}</span>
-      <button type="button" class="primary" ${buttonAttr}="${club.id}" ${available ? '' : 'disabled'}>${escapeHtml(buttonLabel)}</button>
-    </div>
-  </article>`;
-}
-function clubAvailabilityListMarkup(country='Argentina', leagueId=''){
-  const clubs = clubsByCountryLeague(country, leagueId);
-  const prestige = currentManagerPrestige();
-  if(!clubs.length) return '<p class="muted small">No hay clubes para esta liga.</p>';
-  return `<div class="job-club-list">${clubs.map(club => {
-    const available = managerCanSelectClub(club, prestige);
-    return `<button type="button" class="job-club-list-row ${available ? '' : 'locked'}" data-job-club="${club.id}" ${available ? '' : 'disabled'}><strong>${escapeHtml(club.name)}</strong><span>Prestigio ${clubPrestigeValue(club)} · ${escapeHtml(clubAvailabilityLabel(club, prestige))}</span></button>`;
-  }).join('')}</div>`;
-}
-function storedManagerName(){
-  try{ return String(game?.rankingManagerName || localStorage.getItem('fmRankingManagerName') || '').trim(); }
-  catch(_){ return String(game?.rankingManagerName || '').trim(); }
-}
-function persistManagerName(name){
-  const clean = String(name || '').trim().slice(0, 40);
-  try{ localStorage.setItem('fmRankingManagerName', clean); }catch(_){ /* sin almacenamiento */ }
-  if(game) game.rankingManagerName = clean;
-  return clean;
-}
-
-function founderModeEnabled(){ return Boolean(FOUNDER_MODE_ENABLED); }
-function founderLowestDivisionByCountry(country){
-  const divisions = divisionsByCountry(country);
-  return divisions.slice().sort((a,b)=>(Number(b.order || 0) - Number(a.order || 0)) || String(a.name || '').localeCompare(String(b.name || ''), 'es', { sensitivity:'base' }))[0] || divisions[0] || { id:'default', name:'Liga única', country, order:1, prizeMultiplier:1 };
-}
-function founderReplacementClub(country){
-  const division = founderLowestDivisionByCountry(country);
-  const clubs = (seed?.clubs || [])
-    .filter(club => clubCountry(club) === country && String(club.divisionId || 'default') === String(division.id || 'default'))
-    .sort((a,b)=>clubPrestigeValue(a)-clubPrestigeValue(b) || Number(a.budget || 0)-Number(b.budget || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'es', { sensitivity:'base' }));
-  return clubs[0] || null;
-}
-function founderClubShort(name){
-  const words = String(name || 'Club Fundador').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9\s]/g,' ').trim().split(/\s+/).filter(Boolean);
-  if(words.length >= 3) return words.slice(0,3).map(w => w[0]).join('').toUpperCase().slice(0,3);
-  if(words.length === 2) return (words[0].slice(0,2) + words[1][0]).toUpperCase().slice(0,3);
-  return (words[0] || 'FND').slice(0,3).toUpperCase();
-}
-function sanitizeFounderClubInput(options={}){
-  const country = availableCountries().includes(options.country) ? options.country : (availableCountries()[0] || 'Argentina');
-  const clubName = String(options.clubName || '').trim().slice(0, 42) || 'Club Fundador';
-  const city = String(options.city || '').trim().slice(0, 42) || 'Ciudad propia';
-  const colorRaw = String(options.primaryColor || '#3b82f6').trim();
-  const color = /^#[0-9a-f]{6}$/i.test(colorRaw) ? colorRaw : '#3b82f6';
-  return { country, clubName, city, primaryColor:color, managerName:String(options.managerName || '').trim().slice(0, 40) };
-}
-function releaseClubPlayersToFounderMarket(clubId){
-  const released = [];
-  (seed?.players || []).forEach(player => {
-    if(Number(player.clubId || 0) !== Number(clubId)) return;
-    player.clubId = 0;
-    player.freeAgent = true;
-    player.founderReleased = true;
-    player.origin = player.origin || 'Club reemplazado por modo fundador';
-    refreshPlayerClause(player);
-    released.push({ ...player });
-  });
-  return released;
-}
-function createFoundedClubAtReplacement(options={}){
-  if(!founderModeEnabled()) return null;
-  const clean = sanitizeFounderClubInput(options);
-  const replacement = founderReplacementClub(clean.country);
-  if(!replacement) return null;
-  const division = clubDivision(replacement.id);
-  const releasedPlayers = releaseClubPlayersToFounderMarket(replacement.id);
-  const nameSlug = typeof slugId === 'function' ? slugId(clean.clubName) : imageSlug(clean.clubName).toLowerCase();
-  const foundedClub = {
-    ...replacement,
-    originalClubName:replacement.name,
-    founderReplacedClub:{ id:replacement.id, name:replacement.name, country:clubCountry(replacement), divisionName:replacement.divisionName || division.name },
-    isFoundedClub:true,
-    founderClub:true,
-    name:clean.clubName,
-    short:founderClubShort(clean.clubName),
-    city:clean.city,
-    country:clean.country,
-    reputation:FOUNDER_CLUB_REPUTATION,
-    managerPrestige:FOUNDER_CLUB_REPUTATION,
-    budget:FOUNDER_CLUB_INITIAL_BUDGET,
-    primaryColor:clean.primaryColor,
-    stadiumName:`Cancha Fundacional de ${clean.clubName}`,
-    stadiumCapacity:FOUNDER_CLUB_INITIAL_CAPACITY,
-    fansBase:FOUNDER_CLUB_INITIAL_FANS,
-    fieldConditionScore:FOUNDER_CLUB_INITIAL_FIELD,
-    fieldCondition:fieldConditionName(FOUNDER_CLUB_INITIAL_FIELD),
-    crestPath:`img/escudos/${nameSlug}.png`,
-    divisionId:division.id,
-    divisionName:division.name,
-    divisionOrder:division.order,
-    prizeMultiplier:replacement.prizeMultiplier ?? divisionPrizeMultiplier(division.name, (division.order || 1)-1)
-  };
-  const index = seed.clubs.findIndex(club => Number(club.id) === Number(replacement.id));
-  if(index >= 0) seed.clubs[index] = foundedClub;
-  return { club:foundedClub, replacement, releasedPlayers, clean };
-}
-function founderFreeAgentGroupCounts(players=[]){
-  const counts = { total:0, POR:0, DEF:0, MID:0, ATT:0 };
-  (players || []).forEach(player => {
-    if(Number(player.clubId || 0) !== 0 || player.sold || player.retired) return;
-    counts.total += 1;
-    const group = playerRoleGroup(player.position);
-    if(Object.prototype.hasOwnProperty.call(counts, group)) counts[group] += 1;
-  });
-  return counts;
-}
-function ensureFounderFreeAgentPool(initialPlayers=[]){
-  const pool = Array.isArray(game?.marketPlayers) ? game.marketPlayers : [];
-  const existingIds = new Set(pool.map(p => Number(p.id)));
-  (initialPlayers || []).forEach(player => {
-    if(!player || existingIds.has(Number(player.id))) return;
-    pool.push({ ...player, clubId:0, freeAgent:true });
-    existingIds.add(Number(player.id));
-  });
-  const minimums = {
-    total:FOUNDER_FREE_AGENTS_MIN_TOTAL,
-    POR:FOUNDER_FREE_AGENTS_MIN_GK,
-    DEF:FOUNDER_FREE_AGENTS_MIN_DEF,
-    MID:FOUNDER_FREE_AGENTS_MIN_MID,
-    ATT:FOUNDER_FREE_AGENTS_MIN_ATT
-  };
-  let guard = 0;
-  while(guard < 12){
-    const counts = founderFreeAgentGroupCounts(pool);
-    const missing = counts.total < minimums.total || counts.POR < minimums.POR || counts.DEF < minimums.DEF || counts.MID < minimums.MID || counts.ATT < minimums.ATT;
-    if(!missing) break;
-    const nextStart = Math.max(0, ...((seed?.players || []).concat(pool)).map(p => Number(p.id) || 0)) + 1;
-    const generated = generateMarketPlayers(24, { startId:nextStart, label:`founder-free-${guard}-${game?.selectedClubId || 0}`, nameContext:'Modo Fundador' });
-    generated.forEach(player => pool.push(player));
-    guard += 1;
-  }
-  game.marketPlayers = pruneFreeAgentMarketArrayToHardMax(pool, MARKET_FREE_AGENT_HARD_MAX);
-  syncSeedFreeAgentCleanup(game.marketPlayers);
-  mergeMarketPlayersIntoSeed(game.marketPlayers);
-  ensurePlayerStateForAll();
-  return founderFreeAgentGroupCounts(game.marketPlayers);
-}
-function founderGoalBaseTemplates(){
-  return [
-    { type:'capacity_absolute', title:'Primeras gradas', description:'Tener un estadio con capacidad para tus 500 hinchas iniciales.', target:500, importance:'Alta' },
-    { type:'wins_delta', title:'Primeros 10 triunfos', description:'Ganar 10 partidos oficiales desde que se activa esta meta.', target:10, importance:'Media' },
-    { type:'fans_delta', title:'Mil nuevos hinchas', description:'Sumar 1.000 hinchas desde que se activa esta meta.', target:1000, importance:'Media' },
-    { type:'capacity_absolute', title:'Estadio de barrio', description:'Llegar a 5.000 espectadores de capacidad.', target:5000, importance:'Media' },
-    { type:'promotion_or_title', title:'Salto deportivo', description:'Conseguir un ascenso. Si ya estás en la máxima división, salir campeón.', target:1, importance:'Alta' },
-    { type:'wins_delta', title:'Racha fundacional', description:'Ganar 20 partidos oficiales desde que se activa esta meta.', target:20, importance:'Media' },
-    { type:'fans_delta', title:'Arrastre popular', description:'Sumar 5.000 hinchas desde que se activa esta meta.', target:5000, importance:'Alta' },
-    { type:'capacity_absolute', title:'Estadio competitivo', description:'Llegar a 20.000 espectadores de capacidad.', target:20000, importance:'Alta' },
-    { type:'promotion_or_title', title:'Nueva consagración', description:'Conseguir otro ascenso. Si ya estás en la máxima división, salir campeón.', target:1, importance:'Alta' }
-  ];
-}
-function founderLoopGoal(index){
-  const cycle = Math.max(0, Math.floor((index - founderGoalBaseTemplates().length) / 4));
-  const slot = Math.max(0, (index - founderGoalBaseTemplates().length) % 4);
-  if(slot === 0) return { type:'wins_delta', title:`Bloque de victorias ${cycle + 1}`, description:`Ganar ${25 + cycle * 5} partidos oficiales desde que se activa esta meta.`, target:25 + cycle * 5, importance:'Media' };
-  if(slot === 1) return { type:'fans_delta', title:`Nueva masa social ${cycle + 1}`, description:`Sumar ${6000 + cycle * 2000} hinchas desde que se activa esta meta.`, target:6000 + cycle * 2000, importance:'Alta' };
-  if(slot === 2) return { type:'capacity_next', title:`Nueva ampliación grande ${cycle + 1}`, description:'Superar el siguiente umbral grande de capacidad.', target:30000 + cycle * 10000, importance:'Alta' };
-  return { type:'promotion_or_title', title:`Logro deportivo mayor ${cycle + 1}`, description:'Conseguir un ascenso o, si ya estás en primera, salir campeón.', target:1, importance:'Alta' };
-}
-function founderGoalTemplate(index=0){
-  const templates = founderGoalBaseTemplates();
-  return index < templates.length ? templates[index] : founderLoopGoal(index);
-}
-function founderClubPromotionsCount(){ return Math.max(0, Math.round(Number(game?.founderGoals?.promotions || 0))); }
-function founderGoalStartValues(){
-  const totals = normalizeManagerStats(game?.managerStats).totals || {};
-  return {
-    wins:Number(totals.won || 0),
-    fans:clubFansCurrent(game.selectedClubId),
-    capacity:clubStadiumCapacity(game.selectedClubId),
-    promotions:founderClubPromotionsCount(),
-    titles:Number(game?.managerStats?.titles || 0)
-  };
-}
-function activateFounderGoal(index=0){
-  const template = founderGoalTemplate(index);
-  const starts = founderGoalStartValues();
-  const currentCapacity = starts.capacity;
-  let type = template.type;
-  let target = Math.max(1, Math.round(Number(template.target || 1)));
-  if(type === 'capacity_next'){
-    const thresholds = [500, 1000, 2000, 5000, 10000, 20000, 30000, 45000, 60000, 80000, 100000, 120000];
-    target = thresholds.find(value => value > currentCapacity) || Math.min(120000, currentCapacity + 10000);
-    type = 'capacity_absolute';
-  }
-  if(type === 'capacity_absolute' && currentCapacity >= target){
-    const thresholds = [500, 1000, 2000, 5000, 10000, 20000, 30000, 45000, 60000, 80000, 100000, 120000];
-    target = thresholds.find(value => value > currentCapacity) || Math.min(120000, currentCapacity + 10000);
-  }
-  if(type === 'promotion_or_title'){
-    const division = clubDivision(game.selectedClubId);
-    const hasUpper = divisionOrderList().some(item => Number(item.order || 0) < Number(division.order || 0));
-    type = hasUpper ? 'promotion_delta' : 'title_delta';
-  }
-  return {
-    index:Number(index || 0),
-    id:`founder-goal-${index}-${game?.seasonNumber || 1}-${game?.globalTurn || 0}`,
-    type,
-    title:template.title,
-    description:template.description,
-    target,
-    importance:template.importance || 'Media',
-    start:starts,
-    startedAt:{ season:game?.seasonNumber || 1, turn:game?.globalTurn || 0, date:game?.currentDate || '' },
-    completed:false
-  };
-}
-function ensureFounderGoalsState(){
-  if(!currentGameIsFounderMode()) return null;
-  game.founderGoals = game.founderGoals && typeof game.founderGoals === 'object' && !Array.isArray(game.founderGoals) ? game.founderGoals : {};
-  game.founderGoals.activeIndex = Math.max(0, Math.round(Number(game.founderGoals.activeIndex || 0)));
-  game.founderGoals.completed = Array.isArray(game.founderGoals.completed) ? game.founderGoals.completed : [];
-  game.founderGoals.promotions = Math.max(0, Math.round(Number(game.founderGoals.promotions || 0)));
-  if(!game.founderGoals.current || game.founderGoals.current.completed){
-    game.founderGoals.current = activateFounderGoal(game.founderGoals.activeIndex);
-  }
-  return game.founderGoals;
-}
-function founderGoalProgress(goal=null){
-  const state = ensureFounderGoalsState();
-  const current = goal || state?.current;
-  if(!current) return { value:0, target:1, percent:0, label:'—' };
-  let value = 0;
-  if(current.type === 'capacity_absolute') value = clubStadiumCapacity(game.selectedClubId);
-  if(current.type === 'wins_delta') value = Math.max(0, Number(normalizeManagerStats(game.managerStats).totals?.won || 0) - Number(current.start?.wins || 0));
-  if(current.type === 'fans_delta') value = Math.max(0, clubFansCurrent(game.selectedClubId) - Number(current.start?.fans || 0));
-  if(current.type === 'promotion_delta') value = Math.max(0, founderClubPromotionsCount() - Number(current.start?.promotions || 0));
-  if(current.type === 'title_delta') value = Math.max(0, Number(game?.managerStats?.titles || 0) - Number(current.start?.titles || 0));
-  const target = Math.max(1, Number(current.target || 1));
-  const percent = clamp((value / target) * 100, 0, 100);
-  return { value, target, percent, label:`${formatPlainNumber(value)} / ${formatPlainNumber(target)}` };
-}
-function evaluateFounderGoals(options={}){
-  const state = ensureFounderGoalsState();
-  if(!state?.current || state.current.completed) return false;
-  const progress = founderGoalProgress(state.current);
-  if(progress.value < progress.target) return false;
-  const completed = { ...state.current, completed:true, completedAt:{ season:game?.seasonNumber || 1, turn:game?.globalTurn || 0, date:game?.currentDate || '' } };
-  state.completed.push(completed);
-  state.completed = state.completed.slice(-40);
-  state.activeIndex = Number(state.activeIndex || 0) + 1;
-  pushGameMessage({
-    type:'fundador',
-    priority:'high',
-    title:`Meta fundadora cumplida: ${completed.title}`,
-    body:`${completed.description} Progreso final: ${progress.label}. Se activó una nueva meta del club.`,
-    id:`founder-goal-complete-${completed.index}-${game?.selectedClubId}-${game?.globalTurn || 0}`
-  });
-  state.current = activateFounderGoal(state.activeIndex);
-  if(options.silent !== true){
-    pushGameMessage({ type:'fundador', priority:'normal', title:`Nueva meta fundadora: ${state.current.title}`, body:`${state.current.description} Importancia: ${state.current.importance}.`, id:`founder-goal-new-${state.current.index}-${game?.selectedClubId}-${game?.globalTurn || 0}` });
-  }
-  return true;
-}
-function founderGoalProgressMarkup(){
-  const state = ensureFounderGoalsState();
-  const goal = state?.current;
-  if(!goal) return '';
-  const progress = founderGoalProgress(goal);
-  return `<div class="manager-objective-progress founder-goal-progress"><div class="manager-objective-progress-head"><span>Meta fundadora · ${escapeHtml(goal.importance)}</span><strong>${Math.round(progress.percent)}%</strong></div><div class="manager-objective-bar"><span style="width:${Math.min(100, Math.max(0, progress.percent))}%"></span></div><p><strong>${escapeHtml(goal.title)}:</strong> ${escapeHtml(goal.description)} <span class="muted">${escapeHtml(progress.label)}</span></p></div>`;
-}
-function createFounderGame(options={}){
-  if(!founderModeEnabled()){ showNotice('El modo fundador está desactivado en la configuración.'); return; }
-  const created = createFoundedClubAtReplacement(options);
-  if(!created?.club){ showNotice('No se pudo crear el club propio en el país elegido.'); return; }
-  newGame(created.club.id, {
-    managerName:created.clean.managerName || storedManagerName(),
-    country:created.clean.country,
-    leagueId:created.club.divisionId || 'default',
-    founderMode:true,
-    founderReleasedPlayers:created.releasedPlayers,
-    founderReplacedClub:created.club.founderReplacedClub
-  });
-}
-
-function fillClubSelect(){
-  const select = $('clubSelect');
-  if(select) select.innerHTML = clubSelectOptionsMarkup();
-}
-
-
-function integrityCountryKey(value){
-  return normalizeScheduleText(String(value || '').trim() || 'argentina');
-}
-function divisionCountryKey(division){
-  return integrityCountryKey(division?.country || division?.pais || '');
-}
-function clubCountryKeyForIntegrity(club){
-  return integrityCountryKey(typeof clubCountry === 'function' ? clubCountry(club) : (club?.country || club?.pais || 'Argentina'));
-}
-function integrityDivisionById(){
-  return Object.fromEntries((seed?.divisions || []).map(division => [String(division.id || 'default'), division]));
-}
-function integrityDivisionsForClubCountry(club){
-  const country = clubCountryKeyForIntegrity(club);
-  const direct = (seed?.divisions || []).filter(division => divisionCountryKey(division) === country);
-  if(direct.length) return direct.slice().sort((a,b)=>(a.order || 0)-(b.order || 0));
-  const inferredIds = new Set((seed?.clubs || [])
-    .filter(item => item && Number(item.id) !== Number(club?.id) && clubCountryKeyForIntegrity(item) === country)
-    .map(item => String(item.divisionId || 'default')));
-  return (seed?.divisions || [])
-    .filter(division => inferredIds.has(String(division.id || 'default')))
-    .sort((a,b)=>(a.order || 0)-(b.order || 0));
-}
-function safeTargetDivisionForClub(club, currentDivision=null){
-  const candidates = integrityDivisionsForClubCountry(club);
-  if(!candidates.length) return null;
-  const currentOrder = Number(currentDivision?.order || club?.divisionOrder || 1);
-  return candidates.find(division => Number(division.order || 0) === currentOrder) || candidates[0];
-}
-function baseClubDivisionIntegrityMap(){
-  if(typeof window !== 'undefined' && window.__BASE_CLUB_DIVISION_INTEGRITY_MAP__) return window.__BASE_CLUB_DIVISION_INTEGRITY_MAP__;
-  return null;
-}
-function baseClubDivisionEntry(club){
-  const map = baseClubDivisionIntegrityMap();
-  if(!map || !club) return null;
-  const byId = map.byId?.[String(club.id || '')];
-  if(byId) return byId;
-  const key = `${integrityCountryKey(club.country || club.pais || '')}::${normalizeScheduleText(club.name || '')}`;
-  return map.byName?.[key] || null;
-}
-function nativeTargetDivisionForClub(club, currentDivision=null){
-  const divisionsById = integrityDivisionById();
-  const native = baseClubDivisionEntry(club);
-  if(native?.divisionId){
-    const target = divisionsById[String(native.divisionId || '')];
-    if(target && divisionCountryKey(target) === clubCountryKeyForIntegrity(club)) return target;
-  }
-  return safeTargetDivisionForClub(club, currentDivision);
-}
-function expectedDivisionTeamCount(division){
-  const base = baseClubDivisionIntegrityMap();
-  const fromBase = Number(base?.divisionCounts?.[String(division?.id || 'default')]);
-  if(Number.isFinite(fromBase) && fromBase > 0) return Math.round(fromBase);
-  const explicit = Number(division?.expectedTeams || division?.teamCount || division?.teamsCount || division?.cantidadEquipos);
-  if(Number.isFinite(explicit) && explicit > 0) return Math.round(explicit);
-  return 18;
-}
-function setClubIntegrityDivision(club, target){
-  if(!club || !target) return false;
-  const changed = String(club.divisionId || '') !== String(target.id || '');
-  club.divisionId = target.id;
-  club.divisionName = target.name;
-  club.divisionOrder = target.order;
-  club.prizeMultiplier = target.prizeMultiplier ?? divisionPrizeMultiplier(target.name, (target.order || 1)-1);
-  return changed;
-}
-
-function fixtureMatchCountryIssue(match, divisionsById=integrityDivisionById()){
-  if(!match) return null;
-  const home = (seed?.clubs || []).find(club => Number(club.id) === Number(match.homeId));
-  const away = (seed?.clubs || []).find(club => Number(club.id) === Number(match.awayId));
-  if(!home || !away) return { matchId:match.id, issue:'club_inexistente', homeId:match.homeId, awayId:match.awayId, played:Boolean(match.played) };
-  const division = divisionsById[String(match.divisionId || home.divisionId || '')];
-  if(!division) return null;
-  const divCountry = divisionCountryKey(division);
-  if(divCountry && (clubCountryKeyForIntegrity(home) !== divCountry || clubCountryKeyForIntegrity(away) !== divCountry)){
-    return { matchId:match.id, issue:'fixture_pais_cruzado', division:division.name, home:home.name, away:away.name, played:Boolean(match.played) };
-  }
-  return null;
-}
-function fixtureCountryIssues(){
-  const divisionsById = integrityDivisionById();
-  const issues = [];
-  (game?.fixtures || []).forEach((round, roundIndex) => {
-    (round.matches || []).forEach(match => {
-      const issue = fixtureMatchCountryIssue(match, divisionsById);
-      if(issue) issues.push({ ...issue, roundIndex, matchday:round.matchday || roundIndex + 1, roundTitle:round.title || '' });
-    });
-  });
-  return issues;
-}
-function repairCrossCountryClubAssignments(options={}){
-  if(!seed?.clubs?.length || !seed?.divisions?.length) return { repaired:0 };
-  const restoreNativeIfNeeded = options.restoreNativeIfNeeded !== false;
-  const divisionsById = integrityDivisionById();
-  let repaired = 0;
-  (seed.clubs || []).forEach(club => {
-    const currentDivision = divisionsById[String(club.divisionId || 'default')];
-    const countryMismatch = currentDivision && clubCountryKeyForIntegrity(club) !== divisionCountryKey(currentDivision);
-    const invalidDivision = !currentDivision;
-    if(!invalidDivision && !countryMismatch && !restoreNativeIfNeeded) return;
-    if(!invalidDivision && !countryMismatch && restoreNativeIfNeeded){
-      const native = baseClubDivisionEntry(club);
-      if(!native?.divisionId || String(native.divisionId) === String(club.divisionId || '')) return;
-      const nativeDivision = divisionsById[String(native.divisionId || '')];
-      if(!nativeDivision || divisionCountryKey(nativeDivision) !== clubCountryKeyForIntegrity(club)) return;
-      if(setClubIntegrityDivision(club, nativeDivision)) repaired += 1;
-      return;
-    }
-    const target = nativeTargetDivisionForClub(club, currentDivision);
-    if(!target) return;
-    if(setClubIntegrityDivision(club, target)) repaired += 1;
-  });
-  return { repaired };
-}
-function rebuildSafeSeasonFixturesAfterStructureRepair(){
-  if(!game || !Array.isArray(game.fixtures)) return { rebuilt:false, reason:'sin_calendario', blockedPlayedCross:0 };
-  const issues = fixtureCountryIssues();
-  const playedCross = issues.filter(item => item.played);
-  if(playedCross.length) return { rebuilt:false, reason:'hay_partidos_cruzados_jugados', blockedPlayedCross:playedCross.length, issues };
-  if(!issues.length) return { rebuilt:false, reason:'sin_partidos_cruzados', blockedPlayedCross:0, issues };
-  if(typeof generateFixturesForDivisions !== 'function') return { rebuilt:false, reason:'generador_no_disponible', blockedPlayedCross:0, issues };
-  const nextRegular = generateFixturesForDivisions(seed.clubs || [], divisionOrderList(), { seasonYear:game.seasonYear || seasonYearForNumber(game.seasonNumber || 1) });
-  const previousRegular = (game.fixtures || []).filter(round => !isPromotionPlayoffRound(round));
-  const previousPlayoffs = (game.fixtures || []).filter(isPromotionPlayoffRound);
-  const mergedRegular = typeof mergePlayedFixturesIntoCalendar === 'function'
-    ? mergePlayedFixturesIntoCalendar(nextRegular, previousRegular)
-    : nextRegular;
-  game.fixtures = mergedRegular.concat(previousPlayoffs);
-  game.calendarVersion = `${SEASON_CALENDAR_VERSION}-country-safe`;
-  return { rebuilt:true, reason:'calendario_regenerado', fixed:issues.length, blockedPlayedCross:0, issues };
-}
-function divisionCountIntegrityRows(){
-  return (seed?.divisions || []).map(division => {
-    const expected = expectedDivisionTeamCount(division);
-    const count = (seed?.clubs || []).filter(club => String(club.divisionId || 'default') === String(division.id || 'default')).length;
-    return { id:division.id, name:division.name, country:division.country || '', order:division.order || 1, expected, count, delta:count - expected };
-  });
-}
-function buildDivisionCountRepairPlan(){
-  const divisions = (seed?.divisions || []).slice();
-  const byId = Object.fromEntries(divisions.map(division => [String(division.id || 'default'), division]));
-  const assignments = new Map((seed?.clubs || []).map(club => [Number(club.id), String(club.divisionId || 'default')]));
-  const plan = [];
-  const countries = Array.from(new Set(divisions.map(division => divisionCountryKey(division)).filter(Boolean)));
-  countries.forEach(country => {
-    const countryDivisions = divisions
-      .filter(division => divisionCountryKey(division) === country)
-      .sort((a,b)=>(a.order || 0)-(b.order || 0));
-    const expectedById = Object.fromEntries(countryDivisions.map(division => [String(division.id || 'default'), expectedDivisionTeamCount(division)]));
-    const countFor = divisionId => Array.from(assignments.values()).filter(value => String(value) === String(divisionId)).length;
-    const countryClubIds = (seed?.clubs || [])
-      .filter(club => clubCountryKeyForIntegrity(club) === country)
-      .map(club => Number(club.id));
-    countryDivisions.forEach(targetDivision => {
-      let need = Math.max(0, expectedById[String(targetDivision.id || 'default')] - countFor(targetDivision.id));
-      while(need > 0){
-        const overflowDivisions = countryDivisions
-          .filter(division => countFor(division.id) > expectedById[String(division.id || 'default')])
-          .sort((a,b)=>Math.abs((a.order || 1) - (targetDivision.order || 1)) - Math.abs((b.order || 1) - (targetDivision.order || 1)));
-        if(!overflowDivisions.length) break;
-        let chosenClub = null;
-        let fromDivision = null;
-        overflowDivisions.some(sourceDivision => {
-          const candidates = countryClubIds
-            .filter(clubId => String(assignments.get(clubId)) === String(sourceDivision.id || 'default'))
-            .map(clubId => (seed?.clubs || []).find(club => Number(club.id) === Number(clubId)))
-            .filter(Boolean)
-            .sort((a,b) => {
-              const nativeA = baseClubDivisionEntry(a);
-              const nativeB = baseClubDivisionEntry(b);
-              const targetId = String(targetDivision.id || 'default');
-              const nativeScoreA = String(nativeA?.divisionId || '') === targetId ? 0 : 10;
-              const nativeScoreB = String(nativeB?.divisionId || '') === targetId ? 0 : 10;
-              const selectedScoreA = Number(a.id) === Number(game?.selectedClubId || 0) ? 5 : 0;
-              const selectedScoreB = Number(b.id) === Number(game?.selectedClubId || 0) ? 5 : 0;
-              const foundedScoreA = typeof isFoundedClubId === 'function' && isFoundedClubId(a.id) ? 5 : 0;
-              const foundedScoreB = typeof isFoundedClubId === 'function' && isFoundedClubId(b.id) ? 5 : 0;
-              return (nativeScoreA + selectedScoreA + foundedScoreA) - (nativeScoreB + selectedScoreB + foundedScoreB);
-            });
-          if(candidates.length){
-            chosenClub = candidates[0];
-            fromDivision = sourceDivision;
-            return true;
-          }
-          return false;
-        });
-        if(!chosenClub || !fromDivision) break;
-        assignments.set(Number(chosenClub.id), String(targetDivision.id || 'default'));
-        plan.push({
-          clubId:chosenClub.id,
-          clubName:chosenClub.name,
-          fromDivisionId:fromDivision.id,
-          fromDivisionName:fromDivision.name,
-          toDivisionId:targetDivision.id,
-          toDivisionName:targetDivision.name,
-          country:targetDivision.country || country
-        });
-        need -= 1;
-      }
-    });
-  });
-  return plan.filter(item => byId[String(item.fromDivisionId || '')] && byId[String(item.toDivisionId || '')]);
-}
-
-function matchHasMinimumBotStats(match){
-  if(!match || !match.played) return true;
-  if(typeof ownClubInMatch === 'function' && ownClubInMatch(match)) return true;
-  const goals = Array.isArray(match.goals) ? match.goals : [];
-  const cards = Array.isArray(match.cards) ? match.cards : [];
-  const injuries = Array.isArray(match.injuries) ? match.injuries : [];
-  const keySaves = Array.isArray(match.keySaves) ? match.keySaves : [];
-  const errors = Array.isArray(match.errors) ? match.errors : [];
-  const stats = match.matchStats || {};
-  const homeStats = stats.home || {};
-  const awayStats = stats.away || {};
-  const goalsOk = Number(match.homeGoals || 0) + Number(match.awayGoals || 0) === goals.length && goals.every(g => Number.isFinite(Number(g.playerId)) && Number(g.playerId) > 0 && (Number(match.homeGoals || 0) + Number(match.awayGoals || 0) <= 0 || g.clubId));
-  const assistsOk = goals.every(g => g.assistId === null || g.assistId === undefined || Number(g.assistId) > 0);
-  const cardsOk = Array.isArray(cards) && cards.every(c => Number(c.playerId || 0) > 0 && ['yellow','red','secondYellowRed'].includes(String(c.type || '')));
-  const injuriesOk = Array.isArray(injuries) && injuries.every(i => Number(i.playerId || 0) > 0 && String(i.injuryLabel || i.name || '').trim());
-  const savesOk = Array.isArray(keySaves) && keySaves.every(k => Number(k.playerId || 0) > 0);
-  const errorsOk = Array.isArray(errors) && errors.every(e => Number(e.playerId || 0) > 0);
-  const statsOk = ['attacks','chances','possession','fouls','keySaves','errors','goalErrors'].every(key => Number.isFinite(Number(homeStats[key] ?? 0)) && Number.isFinite(Number(awayStats[key] ?? 0)));
-  const playedIdsOk = Array.isArray(match.playedIdsHome) && match.playedIdsHome.length > 0 && Array.isArray(match.playedIdsAway) && match.playedIdsAway.length > 0;
-  return Boolean(goalsOk && assistsOk && cardsOk && injuriesOk && savesOk && errorsOk && statsOk && playedIdsOk);
-}
-function botMatchStatsIntegrityIssues(){
-  if(!game?.fixtures?.length) return [];
-  const issues = [];
-  (game.fixtures || []).forEach((round, roundIndex) => {
-    (round.matches || []).forEach(match => {
-      if(!match?.played) return;
-      if(typeof ownClubInMatch === 'function' && ownClubInMatch(match)) return;
-      if(matchHasMinimumBotStats(match)) return;
-      issues.push({
-        matchId:match.id,
-        roundIndex,
-        matchday:round.matchday || roundIndex + 1,
-        divisionId:match.divisionId || round.divisionId || '',
-        home:clubName(match.homeId),
-        away:clubName(match.awayId),
-        engine:match.engine || 'sin motor',
-        goals:Array.isArray(match.goals) ? match.goals.length : 'faltan',
-        cards:Array.isArray(match.cards) ? match.cards.length : 'faltan',
-        injuries:Array.isArray(match.injuries) ? match.injuries.length : 'faltan',
-        keySaves:Array.isArray(match.keySaves) ? match.keySaves.length : 'faltan',
-        errors:Array.isArray(match.errors) ? match.errors.length : 'faltan'
-      });
-    });
-  });
-  return issues;
-}
-
-function currentFreeAgentIntegrityCount(){
-  const ids = new Set();
-  (game?.marketPlayers || []).forEach(player => { if(Number(player?.clubId || 0) === 0) ids.add(Number(player.id)); });
-  (seed?.players || []).forEach(player => { if(Number(player?.clubId || 0) === 0) ids.add(Number(player.id)); });
-  return Array.from(ids).filter(Number.isFinite).length;
-}
-function inspectGameIntegrity(){
-  const result = {
-    ok:true,
-    checkedAt:new Date().toISOString(),
-    issues:[],
-    warnings:[],
-    repairables:[],
-    stats:{ clubs:Number(seed?.clubs?.length || 0), divisions:Number(seed?.divisions?.length || 0), players:Number(seed?.players?.length || 0), freeAgents:currentFreeAgentIntegrityCount(), fixtures:Number(game?.fixtures?.length || 0) },
-    canRepair:false
-  };
-  if(!seed?.clubs?.length || !seed?.divisions?.length){
-    result.ok = false;
-    result.issues.push({ type:'base_missing', severity:'high', title:'Base incompleta', detail:'No se cargaron clubes o divisiones suficientes para verificar.' });
-    return result;
-  }
-  if(!game){
-    result.warnings.push({ type:'no_game', severity:'low', title:'Sin partida activa', detail:'La base cargó bien, pero no hay partida guardada/activa para verificar estado interno.' });
-    return result;
-  }
-  const divisionsById = integrityDivisionById();
-  const validClubIds = new Set((seed.clubs || []).map(club => Number(club.id)));
-  const duplicateClubIds = [];
-  const seenClubIds = new Set();
-  (seed.clubs || []).forEach(club => {
-    const id = Number(club.id);
-    if(seenClubIds.has(id)) duplicateClubIds.push(id);
-    seenClubIds.add(id);
-  });
-  if(duplicateClubIds.length){
-    result.ok = false;
-    result.issues.push({ type:'duplicate_club_ids', severity:'high', title:'IDs de clubes duplicados', detail:`Hay ${duplicateClubIds.length} IDs repetidos. Esto requiere revisión manual.`, samples:duplicateClubIds.slice(0,8) });
-  }
-  const crossCountryClubs = [];
-  const invalidDivisionClubs = [];
-  (seed.clubs || []).forEach(club => {
-    const divisionId = String(club.divisionId || 'default');
-    const division = divisionsById[divisionId];
-    if(!division){
-      const target = nativeTargetDivisionForClub(club, null);
-      invalidDivisionClubs.push({ clubId:club.id, clubName:club.name, divisionId, targetDivisionId:target?.id || '', targetDivisionName:target?.name || '' });
-      return;
-    }
-    const clubCountry = clubCountryKeyForIntegrity(club);
-    const divCountry = divisionCountryKey(division);
-    if(clubCountry && divCountry && clubCountry !== divCountry){
-      const target = nativeTargetDivisionForClub(club, division);
-      crossCountryClubs.push({
-        clubId:club.id,
-        clubName:club.name,
-        clubCountry:club.country || club.pais || clubCountry,
-        currentDivisionId:division.id,
-        currentDivisionName:division.name,
-        currentDivisionCountry:division.country || divCountry,
-        targetDivisionId:target?.id || '',
-        targetDivisionName:target?.name || ''
-      });
-    }
-  });
-  if(invalidDivisionClubs.length){
-    result.ok = false;
-    result.issues.push({ type:'invalid_club_division', severity:'high', title:'Clubes con división inexistente', detail:`Hay ${invalidDivisionClubs.length} clubes apuntando a divisiones que no existen.`, samples:invalidDivisionClubs.slice(0,8) });
-    result.repairables.push({ type:'invalid_club_division', title:'Reasignar clubes con división inexistente a una división válida de su país', count:invalidDivisionClubs.filter(item => item.targetDivisionId).length, items:invalidDivisionClubs });
-  }
-  if(crossCountryClubs.length){
-    result.ok = false;
-    result.issues.push({ type:'cross_country_clubs', severity:'high', title:'Clubes en ligas de otro país', detail:`Hay ${crossCountryClubs.length} clubes ubicados en una división de otro país.`, samples:crossCountryClubs.slice(0,8) });
-    result.repairables.push({ type:'cross_country_clubs', title:'Reasignar clubes a una división válida de su país', count:crossCountryClubs.filter(item => item.targetDivisionId).length, items:crossCountryClubs });
-  }
-  const overrides = game?.clubDivisionOverrides || {};
-  const invalidOverrides = [];
-  Object.entries(overrides).forEach(([clubId, override]) => {
-    const club = (seed.clubs || []).find(item => Number(item.id) === Number(clubId));
-    const division = divisionsById[String(override?.divisionId || '')];
-    if(!club || !division){
-      invalidOverrides.push({ clubId, clubName:club?.name || 'Club inexistente', divisionId:override?.divisionId || '' });
-      return;
-    }
-    const clubCountry = clubCountryKeyForIntegrity(club);
-    const divCountry = divisionCountryKey(division);
-    if(clubCountry && divCountry && clubCountry !== divCountry){
-      invalidOverrides.push({ clubId, clubName:club.name, divisionId:division.id, divisionName:division.name, clubCountry:club.country || clubCountry, divisionCountry:division.country || divCountry });
-    }
-  });
-  if(invalidOverrides.length){
-    result.ok = false;
-    result.issues.push({ type:'invalid_division_overrides', severity:'medium', title:'Overrides de división inconsistentes', detail:`Hay ${invalidOverrides.length} asignaciones guardadas con división inválida o de otro país.`, samples:invalidOverrides.slice(0,8) });
-    result.repairables.push({ type:'invalid_division_overrides', title:'Regenerar overrides desde la estructura actual reparada', count:invalidOverrides.length, items:invalidOverrides });
-  }
-  const invalidPlayers = (seed.players || []).filter(player => Number(player.clubId || 0) > 0 && !validClubIds.has(Number(player.clubId)));
-  if(invalidPlayers.length){
-    result.ok = false;
-    result.issues.push({ type:'invalid_player_clubs', severity:'medium', title:'Jugadores con club inexistente', detail:`Hay ${invalidPlayers.length} jugadores asignados a clubes que no existen.`, samples:invalidPlayers.slice(0,8).map(p => ({ id:p.id, name:p.name, clubId:p.clubId })) });
-  }
-  if(game?.selectedClubId && !validClubIds.has(Number(game.selectedClubId))){
-    result.ok = false;
-    result.issues.push({ type:'invalid_selected_club', severity:'high', title:'Club del manager inexistente', detail:`El club seleccionado (${game.selectedClubId}) no existe en la base actual.` });
-  }
-  const invalidStandingIds = Object.keys(game?.standings || {}).filter(id => !validClubIds.has(Number(id)));
-  if(invalidStandingIds.length){
-    result.ok = false;
-    result.issues.push({ type:'invalid_standings', severity:'medium', title:'Tabla con clubes inexistentes', detail:`Hay ${invalidStandingIds.length} entradas de tabla de clubes inexistentes.`, samples:invalidStandingIds.slice(0,8) });
-  }
-  const fixtureIssues = fixtureCountryIssues();
-  if(fixtureIssues.length){
-    const playedFixtureIssues = fixtureIssues.filter(item => item.played);
-    const unplayedFixtureIssues = fixtureIssues.filter(item => !item.played);
-    result.ok = false;
-    const detail = playedFixtureIssues.length
-      ? `Hay ${fixtureIssues.length} partidos cuyo país no coincide con la división del fixture. ${playedFixtureIssues.length} ya fueron jugados y no se reconstruyen automáticamente para no borrar resultados.`
-      : `Hay ${fixtureIssues.length} partidos cuyo país no coincide con la división del fixture. Como no están jugados, pueden regenerarse de forma segura.`;
-    result.warnings.push({ type:'fixture_cross_country', severity:'medium', title:'Calendario con partidos cruzados', detail, samples:fixtureIssues.slice(0,8) });
-    if(unplayedFixtureIssues.length && !playedFixtureIssues.length){
-      result.repairables.push({ type:'rebuild_cross_country_fixtures', title:'Regenerar calendario no jugado para quitar partidos cruzados', count:unplayedFixtureIssues.length, items:unplayedFixtureIssues });
-    }
-  }
-  const botStatsIssues = botMatchStatsIntegrityIssues();
-  result.stats.botMatchesWithMissingStats = botStatsIssues.length;
-  if(botStatsIssues.length){
-    result.ok = false;
-    result.warnings.push({ type:'bot_match_min_stats_missing', severity:'medium', title:'Partidos bot sin estadísticas mínimas', detail:`Hay ${botStatsIssues.length} partido(s) bot jugados sin datos mínimos de goleadores, asistentes, tarjetas, lesiones, tapadas o errores. No se reconstruyen automáticamente porque ya fueron simulados.`, samples:botStatsIssues.slice(0,8) });
-  }
-  const freeCap = Number(typeof MARKET_FREE_AGENT_HARD_MAX !== 'undefined' ? MARKET_FREE_AGENT_HARD_MAX : 300);
-  if(result.stats.freeAgents > freeCap){
-    result.ok = false;
-    result.warnings.push({ type:'free_agents_over_cap', severity:'low', title:'Mercado libre excedido', detail:`Hay ${result.stats.freeAgents} libres y el máximo configurado es ${freeCap}. La limpieza automática de mercado debería recortarlo en carga/temporada.` });
-  }
-  const divisionCounts = divisionCountIntegrityRows();
-  result.stats.divisionCounts = divisionCounts;
-  const countMismatches = divisionCounts.filter(item => Number(item.count || 0) !== Number(item.expected || 0));
-  if(countMismatches.length){
-    result.ok = false;
-    const repairPlan = buildDivisionCountRepairPlan();
-    result.warnings.push({ type:'division_team_count_mismatch', severity:'medium', title:'Ligas con cantidad incorrecta de clubes', detail:`Hay ${countMismatches.length} división(es) que no tienen su cantidad esperada de clubes.`, samples:countMismatches.slice(0,8) });
-    if(repairPlan.length){
-      result.repairables.push({ type:'division_team_count_mismatch', title:'Completar ligas moviendo clubes de exceso a su división correspondiente', count:repairPlan.length, items:repairPlan });
-    }else if(baseClubDivisionIntegrityMap()){
-      result.repairables.push({ type:'restore_native_division_structure', title:'Restaurar estructura base de divisiones para completar ligas', count:countMismatches.length, items:countMismatches });
-    }
-  }
-  result.canRepair = result.repairables.some(item => Number(item.count || 0) > 0);
-  return result;
-}
-function integritySeverityLabel(severity){
-  if(severity === 'high') return 'grave';
-  if(severity === 'medium') return 'medio';
-  return 'leve';
-}
-function integrityIssueMarkup(item){
-  const samples = Array.isArray(item.samples) && item.samples.length
-    ? `<details class="integrity-samples"><summary>Ver ejemplos</summary><pre>${escapeHtml(JSON.stringify(item.samples, null, 2))}</pre></details>`
-    : '';
-  return `<li class="integrity-item integrity-${escapeHtml(item.severity || 'low')}"><strong>${escapeHtml(item.title || 'Aviso')}</strong><span>${escapeHtml(integritySeverityLabel(item.severity || 'low'))}</span><p>${escapeHtml(item.detail || '')}</p>${samples}</li>`;
-}
-function showGameIntegrityModal(result=inspectGameIntegrity(), repaired=false){
-  const issueItems = (result.issues || []).map(integrityIssueMarkup).join('');
-  const warningItems = (result.warnings || []).map(integrityIssueMarkup).join('');
-  const divisionRows = (result.stats?.divisionCounts || []).map(item => { const bad = Number(item.count || 0) !== Number(item.expected || item.count || 0); return `<tr class="${bad ? 'integrity-row-warn' : ''}"><td>${escapeHtml(item.country || '—')}</td><td>${escapeHtml(item.name || item.id)}</td><td>${Number(item.count || 0)} / ${Number(item.expected || item.count || 0)}</td></tr>`; }).join('');
-  const repairRows = (result.repairables || []).filter(item => Number(item.count || 0) > 0).map(item => `<li><strong>${escapeHtml(item.title)}</strong><span>${Number(item.count || 0)} caso(s)</span></li>`).join('');
-  const stateLabel = result.ok ? 'Todo correcto' : (result.canRepair ? 'Hay reparaciones seguras disponibles' : 'Hay avisos para revisar');
-  const body = `<div class="integrity-modal">
-    <p class="eyebrow">Verificador de estructura</p>
-    <h2>${escapeHtml(stateLabel)}</h2>
-    <p class="muted">Este chequeo no reinicia la partida y no borra resultados. La reparación segura reasigna clubes que quedaron en una liga de otro país, completa divisiones con cupos incorrectos, regenera el mapa de divisiones guardado y puede reconstruir calendarios cruzados solo si esos partidos todavía no fueron jugados.</p>
-    ${repaired ? '<div class="notice-inline good">Reparación segura aplicada y partida guardada.</div>' : ''}
-    <div class="integrity-summary-grid">
-      <div><span>Clubes</span><strong>${Number(result.stats?.clubs || 0)}</strong></div>
-      <div><span>Divisiones</span><strong>${Number(result.stats?.divisions || 0)}</strong></div>
-      <div><span>Jugadores</span><strong>${Number(result.stats?.players || 0)}</strong></div>
-      <div><span>Libres</span><strong>${Number(result.stats?.freeAgents || 0)}</strong></div>
-    </div>
-    ${issueItems ? `<h3>Problemas detectados</h3><ul class="integrity-list">${issueItems}</ul>` : '<div class="notice-inline good">No se detectaron problemas graves de estructura.</div>'}
-    ${warningItems ? `<h3>Advertencias</h3><ul class="integrity-list">${warningItems}</ul>` : ''}
-    ${repairRows ? `<h3>Reparaciones seguras</h3><ul class="integrity-repair-list">${repairRows}</ul><div class="row message-actions"><button class="primary" data-apply-integrity-repair>Aplicar reparaciones seguras</button></div>` : ''}
-    <h3>Clubes por división actual</h3>
-    <div class="table-wrap compact-table"><table><thead><tr><th>País</th><th>División</th><th>Clubes / esperado</th></tr></thead><tbody>${divisionRows}</tbody></table></div>
-  </div>`;
-  if(typeof openModal === 'function'){
-    openModal(body);
-    document.querySelector('[data-apply-integrity-repair]')?.addEventListener('click', async () => {
-      const next = await applySafeGameIntegrityRepairs();
-      showGameIntegrityModal(next, true);
-    });
-  }else{
-    showNotice(result.ok ? 'Verificación correcta.' : 'Verificación completada con avisos.', true);
-  }
-}
-async function applySafeGameIntegrityRepairs(){
-  const before = inspectGameIntegrity();
-  const divisionsById = integrityDivisionById();
-  let repaired = 0;
-  let fixturesRebuilt = 0;
-  const countryRepair = repairCrossCountryClubAssignments({ restoreNativeIfNeeded:false });
-  repaired += Number(countryRepair.repaired || 0);
-
-  let countPlan = buildDivisionCountRepairPlan();
-  let guard = 0;
-  while(countPlan.length && guard < 6){
-    countPlan.forEach(item => {
-      const club = (seed?.clubs || []).find(club => Number(club.id) === Number(item.clubId));
-      const target = divisionsById[String(item.toDivisionId || '')];
-      if(!club || !target) return;
-      if(divisionCountryKey(target) !== clubCountryKeyForIntegrity(club)) return;
-      if(setClubIntegrityDivision(club, target)) repaired += 1;
-    });
-    const nextPlan = buildDivisionCountRepairPlan();
-    if(!nextPlan.length || nextPlan.length === countPlan.length) break;
-    countPlan = nextPlan;
-    guard += 1;
-  }
-
-  const remainingMismatch = divisionCountIntegrityRows().some(item => Number(item.count || 0) !== Number(item.expected || 0));
-  if(remainingMismatch && baseClubDivisionIntegrityMap()){
-    (seed?.clubs || []).forEach(club => {
-      const native = baseClubDivisionEntry(club);
-      const target = native?.divisionId ? divisionsById[String(native.divisionId || '')] : null;
-      if(!target || divisionCountryKey(target) !== clubCountryKeyForIntegrity(club)) return;
-      if(setClubIntegrityDivision(club, target)) repaired += 1;
-    });
-  }
-
-  const fixtureRepair = rebuildSafeSeasonFixturesAfterStructureRepair();
-  if(fixtureRepair.rebuilt) fixturesRebuilt = Number(fixtureRepair.fixed || 0);
-
-  if(game){
-    game.clubDivisionOverrides = snapshotClubDivisionOverrides();
-    const selectedClub = seed.clubs.find(club => Number(club.id) === Number(game.selectedClubId));
-    if(selectedClub) game.selectedLeagueId = selectedClub.divisionId || game.selectedLeagueId;
-  }
-  if((repaired > 0 || fixturesRebuilt > 0) && typeof saveLocal === 'function'){
-    await saveLocal(true);
-  }
-  if((repaired > 0 || fixturesRebuilt > 0) && typeof renderAll === 'function') renderAll();
-  const after = inspectGameIntegrity();
-  after.repairedCount = repaired;
-  after.fixturesRebuiltCount = fixturesRebuilt;
-  after.previousIssues = before.issues || [];
-  if(repaired > 0 || fixturesRebuilt > 0){
-    const parts = [];
-    if(repaired > 0) parts.push(`${repaired} movimiento(s) de estructura`);
-    if(fixturesRebuilt > 0) parts.push(`${fixturesRebuilt} partido(s) de calendario regenerados`);
-    showNotice(`Verificación: ${parts.join(' y ')} aplicados.`, false);
-  }else{
-    showNotice('Verificación completada. No había reparaciones seguras para aplicar.', false);
-  }
-  return after;
-}
-
-
-function recoveryClonePlain(value){
-  try{ return JSON.parse(JSON.stringify(value ?? null)); }
-  catch(_){ return null; }
-}
-function protectedManagerProgressSnapshot(){
-  const stats = normalizeManagerStats(game?.managerStats || createInitialManagerStats());
-  const special = typeof ensureSpecialState === 'function' ? ensureSpecialState() : (game?.special || null);
-  return {
-    managerStats: recoveryClonePlain(stats),
-    special: recoveryClonePlain(special),
-    prestige: typeof currentManagerPrestige === 'function' ? currentManagerPrestige() : Number(stats.prestige || 0),
-    experience: Math.max(0, Math.round(Number(stats.experience || 0))),
-    skillPoints: Math.max(0, Math.round(Number(special?.puntos_habilidad || 0))),
-    saveCode:String(game?.saveCode || ''),
-    rankingManagerName:String(game?.rankingManagerName || storedManagerName() || '')
-  };
-}
-function restoreProtectedManagerProgress(snapshot){
-  if(!game || !snapshot) return;
-  const season = Math.max(1, Math.round(Number(game.seasonNumber || 1)));
-  const clubId = Number(game.selectedClubId || 0);
-  const stats = normalizeManagerStats(snapshot.managerStats || game.managerStats || createInitialManagerStats());
-  stats.currentSeason = emptyManagerSeasonStats(season, clubId);
-  stats.experience = Math.max(Math.round(Number(stats.experience || 0)), Math.round(Number(snapshot.experience || 0)));
-  game.managerStats = ensureManagerCurrentSeasonStats(stats, season, clubId);
-  game.managerStats = normalizeManagerStats(game.managerStats);
-  if(snapshot.rankingManagerName) game.rankingManagerName = snapshot.rankingManagerName;
-  if(snapshot.saveCode && !game.saveCode) game.saveCode = snapshot.saveCode;
-  if(snapshot.special){
-    game.special = recoveryClonePlain(snapshot.special) || snapshot.special;
-    if(game.special && typeof game.special === 'object'){
-      game.special.manager_id = String(game.saveCode || snapshot.saveCode || game.special.manager_id || '');
-      game.special.nombre_manager = String(game.rankingManagerName || snapshot.rankingManagerName || game.special.nombre_manager || storedManagerName() || 'Manager');
-    }
-    if(typeof normalizeSpecialState === 'function') game.special = normalizeSpecialState(game.special, game.rankingManagerName || storedManagerName() || 'Manager');
-    if(game.special && typeof game.special === 'object'){
-      game.special.puntos_habilidad = Math.max(Math.round(Number(game.special.puntos_habilidad || 0)), Math.round(Number(snapshot.skillPoints || 0)));
-    }
-  }
-}
-function forceStartNewSeasonRecovery(){
-  if(!game){ showNotice('No hay partida activa para desbloquear.'); return; }
-  const clubId = Number(game.selectedClubId || 0);
-  if(!clubId || !seed?.clubs?.some(club => Number(club.id) === clubId)){
-    showNotice('No se encontró un club válido para continuar la partida.');
-    return;
-  }
-  const snapshot = protectedManagerProgressSnapshot();
-  const previousSeason = Math.max(1, Math.round(Number(game.seasonNumber || 1)));
-  game.gameOver = null;
-  game.mustReviewTactics = false;
-  game.advanceLockedUntil = 0;
-  game.advanceLockDurationMs = ADVANCE_LOCK_MS;
-  game.seasonFinalized = true;
-  game.seasonPhase = 'finalized';
-  game.seasonEndModalShown = true;
-  game.seasonTransition = {
-    season:previousSeason,
-    forcedRecovery:true,
-    userRecord:null,
-    movements:[],
-    salariesPaid:0,
-    salaryAdjustments:null,
-    retirements:[],
-    trainingDecay:null,
-    prestigeChanges:[],
-    agingApplied:false
-  };
-  startNextSeason(clubId);
-  restoreProtectedManagerProgress(snapshot);
-  pushGameMessage({
-    type:'sistema',
-    priority:'high',
-    title:'Partida desbloqueada',
-    body:`Se forzó el inicio de la temporada ${game.seasonNumber || previousSeason + 1} con ${clubName(game.selectedClubId)}. Se conservaron prestigio, experiencia, puntos de habilidad y progreso de manager.`,
-    id:`force-new-season-${previousSeason}-${game.selectedClubId}-${Date.now()}`
-  });
-  activeTab = 'home';
-  saveLocal(true);
-  renderAll();
-  showNotice(`Partida desbloqueada. Temporada ${game.seasonNumber || previousSeason + 1} iniciada sin borrar el progreso del manager.`, true);
-}
-function openForceNewSeasonModal(){
-  if(!game){ showNotice('No hay partida activa para desbloquear.'); return; }
-  const snapshot = protectedManagerProgressSnapshot();
-  const prestigeLabel = typeof formatManagerPrestige === 'function' ? formatManagerPrestige(snapshot.prestige) : String(snapshot.prestige);
-  const body = `<div class="force-season-modal">
-    <p class="label">Recuperación de partida</p>
-    <h2>Desbloquear y empezar temporada nueva</h2>
-    <p class="muted">Usá esta opción sólo si la partida quedó bloqueada o necesitás saltar el cierre de temporada. No borra la carrera ni crea una partida nueva.</p>
-    <div class="card blocker"><strong>Progreso protegido</strong><p class="muted small">Antes de avanzar se guarda una copia de seguridad interna de manager, prestigio, experiencia, puntos de habilidad y cartas especiales.</p></div>
-    <div class="protected-grid">
-      <div><span>Club actual</span><strong>${escapeHtml(clubName(game.selectedClubId))}</strong></div>
-      <div><span>Temporada actual</span><strong>${game.seasonNumber || 1}</strong></div>
-      <div><span>Prestigio manager</span><strong>${escapeHtml(prestigeLabel)}</strong></div>
-      <div><span>Experiencia</span><strong>${formatPlainNumber(snapshot.experience)}</strong></div>
-      <div><span>Puntos habilidad</span><strong>${formatPlainNumber(snapshot.skillPoints)}</strong></div>
-    </div>
-    <p class="small muted">No se otorgan títulos, premios ni penalizaciones de la temporada saltada. Es una herramienta de reparación.</p>
-    <div class="row message-actions" style="margin-top:14px"><button id="btnConfirmForceNewSeason" class="primary">Desbloquear ahora</button><button class="ghost" onclick="closeModal()">Cancelar</button></div>
-  </div>`;
-  openModal(body);
-  $('btnConfirmForceNewSeason')?.addEventListener('click', forceStartNewSeasonRecovery);
-}
-
-function confirmResetLocal(){
-  const ok = window.confirm('Vas a borrar la partida local guardada en este navegador. Esta acción no se puede deshacer.');
-  if(ok) resetLocal();
-}
-function bindEvents(){
-  $('btnOpenNewGame')?.addEventListener('click', openNewGameModal);
-  $('btnNewGame')?.addEventListener('click', ()=> newGame(Number($('clubSelect')?.value || 0), { managerName:storedManagerName() }));
-  $('btnSave').addEventListener('click', saveLocal);
-  $('btnLoad').addEventListener('click', ()=>loadLocal(false));
-  $('topResignClubBtn')?.addEventListener('click', resignCurrentClub);
-  $('btnVerifyIntegrity')?.addEventListener('click', () => showGameIntegrityModal(inspectGameIntegrity(), false));
-  $('btnForceNewSeason')?.addEventListener('click', openForceNewSeasonModal);
-  $('btnReset')?.addEventListener('click', confirmResetLocal);
-  document.querySelectorAll('.tabs button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      activeTab = btn.dataset.tab;
-      if(typeof resetManagerDivisionFilterForTab === 'function') resetManagerDivisionFilterForTab(activeTab);
-      renderAll();
-    });
-  });
-  document.addEventListener('click', (event)=>{
-    const playerBtn = event.target.closest('[data-player-id]');
-    if(playerBtn){ showPlayerModal(Number(playerBtn.dataset.playerId)); return; }
-    const clubBtn = event.target.closest('[data-club-id]');
-    if(clubBtn){ showClubModal(Number(clubBtn.dataset.clubId)); return; }
-    const matchBtn = event.target.closest('[data-match-id]');
-    if(matchBtn){ showMatchModal(matchBtn.dataset.matchId); return; }
-    if(event.target.closest('[data-open-messages]')){ activeTab='messages'; renderAll(); return; }
-    const mentalityBtn = event.target.closest('[data-toggle-mentality]');
-    if(mentalityBtn){
-      const playerId = Number(mentalityBtn.dataset.toggleMentality);
-      if(game?.tactic?.starters?.includes(playerId)){
-        game.tactic = applyStarterMentalities(game.tactic);
-        setPlayerMentality(playerId, nextMentality(playerMentality(playerId)), game.tactic);
-        saveLocal(true);
-        renderTactics();
-      }
-      return;
-    }
-    const close = event.target.closest('[data-close-modal]');
-    if(close || event.target.classList.contains('modal-backdrop')) closeModal();
-  });
-  document.addEventListener('keydown', (event)=>{ if(event.key === 'Escape') closeModal(); });
-}
-
-function startUiTicker(){
-  clearInterval(uiTicker);
-  uiTicker = setInterval(()=>{
-    if(game) refreshSidebarDate();
-    if(game && activeTab === 'home') updateAdvanceButtonState();
-  }, 1000);
-}
-function generateSaveCode(){
-  const raw = `${Date.now()}-${Math.random()}-${navigator.userAgent || ''}`;
-  return `FM-${Date.now().toString(36).toUpperCase()}-${hashNumber(raw, 1000000).toString().padStart(6,'0')}`;
-}
-
-function normalizeSectorStyleValue(value){
-  const clean = String(value || '').trim();
-  const aliases = { presion:'presion_alta', presionAlta:'presion_alta', presion_alta:'presion_alta', rotacion:'rotacion', rotación:'rotacion', posicional:'posicional', repliegue:'repliegue' };
-  const normalized = aliases[clean] || clean;
-  const valid = new Set((typeof TACTIC_SECTOR_STYLE_OPTIONS !== 'undefined' ? TACTIC_SECTOR_STYLE_OPTIONS : []).map(opt => opt.value));
-  return valid.has(normalized) ? normalized : 'posicional';
-}
-function normalizeSectorStyles(styles){
-  const base = typeof DEFAULT_TACTIC_SECTOR_STYLES !== 'undefined' ? DEFAULT_TACTIC_SECTOR_STYLES : { defense:'posicional', midfield:'posicional', attack:'posicional' };
-  const src = styles && typeof styles === 'object' && !Array.isArray(styles) ? styles : {};
-  return {
-    defense: normalizeSectorStyleValue(src.defense || src.defensa || base.defense),
-    midfield: normalizeSectorStyleValue(src.midfield || src.medios || src.medio || base.midfield),
-    attack: normalizeSectorStyleValue(src.attack || src.delanteros || src.delantera || base.attack)
-  };
-}
-function normalizeSavedTacticsState(src){
-  const maxSlots = Number.isFinite(Number(typeof TACTIC_SAVE_SLOT_COUNT !== 'undefined' ? TACTIC_SAVE_SLOT_COUNT : 3)) ? Number(TACTIC_SAVE_SLOT_COUNT) : 3;
-  const rawSlots = src && typeof src === 'object' && !Array.isArray(src) ? (src.slots || src) : {};
-  const slots = {};
-  for(let i=1; i<=maxSlots; i++){
-    const raw = rawSlots[i] || rawSlots[String(i)] || null;
-    if(!raw || typeof raw !== 'object') continue;
-    const starters = Array.isArray(raw.starters) ? raw.starters.slice(0,11).map(id => Number(id) || 0) : [];
-    while(starters.length < 11) starters.push(0);
-    const bench = Array.isArray(raw.bench) ? raw.bench.slice(0,10).map(id => Number(id) || 0).filter(Boolean) : [];
-    const playerMentalities = (raw.playerMentalities && typeof raw.playerMentalities === 'object' && !Array.isArray(raw.playerMentalities)) ? raw.playerMentalities : {};
-    const cleanMentalities = {};
-    Object.entries(playerMentalities).forEach(([id, mode]) => {
-      const cleanId = Number(id || 0);
-      if(cleanId) cleanMentalities[cleanId] = normalizeMentality(mode);
-    });
-    slots[i] = {
-      slot:i,
-      name:String(raw.name || `Táctica ${i}`),
-      savedAt:String(raw.savedAt || ''),
-      clubId:Number(raw.clubId || 0),
-      clubName:String(raw.clubName || ''),
-      formation:FORMATIONS[raw.formation] ? raw.formation : DEFAULT_TACTIC.formation,
-      starters,
-      bench,
-      autoSubs:Array.isArray(raw.autoSubs) ? raw.autoSubs.slice(0,5).map(rule => ({ outId:Number(rule?.outId || 0), inId:Number(rule?.inId || 0), trigger:String(rule?.trigger || 'tired') })) : [],
-      playerMentalities:cleanMentalities,
-      matchInstructions: window.Simulator20?.normalizeMatchInstructions ? window.Simulator20.normalizeMatchInstructions(raw.matchInstructions) : (raw.matchInstructions || DEFAULT_TACTIC.matchInstructions),
-      sectorStyles: normalizeSectorStyles(raw.sectorStyles)
-    };
-  }
-  return { slots };
-}
-function savedTacticSlot(slot){
-  game.savedTactics = normalizeSavedTacticsState(game?.savedTactics || {});
-  return game.savedTactics.slots?.[Number(slot || 0)] || null;
-}
-function tacticSlotStatus(slot){
-  const saved = savedTacticSlot(slot);
-  if(!saved) return { exists:false, label:'Vacía', details:'Sin táctica guardada.' };
-  const validStarters = (saved.starters || []).filter(Boolean).length;
-  const clubText = saved.clubName ? ` · ${saved.clubName}` : '';
-  return { exists:true, label:`${saved.formation}${clubText}`, details:`${validStarters}/11 titulares guardados` };
-}
-function snapshotCurrentTacticForSlot(slot){
-  const current = applyStarterMentalities(normalizeTactic(game.selectedClubId, game.tactic || DEFAULT_TACTIC));
-  const starters = current.starters.slice(0,11).map(id => Number(id) || 0);
-  while(starters.length < 11) starters.push(0);
-  const bench = (current.bench || []).slice(0,10).map(id => Number(id) || 0).filter(Boolean);
-  const mentalities = {};
-  starters.filter(Boolean).forEach(id => { mentalities[id] = playerMentality(id, current); });
-  return {
-    slot:Number(slot || 0),
-    name:`Táctica ${Number(slot || 0)}`,
-    savedAt:new Date().toISOString(),
-    clubId:Number(game.selectedClubId || 0),
-    clubName:clubName(game.selectedClubId),
-    formation:current.formation || DEFAULT_TACTIC.formation,
-    starters,
-    bench,
-    autoSubs:(current.autoSubs || []).slice(0,5).map(rule => ({ outId:Number(rule.outId || 0), inId:Number(rule.inId || 0), trigger:String(rule.trigger || 'tired') })),
-    playerMentalities:mentalities,
-    matchInstructions:current.matchInstructions || DEFAULT_TACTIC.matchInstructions,
-    sectorStyles:normalizeSectorStyles(current.sectorStyles)
-  };
-}
-function saveCurrentTacticSlot(slot){
-  if(!game) return false;
-  const cleanSlot = Math.max(1, Math.min(Number(typeof TACTIC_SAVE_SLOT_COUNT !== 'undefined' ? TACTIC_SAVE_SLOT_COUNT : 3), Math.round(Number(slot || 1))));
-  game.savedTactics = normalizeSavedTacticsState(game.savedTactics || {});
-  game.savedTactics.slots[cleanSlot] = snapshotCurrentTacticForSlot(cleanSlot);
-  saveLocal(true);
-  showNotice(`Táctica ${cleanSlot} guardada.`);
-  if(typeof renderTactics === 'function') renderTactics();
-  return true;
-}
-function sanitizeSavedTacticForCurrentClub(saved){
-  const squad = playersByClub(game.selectedClubId);
-  const squadIds = new Set(squad.map(p => Number(p.id)));
-  const starters = (saved.starters || []).slice(0,11).map(id => {
-    const cleanId = Number(id || 0);
-    if(!cleanId || !squadIds.has(cleanId) || isUnavailable(cleanId)) return 0;
-    return cleanId;
-  });
-  while(starters.length < 11) starters.push(0);
-  const taken = new Set(starters.filter(Boolean));
-  const bench = (saved.bench || []).map(Number).filter(id => id && squadIds.has(id) && !taken.has(id) && canBeBench(id)).slice(0,10);
-  const mentalities = {};
-  starters.filter(Boolean).forEach(id => {
-    mentalities[id] = normalizeMentality(saved.playerMentalities?.[id] || saved.playerMentalities?.[String(id)] || 'normal');
-  });
-  const autoSubs = (saved.autoSubs || []).slice(0,5).map(rule => ({
-    outId: starters.includes(Number(rule.outId || 0)) ? Number(rule.outId || 0) : 0,
-    inId: bench.includes(Number(rule.inId || 0)) ? Number(rule.inId || 0) : 0,
-    trigger: SUB_TRIGGERS.some(t => t.value === rule.trigger) ? rule.trigger : 'tired'
-  }));
-  while(autoSubs.length < 5) autoSubs.push({ outId:0, inId:0, trigger:'tired' });
-  if(game){
-    const store = ensurePlayerMentalitiesStore(game);
-    Object.entries(mentalities).forEach(([id, mode]) => { store[Number(id)] = normalizeMentality(mode); });
-  }
-  return applyStarterMentalities({
-    ...DEFAULT_TACTIC,
-    formation:FORMATIONS[saved.formation] ? saved.formation : DEFAULT_TACTIC.formation,
-    starters,
-    bench,
-    autoSubs,
-    playerMentalities:{ ...(game.playerMentalities || {}), ...mentalities },
-    matchInstructions:window.Simulator20?.normalizeMatchInstructions ? window.Simulator20.normalizeMatchInstructions(saved.matchInstructions) : (saved.matchInstructions || DEFAULT_TACTIC.matchInstructions),
-    sectorStyles:normalizeSectorStyles(saved.sectorStyles)
-  });
-}
-function loadSavedTacticSlot(slot){
-  if(!game) return false;
-  const saved = savedTacticSlot(slot);
-  if(!saved){ showNotice(`No hay táctica guardada en el espacio ${slot}.`); return false; }
-  const clean = sanitizeSavedTacticForCurrentClub(saved);
-  const missing = clean.starters.filter(id => !id).length;
-  game.tactic = clean;
-  game.playerMentalities = { ...(game.playerMentalities || {}), ...(clean.playerMentalities || {}) };
-  saveLocal(true);
-  showNotice(missing ? `Táctica ${slot} cargada con ${missing} hueco(s) por jugadores lesionados o fuera del club.` : `Táctica ${slot} cargada.`);
-  if(typeof renderTactics === 'function') renderTactics();
-  return true;
-}
-
-
-function maxTrainingSaveSlots(){
-  const raw = Number(typeof TRAINING_SAVE_SLOT_COUNT !== 'undefined' ? TRAINING_SAVE_SLOT_COUNT : 3);
-  return Number.isFinite(raw) && raw > 0 ? Math.min(6, Math.round(raw)) : 3;
-}
-function safeTrainingTypeForSavedPlan(value){
-  try{
-    return typeof safeTrainingType === 'function' ? safeTrainingType(value) : (value || 'regenerative');
-  }catch(_err){
-    return 'regenerative';
-  }
-}
-function safeIndividualTrainingTypeForSavedPlan(value){
-  try{
-    return typeof safeIndividualTrainingType === 'function' ? safeIndividualTrainingType(value) : (value || 'balanced');
-  }catch(_err){
-    return 'balanced';
-  }
-}
-function normalizeTrainingScheduleForSavedPlan(schedule){
-  try{
-    if(typeof normalizeTrainingSchedule === 'function') return normalizeTrainingSchedule(schedule);
-  }catch(_err){}
-  const labels = Array.isArray(typeof TRAINING_DAY_LABELS !== 'undefined' ? TRAINING_DAY_LABELS : null) ? TRAINING_DAY_LABELS : ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const slots = Array.isArray(typeof TRAINING_DAY_SLOTS !== 'undefined' ? TRAINING_DAY_SLOTS : null) ? TRAINING_DAY_SLOTS : [{key:'morning'},{key:'midday'},{key:'afternoon'},{key:'evening'}];
-  const normalized = {};
-  labels.forEach((_, dayIndex) => {
-    const sourceDay = schedule?.[dayIndex] || schedule?.[String(dayIndex)] || {};
-    normalized[dayIndex] = {};
-    slots.forEach(slot => { normalized[dayIndex][slot.key] = safeTrainingTypeForSavedPlan(sourceDay?.[slot.key]); });
-  });
-  return normalized;
-}
-function normalizeSavedTrainingPlansState(src){
-  const maxSlots = maxTrainingSaveSlots();
-  const source = src && typeof src === 'object' && !Array.isArray(src) ? src : {};
-  const rawSlots = source.slots && typeof source.slots === 'object' && !Array.isArray(source.slots) ? source.slots : source;
-  const slots = {};
-  for(let i=1; i<=maxSlots; i++){
-    try{
-      const raw = rawSlots[i] || rawSlots[String(i)] || null;
-      if(!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
-      const rawPlan = (raw.trainingPlan && typeof raw.trainingPlan === 'object' && !Array.isArray(raw.trainingPlan)) ? raw.trainingPlan : {};
-      const plan = {};
-      Object.entries(rawPlan).forEach(([id, value]) => {
-        const cleanId = Number(id || 0);
-        if(cleanId) plan[cleanId] = safeIndividualTrainingTypeForSavedPlan(value);
-      });
-      slots[i] = {
-        slot:i,
-        name:String(raw.name || `Entrenamiento ${i}`).trim().slice(0,40) || `Entrenamiento ${i}`,
-        savedAt:String(raw.savedAt || ''),
-        clubId:Number(raw.clubId || 0),
-        clubName:String(raw.clubName || ''),
-        trainingSchedule:normalizeTrainingScheduleForSavedPlan(raw.trainingSchedule),
-        trainingPlan:plan
-      };
-    }catch(err){
-      console.warn('Plan de entrenamiento guardado omitido por datos inválidos', i, err);
-    }
-  }
-  return { slots };
-}
-function repairSavedTrainingPlansState(){
-  if(!game) return { repaired:false };
-  const before = JSON.stringify(game.savedTrainingPlans || {});
-  game.savedTrainingPlans = normalizeSavedTrainingPlansState(game.savedTrainingPlans || {});
-  return { repaired: before !== JSON.stringify(game.savedTrainingPlans || {}) };
-}
-function resetSavedTrainingPlans(){
-  if(!game) return false;
-  game.savedTrainingPlans = normalizeSavedTrainingPlansState({});
-  saveLocal(true).catch?.(()=>{});
-  showNotice('Entrenamientos guardados reiniciados.');
-  if(typeof renderTraining === 'function') renderTraining();
-  return true;
-}
-function savedTrainingPlanSlot(slot){
-  if(!game) return null;
-  game.savedTrainingPlans = normalizeSavedTrainingPlansState(game.savedTrainingPlans || {});
-  return game.savedTrainingPlans.slots?.[Number(slot || 0)] || null;
-}
-function trainingPlanSlotStatus(slot){
-  try{
-    const saved = savedTrainingPlanSlot(slot);
-    if(!saved) return { exists:false, label:'Vacío', details:'Sin plan semanal guardado.' };
-    const schedule = normalizeTrainingScheduleForSavedPlan(saved.trainingSchedule);
-    const counts = {};
-    Object.values(schedule || {}).forEach(day => Object.values(day || {}).forEach(value => { const key = safeTrainingTypeForSavedPlan(value); counts[key] = Number(counts[key] || 0) + 1; }));
-    const summary = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([key,count]) => {
-      const label = (typeof trainingOptionByValue === 'function' ? trainingOptionByValue(key)?.label : null) || key;
-      return `${label}: ${count}`;
-    }).join(' · ');
-    const individualCount = Object.keys(saved.trainingPlan || {}).length;
-    return { exists:true, label:saved.name || `Entrenamiento ${slot}`, details:`${summary || 'Plan semanal'} · ${individualCount} individuales` };
-  }catch(err){
-    console.warn('No se pudo leer el espacio de entrenamiento', slot, err);
-    return { exists:false, label:'Error de lectura', details:'Espacio inválido. Reiniciá los entrenamientos guardados.' };
-  }
-}
-function snapshotCurrentTrainingPlanForSlot(slot, name){
-  const schedule = normalizeTrainingScheduleForSavedPlan(game.trainingSchedule);
-  const squadIds = new Set(playersByClub(game.selectedClubId).map(p => Number(p.id)));
-  const plan = {};
-  Object.entries(game.trainingPlan || {}).forEach(([id, value]) => {
-    const cleanId = Number(id || 0);
-    if(cleanId && squadIds.has(cleanId)) plan[cleanId] = safeIndividualTrainingTypeForSavedPlan(value);
-  });
-  return {
-    slot:Number(slot || 0),
-    name:String(name || `Entrenamiento ${Number(slot || 0)}`).trim().slice(0,40) || `Entrenamiento ${Number(slot || 0)}`,
-    savedAt:new Date().toISOString(),
-    clubId:Number(game.selectedClubId || 0),
-    clubName:clubName(game.selectedClubId),
-    trainingSchedule:schedule,
-    trainingPlan:plan
-  };
-}
-function saveCurrentTrainingPlanSlot(slot){
-  if(!game) return false;
-  try{
-    const cleanSlot = Math.max(1, Math.min(maxTrainingSaveSlots(), Math.round(Number(slot || 1))));
-    const previous = savedTrainingPlanSlot(cleanSlot);
-    const suggested = previous?.name || `Entrenamiento ${cleanSlot}`;
-    const name = window.prompt ? window.prompt('Nombre del plan de entrenamiento:', suggested) : suggested;
-    if(name === null) return false;
-    const cleanName = String(name || suggested).trim().slice(0,40) || suggested;
-    game.savedTrainingPlans = normalizeSavedTrainingPlansState(game.savedTrainingPlans || {});
-    game.savedTrainingPlans.slots[cleanSlot] = snapshotCurrentTrainingPlanForSlot(cleanSlot, cleanName);
-    saveLocal(true).catch(err => console.warn('No se pudo guardar el plan de entrenamiento en disco', err));
-    showNotice(`${cleanName} guardado.`);
-    if(typeof renderTraining === 'function') renderTraining();
-    return true;
-  }catch(err){
-    console.error('Error guardando entrenamiento', err);
-    showNotice('No se pudo guardar el entrenamiento. Se conservará la partida.');
-    return false;
-  }
-}
-function loadSavedTrainingPlanSlot(slot){
-  if(!game) return false;
-  try{
-    const saved = savedTrainingPlanSlot(slot);
-    if(!saved){ showNotice(`No hay plan guardado en el espacio ${slot}.`); return false; }
-    game.trainingSchedule = normalizeTrainingScheduleForSavedPlan(saved.trainingSchedule);
-    game.trainingPlan = typeof normalizeIndividualTrainingPlan === 'function' ? normalizeIndividualTrainingPlan(game.trainingPlan || {}) : (game.trainingPlan || {});
-    const squadIds = new Set(playersByClub(game.selectedClubId).map(p => Number(p.id)));
-    let applied = 0;
-    Object.entries(saved.trainingPlan || {}).forEach(([id, value]) => {
-      const cleanId = Number(id || 0);
-      if(cleanId && squadIds.has(cleanId)){
-        game.trainingPlan[cleanId] = safeIndividualTrainingTypeForSavedPlan(value);
-        applied += 1;
-      }
-    });
-    saveLocal(true).catch(err => console.warn('No se pudo guardar la carga del plan de entrenamiento', err));
-    showNotice(`${saved.name || `Entrenamiento ${slot}`} cargado. Individuales aplicados: ${applied}.`);
-    if(typeof renderTraining === 'function') renderTraining();
-    return true;
-  }catch(err){
-    console.error('Error cargando entrenamiento', err);
-    showNotice('No se pudo cargar ese entrenamiento. Probá reiniciar los entrenamientos guardados.');
-    return false;
-  }
-}
 function normalizeStandingsHistoryState(src){
   const obj = (src && typeof src === 'object' && !Array.isArray(src)) ? src : {};
   const seasons = Array.isArray(obj.seasons) ? obj.seasons : [];
@@ -1527,6 +17,259 @@ function normalizeStandingsHistoryState(src){
     return { season:Number(item?.season || 0), year:Number(item?.year || 0), createdAt:String(item?.createdAt || ''), divisions };
   }).filter(item => item.season && item.year && item.divisions && Object.keys(item.divisions).length);
   return { seasons:clean };
+}
+
+function normalizeCompetitionChampionsHistoryState(src){
+  const obj = (src && typeof src === 'object' && !Array.isArray(src)) ? src : {};
+  const entries = Array.isArray(obj.entries) ? obj.entries : (Array.isArray(obj.champions) ? obj.champions : []);
+  const clean = [];
+  const seen = new Set();
+  entries.forEach(item => {
+    const season = Math.max(1, Math.round(Number(item?.season || 0)) || 0);
+    const year = Math.round(Number(item?.year || 0)) || (season ? seasonYearForNumber(season) : 0);
+    const competitionId = String(item?.competitionId || item?.divisionId || item?.id || '').trim();
+    const championId = Number(item?.championId || item?.clubId || 0);
+    if(!season || !year || !competitionId || !championId) return;
+    const key = `${season}-${competitionId}`;
+    if(seen.has(key)) return;
+    seen.add(key);
+    clean.push({
+      season,
+      year,
+      type:String(item?.type || 'league'),
+      competitionId,
+      competitionName:String(item?.competitionName || item?.divisionName || item?.name || competitionId),
+      championId,
+      championName:String(item?.championName || item?.clubName || clubName(championId)),
+      runnerUpId:Number(item?.runnerUpId || 0),
+      runnerUpName:item?.runnerUpName ? String(item.runnerUpName) : (item?.runnerUpId ? clubName(item.runnerUpId) : ''),
+      thirdPlaceId:Number(item?.thirdPlaceId || 0),
+      thirdPlaceName:item?.thirdPlaceName ? String(item.thirdPlaceName) : (item?.thirdPlaceId ? clubName(item.thirdPlaceId) : ''),
+      createdAt:String(item?.createdAt || new Date().toISOString())
+    });
+  });
+  clean.sort((a,b)=>(Number(b.year || 0)-Number(a.year || 0)) || (Number(b.season || 0)-Number(a.season || 0)) || String(a.competitionName || '').localeCompare(String(b.competitionName || '')));
+  return { entries:clean };
+}
+
+function normalizePlayerPalmaresAward(raw={}, fallbackKey=''){
+  const season = Math.max(1, Math.round(Number(raw.season || 1)) || 1);
+  const year = Math.round(Number(raw.year || 0)) || (typeof seasonYearForNumber === 'function' ? seasonYearForNumber(season) : season);
+  const type = String(raw.type || 'league');
+  const competitionId = String(raw.competitionId || raw.divisionId || '').trim();
+  const clubId = Math.max(0, Math.round(Number(raw.clubId || raw.championId || 0)));
+  const key = String(raw.key || fallbackKey || `player-title-${season}-${type}-${competitionId}-${clubId}`).trim();
+  const category = String(raw.category || playerPalmaresCategoryForCompetition(type, competitionId));
+  if(!key || !competitionId || !clubId || !['leagues','nationalCups','internationalCups','clubWorldCups'].includes(category)) return null;
+  return {
+    key,
+    season,
+    year,
+    type,
+    category,
+    competitionId,
+    competitionName:String(raw.competitionName || raw.divisionName || competitionId),
+    clubId,
+    clubName:String(raw.clubName || (typeof clubName === 'function' ? clubName(clubId) : `Club ${clubId}`)),
+    awardedAt:String(raw.awardedAt || raw.createdAt || '')
+  };
+}
+function playerPalmaresCategoryForCompetition(type='', competitionId=''){
+  const raw = `${String(type || '')} ${String(competitionId || '')}`.toLowerCase();
+  if(raw.includes('club_world_cup') || raw.includes('club-world-cup') || raw.includes('mundial de clubes')) return 'clubWorldCups';
+  if(raw.includes('champions') || raw.includes('libertadores') || raw.includes('international') || raw.includes('internacional') || raw.includes('continental')) return 'internationalCups';
+  if(raw.includes('national_cup') || raw.includes('national-cup') || raw.includes('national_supercup') || raw.includes('national-supercup') || raw.includes('copa nacional') || raw.includes('supercopa')) return 'nationalCups';
+  if(raw.includes('league') || raw.includes('liga')) return 'leagues';
+  return '';
+}
+function normalizePlayerPalmaresRecord(raw={}, playerId=0){
+  const cleanId = Math.max(0, Math.round(Number(raw.playerId || playerId || 0)));
+  if(!cleanId) return null;
+  const awards = [];
+  const seen = new Set();
+  (Array.isArray(raw.awards) ? raw.awards : []).forEach((award,index) => {
+    const clean = normalizePlayerPalmaresAward(award, `legacy-player-title-${cleanId}-${index + 1}`);
+    if(!clean || seen.has(clean.key)) return;
+    seen.add(clean.key);
+    awards.push(clean);
+  });
+  awards.sort((a,b)=>Number(a.season || 0)-Number(b.season || 0) || String(a.competitionName || '').localeCompare(String(b.competitionName || ''), 'es', { sensitivity:'base' }));
+  const counts = { leagues:0, nationalCups:0, internationalCups:0, clubWorldCups:0 };
+  awards.forEach(award => { if(Object.prototype.hasOwnProperty.call(counts, award.category)) counts[award.category] += 1; });
+  return {
+    playerId:cleanId,
+    leagues:counts.leagues,
+    nationalCups:counts.nationalCups,
+    internationalCups:counts.internationalCups,
+    clubWorldCups:counts.clubWorldCups,
+    total:counts.leagues + counts.nationalCups + counts.internationalCups + counts.clubWorldCups,
+    awards
+  };
+}
+function normalizePlayerPalmaresState(src={}){
+  const obj = src && typeof src === 'object' && !Array.isArray(src) ? src : {};
+  const byPlayerId = {};
+  Object.entries(obj.byPlayerId && typeof obj.byPlayerId === 'object' && !Array.isArray(obj.byPlayerId) ? obj.byPlayerId : {}).forEach(([key,value]) => {
+    const record = normalizePlayerPalmaresRecord(value, key);
+    if(record) byPlayerId[record.playerId] = record;
+  });
+  const processedCompetitions = {};
+  Object.entries(obj.processedCompetitions && typeof obj.processedCompetitions === 'object' && !Array.isArray(obj.processedCompetitions) ? obj.processedCompetitions : {}).forEach(([key,value]) => {
+    const cleanKey = String(key || '').trim();
+    if(!cleanKey) return;
+    processedCompetitions[cleanKey] = value && typeof value === 'object' && !Array.isArray(value)
+      ? {
+          key:cleanKey,
+          season:Math.max(1, Math.round(Number(value.season || 1)) || 1),
+          year:Math.round(Number(value.year || 0)),
+          type:String(value.type || ''),
+          competitionId:String(value.competitionId || ''),
+          competitionName:String(value.competitionName || ''),
+          championId:Math.max(0, Math.round(Number(value.championId || 0))),
+          playerCount:Math.max(0, Math.round(Number(value.playerCount || 0))),
+          recordedAt:String(value.recordedAt || '')
+        }
+      : { key:cleanKey, season:1, year:0, type:'', competitionId:'', competitionName:'', championId:0, playerCount:0, recordedAt:'' };
+  });
+  return {
+    version:1,
+    trackingStartedVersion:String(obj.trackingStartedVersion || ''),
+    trackingStartedSeason:Math.max(0, Math.round(Number(obj.trackingStartedSeason || 0))),
+    migrationVersion:Math.max(0, Math.round(Number(obj.migrationVersion || 0))),
+    byPlayerId,
+    processedCompetitions
+  };
+}
+function playerPalmaresCompetitionKey(entry={}){
+  const season = Math.max(1, Math.round(Number(entry.season || game?.seasonNumber || 1)) || 1);
+  const type = String(entry.type || 'league').trim() || 'league';
+  const competitionId = String(entry.competitionId || entry.divisionId || '').trim();
+  const championId = Math.max(0, Math.round(Number(entry.championId || entry.clubId || 0)));
+  return `player-title-${season}-${type}-${competitionId}-${championId}`;
+}
+function playerPalmaresChampionSquad(championId){
+  const clubId = Math.max(0, Math.round(Number(championId || 0)));
+  if(!clubId) return [];
+  return (seed?.players || []).filter(player => player
+    && Number(player.clubId || 0) === clubId
+    && !player.retired
+    && !player.sold
+    && !player.freeAgent
+    && !player.youthFreeAgent);
+}
+function awardPlayerPalmaresForCompetitionChampion(entry={}, targetGame=game){
+  if(!targetGame || !entry) return 0;
+  const category = playerPalmaresCategoryForCompetition(entry.type, entry.competitionId || entry.divisionId);
+  const competitionId = String(entry.competitionId || entry.divisionId || '').trim();
+  const championId = Math.max(0, Math.round(Number(entry.championId || entry.clubId || 0)));
+  if(!category || !competitionId || !championId) return 0;
+  targetGame.playerPalmares = normalizePlayerPalmaresState(targetGame.playerPalmares || {});
+  const key = playerPalmaresCompetitionKey(entry);
+  if(targetGame.playerPalmares.processedCompetitions[key]) return 0;
+  const squad = playerPalmaresChampionSquad(championId);
+  if(!squad.length) return 0;
+  const season = Math.max(1, Math.round(Number(entry.season || targetGame.seasonNumber || 1)) || 1);
+  const year = Math.round(Number(entry.year || targetGame.seasonYear || (typeof seasonYearForNumber === 'function' ? seasonYearForNumber(season) : season))) || season;
+  const competitionName = String(entry.competitionName || entry.divisionName || competitionId);
+  const awardedAt = String(entry.createdAt || new Date().toISOString());
+  squad.forEach(player => {
+    const playerId = Number(player.id || 0);
+    if(!playerId) return;
+    const current = normalizePlayerPalmaresRecord(targetGame.playerPalmares.byPlayerId[playerId] || {}, playerId) || normalizePlayerPalmaresRecord({}, playerId);
+    if(current.awards.some(award => award.key === key)) return;
+    current.awards.push({
+      key,
+      season,
+      year,
+      type:String(entry.type || 'league'),
+      category,
+      competitionId,
+      competitionName,
+      clubId:championId,
+      clubName:String(entry.championName || entry.clubName || (typeof clubName === 'function' ? clubName(championId) : `Club ${championId}`)),
+      awardedAt
+    });
+    targetGame.playerPalmares.byPlayerId[playerId] = normalizePlayerPalmaresRecord(current, playerId);
+  });
+  targetGame.playerPalmares.processedCompetitions[key] = {
+    key,
+    season,
+    year,
+    type:String(entry.type || 'league'),
+    competitionId,
+    competitionName,
+    championId,
+    playerCount:squad.length,
+    recordedAt:awardedAt
+  };
+  return squad.length;
+}
+function migrateCurrentSeasonPlayerPalmares(targetGame=game){
+  if(!targetGame) return { migrated:0, competitions:0, initialized:false };
+  targetGame.playerPalmares = normalizePlayerPalmaresState(targetGame.playerPalmares || {});
+  if(Number(targetGame.playerPalmares.migrationVersion || 0) >= 1) return { migrated:0, competitions:0, initialized:false };
+  const currentSeason = Math.max(1, Math.round(Number(targetGame.seasonNumber || 1)) || 1);
+  let migrated = 0;
+  let competitions = 0;
+  (targetGame.competitionChampionsHistory?.entries || []).filter(entry => Number(entry?.season || 0) === currentSeason).forEach(entry => {
+    const awarded = awardPlayerPalmaresForCompetitionChampion(entry, targetGame);
+    if(awarded > 0){ migrated += awarded; competitions += 1; }
+  });
+  targetGame.playerPalmares.migrationVersion = 1;
+  targetGame.playerPalmares.trackingStartedVersion = targetGame.playerPalmares.trackingStartedVersion || 'V9.22';
+  targetGame.playerPalmares.trackingStartedSeason = targetGame.playerPalmares.trackingStartedSeason || currentSeason;
+  return { migrated, competitions, initialized:true };
+}
+
+function recordCompetitionChampion(entry){
+  if(!game || !entry) return false;
+  const season = Math.max(1, Math.round(Number(entry.season || game.seasonNumber || 1)) || 1);
+  const year = Math.round(Number(entry.year || game.seasonYear || seasonYearForNumber(season))) || seasonYearForNumber(season);
+  const competitionId = String(entry.competitionId || entry.divisionId || '').trim();
+  const championId = Number(entry.championId || entry.clubId || 0);
+  if(!competitionId || !championId) return false;
+  game.competitionChampionsHistory = normalizeCompetitionChampionsHistoryState(game.competitionChampionsHistory || {});
+  const clean = {
+    season,
+    year,
+    type:String(entry.type || 'league'),
+    competitionId,
+    competitionName:String(entry.competitionName || entry.divisionName || competitionId),
+    championId,
+    championName:String(entry.championName || clubName(championId)),
+    runnerUpId:Number(entry.runnerUpId || 0),
+    runnerUpName:entry.runnerUpName ? String(entry.runnerUpName) : (entry.runnerUpId ? clubName(entry.runnerUpId) : ''),
+    thirdPlaceId:Number(entry.thirdPlaceId || 0),
+    thirdPlaceName:entry.thirdPlaceName ? String(entry.thirdPlaceName) : (entry.thirdPlaceId ? clubName(entry.thirdPlaceId) : ''),
+    createdAt:String(entry.createdAt || new Date().toISOString())
+  };
+  const key = `${season}-${competitionId}`;
+  const entries = (game.competitionChampionsHistory.entries || []).filter(item => `${Number(item.season || 0)}-${String(item.competitionId || '')}` !== key);
+  entries.push(clean);
+  game.competitionChampionsHistory = normalizeCompetitionChampionsHistoryState({ entries });
+  awardPlayerPalmaresForCompetitionChampion(clean, game);
+  return true;
+}
+function recordLeagueChampionsForCurrentSeason(){
+  if(!game || !seed?.divisions?.length) return 0;
+  let count = 0;
+  const season = Number(game.seasonNumber || 1);
+  const year = Number(game.seasonYear || seasonYearForNumber(season));
+  (seed.divisions || []).forEach(division => {
+    const rows = sortedStandings(division.id);
+    const champion = rows && rows[0];
+    if(!champion?.clubId) return;
+    if(recordCompetitionChampion({
+      season,
+      year,
+      type:'league',
+      competitionId:division.id,
+      competitionName:division.name,
+      championId:Number(champion.clubId),
+      championName:clubName(champion.clubId)
+    })) count += 1;
+  });
+  return count;
 }
 function snapshotStandingsHistoryForCurrentSeason(){
   if(!game || !seed?.divisions?.length) return false;
@@ -1555,23 +298,61 @@ function deriveSeasonInitialBudgetFromHistory(saved, season){
   const currentSeason = Number(season || saved?.seasonNumber || 1);
   const first = history.find(entry => Number(entry.season || currentSeason) === currentSeason && Number.isFinite(Number(entry.budget)));
   if(first){
-    return Math.max(0, Math.round(Number(first.budget || 0) - Number(first.delta || 0)));
+    return Math.round(Number(first.budget || 0) - Number(first.delta || 0));
   }
   if(currentSeason === 1){
     const club = seed?.clubs?.find(c => Number(c.id) === Number(saved?.selectedClubId));
-    if(club && Number.isFinite(Number(club.budget))) return Math.max(0, Math.round(Number(club.budget)));
+    if(club && Number.isFinite(Number(club.budget))) return Math.round(Number(club.budget));
   }
-  return Math.max(0, Math.round(Number(saved?.budget || 0)));
+  return Math.round(Number(saved?.budget || 0));
+}
+function firstIncompleteFixtureIndexForState(state){
+  const fixtures = Array.isArray(state?.fixtures) ? state.fixtures : [];
+  const index = fixtures.findIndex(round => (round?.matches || []).some(match => !match?.played));
+  return index >= 0 ? index : fixtures.length;
+}
+function repairFixtureCursorForState(state, options={}){
+  if(!state || !Array.isArray(state.fixtures)) return { changed:false, previous:0, next:0, recoveredPending:0 };
+  const previous = Math.min(Math.max(0, Math.round(Number(state.matchdayIndex || 0))), state.fixtures.length);
+  const next = firstIncompleteFixtureIndexForState(state);
+  const recoveredPending = state.fixtures.slice(0, previous).reduce((total, round) => total + (round?.matches || []).filter(match => !match?.played).length, 0);
+  const changed = previous !== next;
+  if(changed){
+    state.matchdayIndex = next;
+    state._needsAutosave = true;
+    state.fixtureCursorRepair = {
+      version:1,
+      season:Number(state.seasonNumber || 1),
+      previous,
+      next,
+      recoveredPending,
+      reason:String(options.reason || 'calendar_reorder'),
+      repairedAt:new Date().toISOString()
+    };
+  }
+  return { changed, previous, next, recoveredPending };
 }
 function normalizeGame(saved){
   const normalized = {...saved};
   normalized.version = APP_VERSION;
+  normalized.saveSlotId = typeof normalizeSaveSlotId === 'function' ? normalizeSaveSlotId(normalized.saveSlotId || currentSaveSlotId || SAVE_SLOT_CAREER) : (normalized.saveSlotId || 'career');
   normalized.seedSignature = normalized.seedSignature || seed?.meta?.signature || '';
   normalized.tactic = normalizeTactic(normalized.selectedClubId, normalized.tactic || DEFAULT_TACTIC);
+  normalized.captaincyProgress = normalizeCaptaincyProgressState(normalized.captaincyProgress || {});
+  normalized.captaincyAppliedMatches = (normalized.captaincyAppliedMatches && typeof normalized.captaincyAppliedMatches === 'object' && !Array.isArray(normalized.captaincyAppliedMatches)) ? normalized.captaincyAppliedMatches : {};
+  normalized.lastCaptaincyEffect = normalized.lastCaptaincyEffect && typeof normalized.lastCaptaincyEffect === 'object' ? normalized.lastCaptaincyEffect : null;
   normalized.savedTactics = normalizeSavedTacticsState(normalized.savedTactics || {});
   normalized.savedTrainingPlans = normalizeSavedTrainingPlansState(normalized.savedTrainingPlans || {});
   normalized.standingsHistory = normalizeStandingsHistoryState(normalized.standingsHistory || {});
+  normalized.competitionChampionsHistory = normalizeCompetitionChampionsHistoryState(normalized.competitionChampionsHistory || {});
+  normalized.playerPalmares = normalizePlayerPalmaresState(normalized.playerPalmares || {});
   normalized.playerStatus = normalized.playerStatus || {};
+  normalized.manualRetiredPlayerIds = Array.from(new Set((Array.isArray(normalized.manualRetiredPlayerIds) ? normalized.manualRetiredPlayerIds : (Array.isArray(normalized.retiredManualPlayerIds) ? normalized.retiredManualPlayerIds : [])).map(id => Number(id)).filter(id => Number.isFinite(id) && id > 0)));
+  normalized.retiredPlayerPool = normalizeRetiredPlayerPool(normalized.retiredPlayerPool || []);
+  const surnameVarietyMigration = typeof migrateGamePlayerSurnameVariety === 'function' ? migrateGamePlayerSurnameVariety(normalized, seed) : { changed:0, references:0 };
+  if(Number(surnameVarietyMigration?.changed || 0) > 0 || Number(surnameVarietyMigration?.references || 0) > 0) normalized._needsAutosave = true;
+  const professionalQualityMigration = typeof migrateProfessionalQualityScaleForState === 'function' ? migrateProfessionalQualityScaleForState(normalized, seed?.players || []) : { changed:0 };
+  if(Number(professionalQualityMigration?.changed || 0) > 0) normalized._needsAutosave = true;
   normalized.statusRebases = (normalized.statusRebases && typeof normalized.statusRebases === 'object' && !Array.isArray(normalized.statusRebases)) ? normalized.statusRebases : {};
   normalized.injuryRecoveryTurnsBySeason = (normalized.injuryRecoveryTurnsBySeason && typeof normalized.injuryRecoveryTurnsBySeason === 'object' && !Array.isArray(normalized.injuryRecoveryTurnsBySeason)) ? normalized.injuryRecoveryTurnsBySeason : {};
   normalized.lastOwnProblems = normalized.lastOwnProblems || [];
@@ -1580,13 +361,44 @@ function normalizeGame(saved){
   normalized.advanceLockedUntil = normalized.advanceLockedUntil || 0;
   normalized.advanceLockDurationMs = Number.isFinite(Number(normalized.advanceLockDurationMs)) ? Number(normalized.advanceLockDurationMs) : ADVANCE_LOCK_MS;
   normalized.matchHistory = normalized.matchHistory || [];
+  normalized.disciplineProcessedMatches = (normalized.disciplineProcessedMatches && typeof normalized.disciplineProcessedMatches === 'object' && !Array.isArray(normalized.disciplineProcessedMatches)) ? normalized.disciplineProcessedMatches : {};
+  if(typeof migrateLegacyCompetitionSuspensionsForState === 'function'){
+    const disciplineMigration = migrateLegacyCompetitionSuspensionsForState(normalized);
+    if(Number(disciplineMigration?.changed || 0) > 0){
+      normalized._needsAutosave = true;
+      normalized.disciplineMigrationV914 = {
+        version:1,
+        migrated:Number(disciplineMigration.migrated || 0),
+        normalized:Number(disciplineMigration.normalized || 0)
+      };
+    }
+  }
   normalized.seasonNumber = Number.isFinite(normalized.seasonNumber) ? normalized.seasonNumber : 1;
   normalized.seasonYear = Math.round(Number(normalized.seasonYear || 0)) || seasonYearForNumber(normalized.seasonNumber || 1);
+  const playerPalmaresMigration = migrateCurrentSeasonPlayerPalmares(normalized);
+  if(Boolean(playerPalmaresMigration?.initialized) || Number(playerPalmaresMigration?.migrated || 0) > 0) normalized._needsAutosave = true;
   normalized.calendarVersion = normalized.calendarVersion || '';
   normalized.saveCode = normalized.saveCode || generateSaveCode();
   normalized.rankingUploads = (normalized.rankingUploads && typeof normalized.rankingUploads === 'object' && !Array.isArray(normalized.rankingUploads)) ? normalized.rankingUploads : {};
   normalized.rankingManagerName = normalized.rankingManagerName || storedManagerName() || '';
   normalized.rankingLastUploadGameDate = validIsoDate(normalized.rankingLastUploadGameDate) ? normalized.rankingLastUploadGameDate : '';
+  normalized.rankingLastManualUploadGameDate = validIsoDate(normalized.rankingLastManualUploadGameDate) ? normalized.rankingLastManualUploadGameDate : '';
+  normalized.rankingLastAutomaticUploadGameDate = validIsoDate(normalized.rankingLastAutomaticUploadGameDate) ? normalized.rankingLastAutomaticUploadGameDate : '';
+  normalized.rankingScheduledCareerUploads = (normalized.rankingScheduledCareerUploads && typeof normalized.rankingScheduledCareerUploads === 'object' && !Array.isArray(normalized.rankingScheduledCareerUploads)) ? normalized.rankingScheduledCareerUploads : { version:2, events:{} };
+  normalized.rankingScheduledCareerUploads.version = 2;
+  normalized.rankingScheduledCareerUploads.events = (normalized.rankingScheduledCareerUploads.events && typeof normalized.rankingScheduledCareerUploads.events === 'object' && !Array.isArray(normalized.rankingScheduledCareerUploads.events)) ? normalized.rankingScheduledCareerUploads.events : {};
+  normalized.rankingCareerActivitySync = (normalized.rankingCareerActivitySync && typeof normalized.rankingCareerActivitySync === 'object' && !Array.isArray(normalized.rankingCareerActivitySync)) ? normalized.rankingCareerActivitySync : { version:1, status:'idle' };
+  normalized.rankingCareerActivitySync.version = 1;
+  normalized.rankingCareerActivitySync.status = String(normalized.rankingCareerActivitySync.status || 'idle');
+  normalized.rankingCareerActivitySync.lastSuccessGameDate = validIsoDate(normalized.rankingCareerActivitySync.lastSuccessGameDate) ? normalized.rankingCareerActivitySync.lastSuccessGameDate : '';
+  normalized.rankingCareerActivitySync.lastSuccessAt = String(normalized.rankingCareerActivitySync.lastSuccessAt || '');
+  normalized.rankingCareerActivitySync.lastFingerprint = String(normalized.rankingCareerActivitySync.lastFingerprint || '');
+  normalized.rankingCareerActivitySync.lastAttemptAt = String(normalized.rankingCareerActivitySync.lastAttemptAt || '');
+  normalized.rankingCareerActivitySync.lastAttemptGameDate = validIsoDate(normalized.rankingCareerActivitySync.lastAttemptGameDate) ? normalized.rankingCareerActivitySync.lastAttemptGameDate : '';
+  normalized.rankingCareerActivitySync.lastReason = String(normalized.rankingCareerActivitySync.lastReason || '');
+  normalized.rankingCareerActivitySync.error = String(normalized.rankingCareerActivitySync.error || '');
+  normalized.rankingCareerActivitySync.attempts = Math.max(0, Math.round(Number(normalized.rankingCareerActivitySync.attempts || 0)));
+  normalized.rankingCareerActivitySync.loginPromptSent = Boolean(normalized.rankingCareerActivitySync.loginPromptSent);
   normalized.selectedCountry = normalized.selectedCountry || clubCountry(seed?.clubs?.find(c => Number(c.id) === Number(normalized.selectedClubId))) || 'Argentina';
   normalized.selectedLeagueId = normalized.selectedLeagueId || (seed?.clubs?.find(c => Number(c.id) === Number(normalized.selectedClubId))?.divisionId || 'default');
   normalized.playerMentalities = (normalized.playerMentalities && typeof normalized.playerMentalities === 'object' && !Array.isArray(normalized.playerMentalities)) ? normalized.playerMentalities : {};
@@ -1601,41 +413,150 @@ function normalizeGame(saved){
   if(!Number.isFinite(Number(normalized.seasonBudgetStartBySeason[normalized.seasonNumber]))){
     normalized.seasonBudgetStartBySeason[normalized.seasonNumber] = deriveSeasonInitialBudgetFromHistory(normalized, normalized.seasonNumber);
   }
-  normalized.seasonInitialBudget = Number.isFinite(Number(normalized.seasonInitialBudget)) ? Math.round(Number(normalized.seasonInitialBudget)) : Math.round(Number(normalized.seasonBudgetStartBySeason[normalized.seasonNumber] || deriveSeasonInitialBudgetFromHistory(normalized, normalized.seasonNumber)));
+  normalized.seasonInitialBudget = Number.isFinite(Number(normalized.seasonInitialBudget)) ? Math.round(Number(normalized.seasonInitialBudget)) : Math.round(Number(normalized.seasonBudgetStartBySeason[normalized.seasonNumber] ?? deriveSeasonInitialBudgetFromHistory(normalized, normalized.seasonNumber)));
+  const hadCareerInitialBudget = Number.isFinite(Number(normalized.careerInitialBudget));
+  const orderedBudgetStarts = Object.entries(normalized.seasonBudgetStartBySeason).map(([season, value]) => ({ season:Number(season), value:Number(value) })).filter(item => Number.isFinite(item.season) && Number.isFinite(item.value)).sort((a,b)=>a.season-b.season);
+  normalized.careerInitialBudget = hadCareerInitialBudget ? Math.round(Number(normalized.careerInitialBudget)) : Math.round(Number(orderedBudgetStarts[0]?.value ?? normalized.seasonInitialBudget ?? normalized.budget ?? 0));
+  if(!hadCareerInitialBudget) normalized._needsAutosave = true;
   normalized.seasonFinalized = Boolean(normalized.seasonFinalized);
   normalized.seasonTransition = normalized.seasonTransition || null;
   normalized.argentinaPlayoffs = (normalized.argentinaPlayoffs && typeof normalized.argentinaPlayoffs === 'object' && !Array.isArray(normalized.argentinaPlayoffs)) ? normalized.argentinaPlayoffs : null;
+  normalized.clubWorldCup = (normalized.clubWorldCup && typeof normalized.clubWorldCup === 'object' && !Array.isArray(normalized.clubWorldCup)) ? normalized.clubWorldCup : null;
+  normalized.clubWorldCupHistory = normalizeClubWorldCupHistoryState(normalized.clubWorldCupHistory || {});
+  normalized.nationalCups = typeof normalizeNationalCupsState === 'function' ? normalizeNationalCupsState(normalized.nationalCups || {}, normalized.seasonNumber, normalized.seasonYear) : (normalized.nationalCups || null);
+  normalized.libertadores = typeof normalizeLibertadoresState === 'function' ? normalizeLibertadoresState(normalized.libertadores || {}, normalized.seasonNumber, normalized.seasonYear) : (normalized.libertadores || null);
+  normalized.libertadoresHistory = typeof normalizeLibertadoresHistoryState === 'function' ? normalizeLibertadoresHistoryState(normalized.libertadoresHistory || {}) : (normalized.libertadoresHistory || { version:1, editions:[] });
+  normalized.championsLeague = typeof normalizeChampionsLeagueState === 'function' ? normalizeChampionsLeagueState(normalized.championsLeague || {}, normalized.seasonNumber, normalized.seasonYear) : (normalized.championsLeague || null);
+  normalized.championsLeagueHistory = typeof normalizeChampionsLeagueHistoryState === 'function' ? normalizeChampionsLeagueHistoryState(normalized.championsLeagueHistory || {}) : (normalized.championsLeagueHistory || { version:1, editions:[] });
+  if(normalized.clubWorldCup && typeof ensureClubWorldCupInvitedData === 'function') ensureClubWorldCupInvitedData();
+  if(syncClubWorldCupHistoryForState(normalized)) normalized._needsAutosave = true;
+  if(typeof syncLibertadoresHistoryForState === 'function' && syncLibertadoresHistoryForState(normalized)) normalized._needsAutosave = true;
+  if(typeof syncChampionsLeagueHistoryForState === 'function' && syncChampionsLeagueHistoryForState(normalized)) normalized._needsAutosave = true;
   normalized.seasonPhase = normalized.seasonPhase || (normalized.seasonFinalized ? 'finalized' : 'regular');
   normalized.phaseTurn = Number.isFinite(normalized.phaseTurn) ? normalized.phaseTurn : 0;
   normalized.globalTurn = Number.isFinite(normalized.globalTurn) ? normalized.globalTurn : ((Math.max(1, normalized.seasonNumber || 1) - 1) * 53 + (normalized.matchdayIndex || 0));
   normalized.preseasonFriendliesPlayed = Number.isFinite(normalized.preseasonFriendliesPlayed) ? normalized.preseasonFriendliesPlayed : 0;
   normalized.pendingFriendlyOpponentId = Number.isFinite(normalized.pendingFriendlyOpponentId) ? normalized.pendingFriendlyOpponentId : 0;
-  normalized.clubDivisionOverrides = normalized.clubDivisionOverrides || {};
+  const rawDivisionOverrides = (normalized.clubDivisionOverrides && typeof normalized.clubDivisionOverrides === 'object' && !Array.isArray(normalized.clubDivisionOverrides)) ? normalized.clubDivisionOverrides : {};
+  normalized.clubDivisionOverrides = sanitizeClubDivisionOverrides(rawDivisionOverrides);
+  const removedSpecialOverrides = Object.keys(rawDivisionOverrides).length !== Object.keys(normalized.clubDivisionOverrides).length;
+  const economySeasonKey = String(Math.max(1, Math.round(Number(normalized.seasonNumber || 1))));
+  const hadLeagueEconomySnapshot = Boolean(normalized.leagueSeasonEconomy?.seasons?.[economySeasonKey]);
+  if(typeof ensureLeagueSeasonEconomyForSeason === 'function') ensureLeagueSeasonEconomyForSeason(normalized, normalized.seasonNumber, { reason:'save_migration' });
+  if(removedSpecialOverrides || !hadLeagueEconomySnapshot) normalized._needsAutosave = true;
+  const previousTitleHistoryCount = Array.isArray(normalized.managerStats?.titleHistory) ? normalized.managerStats.titleHistory.length : 0;
   normalized.managerStats = ensureManagerCurrentSeasonStats(normalized.managerStats, normalized.seasonNumber, normalized.selectedClubId);
+  const hadManagerPhilosophy = Boolean(normalized.managerPhilosophy && typeof normalized.managerPhilosophy === 'object');
+  normalized.managerPhilosophy = typeof normalizeManagerPhilosophyState === 'function'
+    ? normalizeManagerPhilosophyState(normalized.managerPhilosophy)
+    : (normalized.managerPhilosophy || null);
+  if(!hadManagerPhilosophy) normalized._needsAutosave = true;
+  const hadAssistantCoachAnalysis = Boolean(normalized.assistantCoachAnalysis && typeof normalized.assistantCoachAnalysis === 'object');
+  normalized.assistantCoachAnalysis = typeof normalizeAssistantCoachAnalysisState === 'function'
+    ? normalizeAssistantCoachAnalysisState(normalized.assistantCoachAnalysis)
+    : (normalized.assistantCoachAnalysis || null);
+  if(!hadAssistantCoachAnalysis) normalized._needsAutosave = true;
+  const titlesRebuilt = syncManagerOfficialTitles(normalized);
+  if(titlesRebuilt || Number(normalized.managerStats?.titleHistory?.length || 0) !== previousTitleHistoryCount) normalized._needsAutosave = true;
+  normalized.managerSharedProfile = (normalized.managerSharedProfile && typeof normalized.managerSharedProfile === 'object' && !Array.isArray(normalized.managerSharedProfile)) ? {
+    version:String(normalized.managerSharedProfile.version || 'V6.24'),
+    experience:Math.max(0, Math.round(Number(normalized.managerSharedProfile.experience || 0))),
+    careerHistory:Array.isArray(normalized.managerSharedProfile.careerHistory) ? normalized.managerSharedProfile.careerHistory : [],
+    updatedAt:normalized.managerSharedProfile.updatedAt || null
+  } : null;
   normalized.gameOver = normalizeGameOverState(normalized.gameOver);
+  normalized.managerJobMarket = typeof normalizeManagerJobMarketState === 'function' ? normalizeManagerJobMarketState(normalized.managerJobMarket || {}) : (normalized.managerJobMarket || {});
+  normalized.managerJobContract = (normalized.managerJobContract && typeof normalized.managerJobContract === 'object' && !Array.isArray(normalized.managerJobContract)) ? normalized.managerJobContract : null;
   normalized.founderMode = Boolean(normalized.founderMode || isFoundedClubId(normalized.selectedClubId));
   normalized.founderClubId = normalized.founderMode ? Number(normalized.founderClubId || normalized.selectedClubId || 0) : 0;
   normalized.founderReplacedClub = normalized.founderReplacedClub || null;
   normalized.founderGoals = normalized.founderMode && normalized.founderGoals && typeof normalized.founderGoals === 'object' && !Array.isArray(normalized.founderGoals) ? normalized.founderGoals : (normalized.founderMode ? {} : null);
+  normalized.founderAdministrativeCosts = typeof normalizeFounderAdministrativeCostsState === 'function' ? normalizeFounderAdministrativeCostsState(normalized.founderAdministrativeCosts || {}) : (normalized.founderAdministrativeCosts || {});
+  normalized.bankruptcyMode = Boolean(normalized.bankruptcyMode);
+  normalized.bankruptcy = normalized.bankruptcy && typeof normalized.bankruptcy === 'object' && !Array.isArray(normalized.bankruptcy) ? normalized.bankruptcy : null;
   normalized.messages = Array.isArray(normalized.messages) ? normalized.messages : [];
   normalized.messages = normalized.messages.filter(msg => !String(msg?.body || '').includes('La liga ajustó la preparación de'));
+  if(typeof compactMessageInboxForState === 'function'){
+    const inboxMigration = compactMessageInboxForState(normalized, { migration:true });
+    if(Boolean(inboxMigration?.changed)) normalized._needsAutosave = true;
+  }
   normalized.specialClauseOffers = (normalized.specialClauseOffers && typeof normalized.specialClauseOffers === 'object' && !Array.isArray(normalized.specialClauseOffers)) ? normalized.specialClauseOffers : null;
   normalized.eventLog = Array.isArray(normalized.eventLog) ? normalized.eventLog : [];
   normalized.playerStars = normalizePlayerStarsState(normalized.playerStars || {});
   normalized.playerImpactWindows = normalizePlayerImpactWindows(normalized.playerImpactWindows || {});
   syncPlayerStarsWithClubs(normalized);
+  const hadFirstVictoryQolMarker = Boolean(saved?.special?.recompensas_calidad_vida && Object.prototype.hasOwnProperty.call(saved.special.recompensas_calidad_vida, 'primera_victoria'));
   normalized.special = typeof normalizeSpecialState === 'function' ? normalizeSpecialState(normalized.special, normalized.rankingManagerName || storedManagerName() || 'Manager') : (normalized.special || null);
+  if(normalized.special && typeof normalized.special === 'object'){
+    normalized.special.recompensas_calidad_vida = normalized.special.recompensas_calidad_vida && typeof normalized.special.recompensas_calidad_vida === 'object' && !Array.isArray(normalized.special.recompensas_calidad_vida)
+      ? { version:1, ...normalized.special.recompensas_calidad_vida }
+      : { version:1, primera_victoria:false };
+    if(!hadFirstVictoryQolMarker){
+      // V9.72: todas las carreras quedan habilitadas para cobrar el premio en su próxima victoria oficial.
+      normalized.special.recompensas_calidad_vida.primera_victoria = false;
+      normalized.special.recompensas_calidad_vida.migrada_v972 = true;
+      normalized.special.recompensas_calidad_vida.premio_retroactivo_pendiente = Math.max(0, Math.round(Number(normalized.managerStats?.totals?.won || 0))) > 0;
+      normalized._needsAutosave = true;
+    }else{
+      const rewardState = normalized.special.recompensas_calidad_vida;
+      const rewardLogged = Array.isArray(normalized.special.puntos_log) && normalized.special.puntos_log.some(entry => String(entry?.actionId || '') === 'primera_victoria_manager');
+      const rewardActuallyPaid = Boolean(rewardLogged || rewardState.primera_victoria_fecha || rewardState.primera_victoria_partido);
+      if(rewardState.primera_victoria && !rewardActuallyPaid){
+        // V9.71 podía marcar carreras antiguas como cobradas sin acreditar los 5.000 puntos. Se reabre el premio.
+        rewardState.primera_victoria = false;
+        rewardState.migrada_v972 = true;
+        rewardState.premio_retroactivo_pendiente = true;
+        normalized._needsAutosave = true;
+      }
+    }
+  }
   normalized.marketPlayers = Array.isArray(normalized.marketPlayers) ? normalized.marketPlayers : generateMarketPlayers(MARKET_FREE_AGENT_COUNT);
-  normalized.pendingTransfers = Array.isArray(normalized.pendingTransfers) ? normalized.pendingTransfers : [];
+  const hadTransferHistory = Boolean(normalized.transferHistory && typeof normalized.transferHistory === 'object' && !Array.isArray(normalized.transferHistory));
+  const previousTransferHistoryCount = Array.isArray(normalized.transferHistory?.entries) ? normalized.transferHistory.entries.length : 0;
+  if(typeof ensureTransferHistoryState === 'function') ensureTransferHistoryState(normalized);
+  else normalized.transferHistory = hadTransferHistory ? normalized.transferHistory : { version:'V8.99', nextId:1, entries:[] };
+  if(!hadTransferHistory || Number(normalized.transferHistory?.entries?.length || 0) !== previousTransferHistoryCount) normalized._needsAutosave = true;
+  const hadEliteBotMarket = Boolean(normalized.eliteBotMarket && typeof normalized.eliteBotMarket === 'object' && !Array.isArray(normalized.eliteBotMarket));
+  normalized.eliteBotMarket = typeof normalizeEliteBotMarketState === 'function' ? normalizeEliteBotMarketState(normalized.eliteBotMarket || {}, normalized) : (normalized.eliteBotMarket || { version:'V9.00', season:Number(normalized.seasonNumber || 1), lastFreeReviewDate:'', lastTransferReviewDate:'', clubSeasonSignings:{}, log:[] });
+  if(!hadEliteBotMarket) normalized._needsAutosave = true;
+  const manualReferenceRepair = typeof synchronizeManualPlayerReferences === 'function'
+    ? synchronizeManualPlayerReferences(normalized, seed, { retiredManualPlayerIds:normalized?.manualRetiredPlayerIds || normalized?.retiredManualPlayerIds || [] })
+    : { changed:false };
+  if(manualReferenceRepair.changed) normalized._needsAutosave = true;
+  const rawPendingTransfers = Array.isArray(normalized.pendingTransfers) ? normalized.pendingTransfers : [];
+  const normalizedPendingTransfers = rawPendingTransfers
+    .map(item => typeof normalizePendingTransferMarketEntry === 'function' ? normalizePendingTransferMarketEntry(item, normalized) : item)
+    .filter(Boolean);
+  if(JSON.stringify(rawPendingTransfers) !== JSON.stringify(normalizedPendingTransfers)) normalized._needsAutosave = true;
+  normalized.pendingTransfers = normalizedPendingTransfers;
+  if(typeof repairCompletedIncomingTransferOwnership === 'function'){
+    const ownershipRepair = repairCompletedIncomingTransferOwnership(normalized);
+    if(Number(ownershipRepair?.repaired || 0) > 0 || Number(ownershipRepair?.synced || 0) > 0) normalized._needsAutosave = true;
+    if(Number(ownershipRepair?.repaired || 0) > 0){
+      const repairedNames = (ownershipRepair.playerIds || []).map(id => seed?.players?.find(player => Number(player?.id || 0) === Number(id))?.name || `Jugador ${id}`);
+      normalized.messages.unshift({
+        id:`ownership-repair-v961-${Date.now()}`,
+        type:'mercado',
+        title:'Compra recuperada',
+        body:`Se restauró ${repairedNames.length === 1 ? repairedNames[0] : `${repairedNames.length} jugadores`} al club porque el historial confirmaba una compra ya pagada. No se realizó un nuevo cobro.`,
+        priority:'high',
+        read:false,
+        createdAt:new Date().toISOString()
+      });
+    }
+  }
   normalized.rejectedPurchaseOffers = (normalized.rejectedPurchaseOffers && typeof normalized.rejectedPurchaseOffers === 'object' && !Array.isArray(normalized.rejectedPurchaseOffers)) ? normalized.rejectedPurchaseOffers : {};
   normalized.rejectedFreeAgentOffers = (normalized.rejectedFreeAgentOffers && typeof normalized.rejectedFreeAgentOffers === 'object' && !Array.isArray(normalized.rejectedFreeAgentOffers)) ? normalized.rejectedFreeAgentOffers : {};
   normalized.scoutingCenter = (normalized.scoutingCenter && typeof normalized.scoutingCenter === 'object' && !Array.isArray(normalized.scoutingCenter)) ? normalized.scoutingCenter : {};
   normalized.monthlyExpenses = (normalized.monthlyExpenses && typeof normalized.monthlyExpenses === 'object' && !Array.isArray(normalized.monthlyExpenses)) ? normalized.monthlyExpenses : {};
   normalized.lastOwnPlayerOffer = normalized.lastOwnPlayerOffer || null;
+  // Limpia búsquedas pendientes creadas por la compilación retirada de V7.07.
+  if(Object.prototype.hasOwnProperty.call(normalized, 'forcedOwnPlayerOffers')) delete normalized.forcedOwnPlayerOffers;
   normalized.seasonEndPlayerOffers = normalized.seasonEndPlayerOffers || null;
   mergeMarketPlayersIntoSeed(normalized.marketPlayers);
   normalizeAllPlayerPositions();
   normalized.marketPlayers.forEach((p, index) => {
+    if(typeof removeCustomPlayerPhotoFields === 'function') removeCustomPlayerPhotoFields(p);
     p.position = normalizePlayerPosition(p.position, p.id);
     p.transferListed = Boolean(p.transferListed);
     p.intransferible = Boolean(p.intransferible);
@@ -1651,11 +572,33 @@ function normalizeGame(saved){
   mergeMarketPlayersIntoSeed(normalized.marketPlayers);
   seed.players.forEach(p => { p.transferListed = Boolean(p.transferListed); p.intransferible = Boolean(p.intransferible); if(p.intransferible) p.transferListed = false; ensurePlayerEconomics(p, p.youthFreeAgent ? FREE_YOUTH_SALARY_FACTOR : 1); });
   applyClubDivisionOverrides(normalized.clubDivisionOverrides);
+  if(typeof restoreClubDivisionsFromSeasonFixtures === 'function'){
+    const divisionRepair = restoreClubDivisionsFromSeasonFixtures(normalized, { reason:'load_v964', message:true });
+    if(Number(divisionRepair?.repaired || 0) > 0) normalized._needsAutosave = true;
+  }
+  const embeddedFixtureSeedIndex = (normalized.fixtures || []).map(round => typeof leagueFixtureSeedIndexFromRound === 'function' ? leagueFixtureSeedIndexFromRound(round) : null).find(value => value !== null && value !== undefined);
+  const savedFixtureSeedIndex = typeof normalizeLeagueFixtureSeedIndex === 'function' ? normalizeLeagueFixtureSeedIndex(normalized.leagueFixtureSeedIndex) : null;
+  normalized.leagueFixtureSeedIndex = savedFixtureSeedIndex !== null ? savedFixtureSeedIndex : (embeddedFixtureSeedIndex !== undefined ? embeddedFixtureSeedIndex : null);
+  normalized.leagueFixtureSeedVersion = normalized.leagueFixtureSeedIndex === null
+    ? 'legacy-v969'
+    : (typeof LEAGUE_FIXTURE_SEED_VERSION !== 'undefined' ? LEAGUE_FIXTURE_SEED_VERSION : 'v970-20-seeds');
+  normalized.leagueFixtureSeedHistory = normalized.leagueFixtureSeedHistory && typeof normalized.leagueFixtureSeedHistory === 'object' && !Array.isArray(normalized.leagueFixtureSeedHistory)
+    ? normalized.leagueFixtureSeedHistory
+    : {};
+  if(normalized.leagueFixtureSeedIndex !== null) normalized.leagueFixtureSeedHistory[normalized.seasonNumber] = normalized.leagueFixtureSeedIndex;
   const previousCalendarVersion = normalized.calendarVersion;
   const previousFixtureCount = Array.isArray(normalized.fixtures) ? normalized.fixtures.length : 0;
-  normalized.fixtures = normalizeSeasonFixtures(normalized.fixtures || structuredClone(seed.fixtures), normalized.seasonNumber, normalized.seasonYear);
+  normalized.fixtures = normalizeSeasonFixtures(normalized.fixtures || structuredClone(seed.fixtures), normalized.seasonNumber, normalized.seasonYear, { fixtureSeedIndex:normalized.leagueFixtureSeedIndex });
+  repairPromotionPlayoffScheduleForState(normalized);
   const calendarExpanded = previousCalendarVersion !== SEASON_CALENDAR_VERSION && previousFixtureCount > 0 && normalized.fixtures.length > previousFixtureCount;
   normalized.matchdayIndex = Math.min(Math.max(0, Number(normalized.matchdayIndex || 0)), normalized.fixtures.length);
+  const fixtureCursorRepair = repairFixtureCursorForState(normalized, { reason:calendarExpanded ? 'calendar_expanded' : 'calendar_normalized' });
+  if(fixtureCursorRepair.recoveredPending > 0 && ['postseason','finalizing'].includes(normalized.seasonPhase)){
+    normalized.seasonPhase = 'regular';
+    normalized.phaseTurn = 0;
+    normalized.seasonFinalized = false;
+    normalized.seasonTransition = null;
+  }
   if(calendarExpanded && normalized.matchdayIndex < normalized.fixtures.length && ['postseason','finalizing','finalized'].includes(normalized.seasonPhase)){
     normalized.seasonPhase = 'regular';
     normalized.phaseTurn = 0;
@@ -1670,14 +613,29 @@ function normalizeGame(saved){
     normalized.currentDate = normalized.lastCalendarDate;
     normalized._calendarRegressionRepaired = true;
   }
-  if(validIsoDate(normalized.currentDate)) normalized.lastCalendarDate = normalized.currentDate;
+  if(normalized.seasonPhase === 'postseason' && typeof ensurePostseasonCalendar === 'function'){
+    const postseasonCalendar = ensurePostseasonCalendar(normalized);
+    const expectedPostseasonDate = dateForSeasonState(normalized);
+    if(validIsoDate(expectedPostseasonDate) && (!validIsoDate(normalized.currentDate) || daysBetweenIsoDates(normalized.currentDate, expectedPostseasonDate) >= 0)){
+      normalized.currentDate = expectedPostseasonDate;
+      normalized.lastCalendarDate = expectedPostseasonDate;
+    }
+    normalized._postseasonCalendarRepaired = Boolean(postseasonCalendar?.repaired || normalized._postseasonCalendarRepaired);
+  }
   normalized.calendarVersion = SEASON_CALENDAR_VERSION;
   normalized.standings = normalized.standings || createInitialStandings();
   normalized.playerStats = normalized.playerStats || createInitialPlayerStats();
+  normalized.playerCareerStats = normalizePlayerCareerStats(normalized.playerCareerStats, normalized.playerStats);
+  normalized.managerPlayerStatsHistory = normalizeManagerPlayerStatsHistory(normalized.managerPlayerStatsHistory);
   normalized.clubBudgets = (normalized.clubBudgets && typeof normalized.clubBudgets === 'object' && !Array.isArray(normalized.clubBudgets)) ? normalized.clubBudgets : {};
   seed.clubs.forEach(c => { if(!Number.isFinite(Number(normalized.clubBudgets[c.id]))) normalized.clubBudgets[c.id] = Math.round(Number(c.budget || 0)); });
-  normalized.budget = Number.isFinite(normalized.budget) ? normalized.budget : (Number(normalized.clubBudgets[normalized.selectedClubId]) || seed.clubs.find(c=>c.id===normalized.selectedClubId)?.budget || 0);
-  normalized.clubBudgets[normalized.selectedClubId] = Math.round(Number(normalized.budget || 0));
+  const normalizedManagerHasClub = !Boolean(normalized.gameOver?.active);
+  if(normalizedManagerHasClub){
+    normalized.budget = Number.isFinite(normalized.budget) ? normalized.budget : (Number(normalized.clubBudgets[normalized.selectedClubId]) || seed.clubs.find(c=>c.id===normalized.selectedClubId)?.budget || 0);
+    normalized.clubBudgets[normalized.selectedClubId] = Math.round(Number(normalized.budget || 0));
+  }else{
+    normalized.budget = 0;
+  }
   normalized.lastBudgetDelta = Number.isFinite(normalized.lastBudgetDelta) ? normalized.lastBudgetDelta : 0;
   normalized.budgetHistory = normalized.budgetHistory || [];
   normalized.transferBudget = typeof normalizeTransferBudgetState === 'function' ? normalizeTransferBudgetState(normalized.transferBudget, normalized) : (normalized.transferBudget || null);
@@ -1694,12 +652,20 @@ function normalizeGame(saved){
     else if(!Number.isFinite(normalized.playerMorale[p.id])) normalized.playerMorale[p.id] = PLAYER_MORALE_START;
   });
   normalized.playerSkillBoosts = normalized.playerSkillBoosts || {};
+  normalized.playerAgeSkillPenalties = (normalized.playerAgeSkillPenalties && typeof normalized.playerAgeSkillPenalties === 'object' && !Array.isArray(normalized.playerAgeSkillPenalties)) ? normalized.playerAgeSkillPenalties : {};
   normalized.trainingPlan = normalized.trainingPlan || {};
   normalized.trainingSchedule = normalizeTrainingSchedule(normalized.trainingSchedule);
   seed.players.forEach(p => {
-    if(!normalized.playerSkillBoosts[p.id]) normalized.playerSkillBoosts[p.id] = {};
+    const agePenalty = Math.round(Number(p.age || 18)) < PLAYER_AGE_DECAY_START_AGE
+      ? 0
+      : clamp(Math.round(Number(normalized.playerAgeSkillPenalties[p.id] || 0)), 0, PLAYER_AGE_DECAY_CAP);
+    if(agePenalty > 0) normalized.playerAgeSkillPenalties[p.id] = agePenalty;
+    else delete normalized.playerAgeSkillPenalties[p.id];
     normalized.trainingPlan[p.id] = safeIndividualTrainingType(normalized.trainingPlan[p.id]);
   });
+  const skillBoostRepair = repairPlayerSkillBoostsForState(normalized, seed.players);
+  const agePenaltyRepair = repairPlayerAgeSkillPenaltiesForState(normalized, seed.players);
+  if(skillBoostRepair.normalized || skillBoostRepair.pruned || agePenaltyRepair.cleared || agePenaltyRepair.normalized || agePenaltyRepair.pruned) normalized._needsAutosave = true;
   normalized.staffActions = normalized.staffActions || {};
   normalized.staffContracts = normalizeStaffContracts(normalized.staffContracts || {});
   normalized.academy = normalizeAcademyState(normalized.academy);
@@ -1719,22 +685,59 @@ function normalizeGame(saved){
     }
     normalized.fans.clubs[clubId] = normalized.fans.clubs[clubId] || { base:FOUNDER_CLUB_INITIAL_FANS, current:FOUNDER_CLUB_INITIAL_FANS, lastDelta:0, lastReason:'Modo fundador' };
   }
+  if(normalized.bankruptcyMode){
+    const clubId = Number(normalized.selectedClubId);
+    const club = seed.clubs.find(c => Number(c.id) === clubId);
+    if(club){
+      const prestige = Number(normalized.bankruptcy?.reducedPrestige || club.reputation || 1);
+      club.reputation = clamp(Math.round(prestige), 1, 99);
+      club.managerPrestige = clamp(Math.round(prestige), 1, 99);
+      club.stadiumCapacity = BANKRUPTCY_INITIAL_CAPACITY;
+      club.budget = Number.isFinite(Number(normalized.clubBudgets?.[clubId])) ? Math.round(Number(normalized.clubBudgets[clubId])) : BANKRUPTCY_INITIAL_BUDGET;
+      club.fieldConditionScore = Number.isFinite(Number(club.fieldConditionScore)) ? Math.round(Number(club.fieldConditionScore)) : BANKRUPTCY_INITIAL_FIELD;
+    }
+    normalized.fans.clubs[clubId] = normalized.fans.clubs[clubId] || { base:0, current:0, lastDelta:0, lastReason:'Modo Bancarrota' };
+    if(normalized.stadium){
+      normalized.stadium.capacityOverrides = normalized.stadium.capacityOverrides || {};
+      normalized.stadium.capacityOverrides[clubId] = Number.isFinite(Number(normalized.stadium.capacityOverrides[clubId])) ? Math.round(Number(normalized.stadium.capacityOverrides[clubId])) : BANKRUPTCY_INITIAL_CAPACITY;
+      normalized.stadium.fields = normalized.stadium.fields || {};
+      normalized.stadium.fields[clubId] = Number.isFinite(Number(normalized.stadium.fields[clubId])) ? Math.round(Number(normalized.stadium.fields[clubId])) : BANKRUPTCY_INITIAL_FIELD;
+    }
+  }
   normalized.sponsors = normalizeSponsorState(normalized.sponsors);
   normalized.teamCohesion = normalized.teamCohesion || {};
   normalized.lastMatchTactics = normalized.lastMatchTactics || {};
+  const normalizedSeasonForDifficulty = Math.max(1, Math.round(Number(normalized.seasonNumber || 1)));
+  if(!normalized.managerTacticalAdaptation || typeof normalized.managerTacticalAdaptation !== 'object' || Array.isArray(normalized.managerTacticalAdaptation) || Number(normalized.managerTacticalAdaptation.season || normalizedSeasonForDifficulty) !== normalizedSeasonForDifficulty){
+    normalized.managerTacticalAdaptation = { season:normalizedSeasonForDifficulty, signature:'', streak:0, lastBonus:0, lastProspectiveStreak:0 };
+  }
+  if(!normalized.playerBenchedStreak || typeof normalized.playerBenchedStreak !== 'object' || Array.isArray(normalized.playerBenchedStreak) || Number(normalized.playerBenchedStreak.season || normalizedSeasonForDifficulty) !== normalizedSeasonForDifficulty){
+    normalized.playerBenchedStreak = { season:normalizedSeasonForDifficulty, players:{} };
+  }
+  if(!normalized.playerBenchedStreak.players || typeof normalized.playerBenchedStreak.players !== 'object' || Array.isArray(normalized.playerBenchedStreak.players)){
+    normalized.playerBenchedStreak.players = {};
+  }
   normalized.botRosterRepairLog = Array.isArray(normalized.botRosterRepairLog) ? normalized.botRosterRepairLog : [];
   normalized.botBalanceLog = Array.isArray(normalized.botBalanceLog) ? normalized.botBalanceLog : [];
   seed.clubs.forEach(c => { if(!Number.isFinite(normalized.teamCohesion[c.id])) normalized.teamCohesion[c.id] = TEAM_COHESION_START; });
   if(!normalized.stadium.fields) normalized.stadium.fields = {};
   if(!normalized.stadium.projects) normalized.stadium.projects = {};
   if(!normalized.stadium.ticketPrices) normalized.stadium.ticketPrices = {};
+  if(!normalized.stadium.capacityOverrides || typeof normalized.stadium.capacityOverrides !== 'object' || Array.isArray(normalized.stadium.capacityOverrides)) normalized.stadium.capacityOverrides = {};
+  if(!Array.isArray(normalized.stadium.capacityDeteriorationHistory)) normalized.stadium.capacityDeteriorationHistory = [];
+  if(!normalized.stadium.capacityRepairProjects || typeof normalized.stadium.capacityRepairProjects !== 'object' || Array.isArray(normalized.stadium.capacityRepairProjects)) normalized.stadium.capacityRepairProjects = {};
+  if(!normalized.stadium.facilities || typeof normalized.stadium.facilities !== 'object' || Array.isArray(normalized.stadium.facilities)) normalized.stadium.facilities = {};
+  if(typeof migrateManagerAcademyOwnershipForState === 'function') migrateManagerAcademyOwnershipForState(normalized);
+  Object.keys(normalized.stadium.facilities).forEach(clubId => { normalized.stadium.facilities[clubId] = normalizeClubFacilitiesState(normalized.stadium.facilities[clubId]); });
   seed.clubs.forEach(c => {
     if(!Number.isFinite(normalized.stadium.fields[c.id])) normalized.stadium.fields[c.id] = Number.isFinite(c.fieldConditionScore) ? c.fieldConditionScore : initialFieldScore(c);
     if(!Number.isFinite(Number(normalized.stadium.ticketPrices[c.id]))) normalized.stadium.ticketPrices[c.id] = TICKET_PRICE_INITIAL;
     normalized.stadium.ticketPrices[c.id] = clamp(Math.round(Number(normalized.stadium.ticketPrices[c.id])), TICKET_PRICE_MIN, TICKET_PRICE_MAX);
   });
   repairInvalidBotFieldStates(normalized, 'normalize_game', { message:true });
+  repairInvalidClubWorldCupParticipationPrizeForState(normalized);
   Object.values(normalized.playerStats).forEach(stat => normalizePlayerStatRecord(stat));
+  Object.values(normalized.playerCareerStats || {}).forEach(stat => normalizePlayerStatRecord(stat));
   repairLegacySeasonStartAvailability(normalized);
   return normalized;
 }
@@ -1745,86 +748,58 @@ function ensurePlayerStateForAll(){
   game.playerCondition = game.playerCondition || {};
   game.playerMorale = game.playerMorale || {};
   game.playerSkillBoosts = game.playerSkillBoosts || {};
+  game.playerAgeSkillPenalties = (game.playerAgeSkillPenalties && typeof game.playerAgeSkillPenalties === 'object' && !Array.isArray(game.playerAgeSkillPenalties)) ? game.playerAgeSkillPenalties : {};
   game.trainingPlan = game.trainingPlan || {};
   game.trainingSchedule = normalizeTrainingSchedule(game.trainingSchedule);
   game.playerStats = game.playerStats || {};
+  game.playerCareerStats = game.playerCareerStats && typeof game.playerCareerStats === 'object' && !Array.isArray(game.playerCareerStats) ? game.playerCareerStats : {};
   seed.players.forEach(p => {
     ensurePlayerEconomics(p, p.youthFreeAgent ? FREE_YOUTH_SALARY_FACTOR : (p.freeAgent ? MARKET_FREE_AGENT_SALARY_FACTOR : 1));
     if(Number(p.clubId || 0) === 0 || p.freeAgent){ game.playerCondition[p.id] = 5; }
     else if(!Number.isFinite(game.playerCondition[p.id])) game.playerCondition[p.id] = 99;
     if(Number(p.clubId || 0) === 0 || p.freeAgent){ game.playerMorale[p.id] = 5; }
     else if(!Number.isFinite(game.playerMorale[p.id])) game.playerMorale[p.id] = PLAYER_MORALE_START;
-    if(!game.playerSkillBoosts[p.id]) game.playerSkillBoosts[p.id] = {};
+    const agePenalty = Math.round(Number(p.age || 18)) < PLAYER_AGE_DECAY_START_AGE
+      ? 0
+      : clamp(Math.round(Number(game.playerAgeSkillPenalties[p.id] || 0)), 0, PLAYER_AGE_DECAY_CAP);
+    if(agePenalty > 0) game.playerAgeSkillPenalties[p.id] = agePenalty;
+    else delete game.playerAgeSkillPenalties[p.id];
     game.trainingPlan[p.id] = safeIndividualTrainingType(game.trainingPlan[p.id]);
     if(!game.playerStats[p.id]) game.playerStats[p.id] = createEmptyPlayerStat(p);
-    normalizePlayerStatRecord(game.playerStats[p.id]);
+    normalizePlayerStatRecord(game.playerStats[p.id], p);
+    if(game.playerCareerStats[p.id]) normalizePlayerStatRecord(game.playerCareerStats[p.id], p);
   });
-}
-
-function assignPlayerToStarterSlot(playerId, slotIndex){
-  if(!canBeStarter(playerId)){
-    showNotice('Los lesionados no pueden ser titulares. Los de recuperación menor a 70 días sólo pueden ir al banco.');
-    return;
-  }
-  const player = playerById(playerId);
-  const slot = (FORMATIONS[game?.tactic?.formation] || FORMATIONS['4-4-2'])[slotIndex];
-  if(!canAssignPlayerToSlot(player, slot)){
-    showNotice(slot === 'POR' ? 'El puesto de portero sólo acepta porteros.' : 'Los porteros sólo pueden ocupar el puesto de portero.');
-    return;
-  }
-  game.tactic = applyStarterMentalities(normalizeTactic(game.selectedClubId, game.tactic));
-  const starters = game.tactic.starters.slice(0,11);
-  while(starters.length < 11) starters.push(0);
-  let bench = game.tactic.bench.slice(0,10).filter(id => id !== playerId);
-  const previousIndex = starters.indexOf(playerId);
-  if(previousIndex >= 0) starters[previousIndex] = 0;
-  const displaced = starters[slotIndex];
-  starters[slotIndex] = playerId;
-  if(displaced && displaced !== playerId && bench.length < 10) bench.push(displaced);
-  game.tactic.starters = starters.slice(0,11);
-  game.tactic.bench = bench.filter(Boolean).slice(0,10);
-  game.tactic.autoSubs = (game.tactic.autoSubs || []).map(rule => ({...rule, outId:game.tactic.starters.includes(rule.outId)?rule.outId:0, inId:game.tactic.bench.includes(rule.inId)?rule.inId:0}));
-  game.tactic = applyStarterMentalities(game.tactic);
-  saveLocal(true);
-  renderTactics();
-}
-function movePlayerToPool(playerId, pool){
-  game.tactic = applyStarterMentalities(normalizeTactic(game.selectedClubId, game.tactic));
-  const starters = game.tactic.starters.slice(0,11);
-  while(starters.length < 11) starters.push(0);
-  const idx = starters.indexOf(playerId);
-  if(idx >= 0) starters[idx] = 0;
-  game.tactic.starters = starters;
-  game.tactic.bench = game.tactic.bench.filter(id => id !== playerId);
-  if(pool === 'bench'){
-    if(!canBeBench(playerId)){
-      showNotice('Sólo se pueden convocar al banco jugadores disponibles o lesionados con recuperación menor a 70 días.');
-    } else if(game.tactic.bench.length < 10) game.tactic.bench.push(playerId);
-    else showNotice('El banco ya tiene 10 suplentes. El jugador quedó como reserva.');
-  }
-  game.tactic.autoSubs = (game.tactic.autoSubs || []).map(rule => ({...rule, outId:game.tactic.starters.includes(rule.outId)?rule.outId:0, inId:game.tactic.bench.includes(rule.inId)?rule.inId:0}));
-  game.tactic = applyStarterMentalities(game.tactic);
-  saveLocal(true);
-  renderTactics();
+  const skillBoostRepair = repairPlayerSkillBoostsForState(game, seed.players);
+  const agePenaltyRepair = repairPlayerAgeSkillPenaltiesForState(game, seed.players);
+  if(skillBoostRepair.normalized || skillBoostRepair.pruned || agePenaltyRepair.cleared || agePenaltyRepair.normalized || agePenaltyRepair.pruned) game._needsAutosave = true;
 }
 
 function tacticLocationOfPlayer(playerId){
   game.tactic = normalizeTactic(game.selectedClubId, game.tactic);
   const id = Number(playerId || 0);
   const starterIndex = (game.tactic.starters || []).map(Number).indexOf(id);
-  if(starterIndex >= 0) return { type:'starter', index:starterIndex, playerId:id };
+  if(starterIndex >= 0){
+    if(typeof isCustomTactic === 'function' && isCustomTactic(game.tactic)){
+      return { type:'custom', index:starterIndex, cellId:String(game.tactic.customSlots?.[starterIndex] || ''), playerId:id };
+    }
+    return { type:'starter', index:starterIndex, playerId:id };
+  }
   const benchIndex = (game.tactic.bench || []).map(Number).indexOf(id);
   if(benchIndex >= 0) return { type:'bench', index:benchIndex, playerId:id };
   return { type:'reserve', index:-1, playerId:id };
 }
 function tacticLocationLabel(location){
   if(!location) return '';
-  if(location.type === 'starter') return `titular ${Number(location.index || 0) + 1}`;
+  if(location.type === 'starter' || location.type === 'custom') return `titular ${Number(location.index || 0) + 1}`;
   if(location.type === 'bench') return `suplente ${Number(location.index || 0) + 1}`;
   return 'reserva';
 }
 function targetSlotLabel(location){
   if(!location) return '';
+  if(location.type === 'custom' || location.type === 'custom-cell'){
+    const role = typeof customTacticCellRole === 'function' ? customTacticCellRole(location.cellId || game?.tactic?.customSlots?.[location.index]) : 'puesto';
+    return `${role} ${Number(location.index || 0) + 1}`;
+  }
   if(location.type === 'starter'){
     const slot = (FORMATIONS[game?.tactic?.formation] || FORMATIONS['4-4-2'])[location.index] || 'puesto';
     return `${slot} ${Number(location.index || 0) + 1}`;
@@ -1834,18 +809,20 @@ function targetSlotLabel(location){
 function validateTacticPlacement(playerId, location){
   const id = Number(playerId || 0);
   if(!id || !location) return '';
-  if(location.type === 'starter'){
+  if(location.type === 'starter' || location.type === 'custom' || location.type === 'custom-cell'){
     if(!canBeStarter(id)) return 'Los lesionados no pueden ser titulares. Los de recuperación menor a 70 días sólo pueden ir al banco.';
     const player = playerById(id);
-    const slot = (FORMATIONS[game?.tactic?.formation] || FORMATIONS['4-4-2'])[location.index];
-    if(!canAssignPlayerToSlot(player, slot)) return slot === 'POR' ? 'El puesto de portero sólo acepta porteros.' : 'Los porteros sólo pueden ocupar el puesto de portero.';
+    const slot = location.type === 'starter'
+      ? (FORMATIONS[game?.tactic?.formation] || FORMATIONS['4-4-2'])[location.index]
+      : (typeof customTacticCellRole === 'function' ? customTacticCellRole(location.cellId || game?.tactic?.customSlots?.[location.index]) : 'MC');
+    if(!canAssignPlayerToSlot(player, slot)) return slot === 'POR' ? 'El puesto de portero sólo acepta porteros, salvo emergencia real cuando el plantel no tiene ningún POR.' : 'Los porteros sólo pueden ocupar el puesto de portero.';
   }
   if(location.type === 'bench' && !canBeBench(id)) return 'Sólo se pueden convocar al banco jugadores disponibles o lesionados con recuperación menor a 70 días.';
   return '';
 }
 function setTacticPlayerAt(location, playerId){
   const id = Number(playerId || 0);
-  if(location.type === 'starter'){
+  if(location.type === 'starter' || location.type === 'custom'){
     while(game.tactic.starters.length < 11) game.tactic.starters.push(0);
     game.tactic.starters[location.index] = id;
   } else if(location.type === 'bench'){
@@ -1855,19 +832,13 @@ function setTacticPlayerAt(location, playerId){
 }
 function clearTacticLocation(location){
   if(!location) return;
-  if(location.type === 'starter'){
+  if(location.type === 'starter' || location.type === 'custom'){
     while(game.tactic.starters.length < 11) game.tactic.starters.push(0);
     game.tactic.starters[location.index] = 0;
   } else if(location.type === 'bench'){
     while(game.tactic.bench.length <= location.index) game.tactic.bench.push(0);
     game.tactic.bench[location.index] = 0;
   }
-}
-function removeTacticPlayer(playerId){
-  const id = Number(playerId || 0);
-  game.tactic.starters = (game.tactic.starters || []).map(current => Number(current) === id ? 0 : Number(current || 0)).slice(0,11);
-  while(game.tactic.starters.length < 11) game.tactic.starters.push(0);
-  game.tactic.bench = (game.tactic.bench || []).map(current => Number(current) === id ? 0 : Number(current || 0)).slice(0,10);
 }
 function cleanupTacticAfterClickSwap(){
   const starterIds = new Set((game.tactic.starters || []).map(Number).filter(Boolean));
@@ -1880,11 +851,12 @@ function cleanupTacticAfterClickSwap(){
     outId:game.tactic.starters.includes(Number(rule.outId)) ? Number(rule.outId) : 0,
     inId:game.tactic.bench.includes(Number(rule.inId)) ? Number(rule.inId) : 0
   }));
-  game.tactic = applyStarterMentalities(game.tactic);
+  game.tactic = ensureTacticCaptain(applyStarterMentalities(game.tactic), game.selectedClubId);
 }
 function swapTacticClickTargets(source, target){
   if(!game || !source || !target || !source.playerId) return false;
   game.tactic = applyStarterMentalities(normalizeTactic(game.selectedClubId, game.tactic));
+  if(target.type === 'custom-cell' && typeof customTacticMoveSelectedToCell === 'function') return customTacticMoveSelectedToCell(target.cellId);
   const sourcePlayerId = Number(source.playerId || 0);
   const targetPlayerId = Number(target.playerId || 0);
   if(sourcePlayerId && targetPlayerId && sourcePlayerId === targetPlayerId){
@@ -1919,12 +891,18 @@ function swapTacticClickTargets(source, target){
 }
 function normalizeTactic(clubId, tactic){
   const base = {...DEFAULT_TACTIC, ...(tactic || {})};
+  const layoutMode = typeof normalizeTacticLayoutMode === 'function' ? normalizeTacticLayoutMode(base.layoutMode) : 'preset';
+  const formation = FORMATIONS[base.formation] ? base.formation : DEFAULT_TACTIC.formation;
   const squad = playersByClub(clubId);
   const squadIds = new Set(squad.map(p => p.id));
   const rawStarters = Array.isArray(base.starters) ? base.starters.map(Number) : [];
   let starters = rawStarters.length >= 11
     ? rawStarters.slice(0,11).map(id => squadIds.has(id) ? id : 0)
-    : autoSelectStarters(clubId, base).map(p => p.id);
+    : autoSelectStarters(clubId, { ...base, formation }).map(p => p.id);
+  while(starters.length < 11) starters.push(0);
+  const customSlots = typeof normalizeCustomTacticSlots === 'function'
+    ? normalizeCustomTacticSlots(base.customSlots, { ...base, formation, starters })
+    : [];
   let bench = (base.bench || []).map(Number).filter(id => squadIds.has(id) && !starters.includes(id));
   if(bench.length !== 10){ bench = autoSelectBench(clubId, starters.filter(Boolean)).map(p => p.id); }
   let autoSubs = Array.isArray(base.autoSubs) ? base.autoSubs.slice(0,5) : [];
@@ -1941,20 +919,172 @@ function normalizeTactic(clubId, tactic){
     ? window.Simulator20.normalizeMatchInstructions(base.matchInstructions)
     : { winning:'normal', drawing:'normal', losing:'normal' };
   const sectorStyles = normalizeSectorStyles(base.sectorStyles);
-  const normalized = { formation:base.formation, starters, bench, autoSubs, playerMentalities:{ ...(game?.playerMentalities || {}), ...(base.playerMentalities || {}) }, matchInstructions, sectorStyles };
+  const captainSelectionMode = typeof normalizeCaptainSelectionMode === 'function' ? normalizeCaptainSelectionMode(base.captainSelectionMode) : 'automatic';
+  const normalized = { formation, layoutMode, customSlots, captainId:0, captainSelectionMode, starters, bench, autoSubs, playerMentalities:{ ...(game?.playerMentalities || {}), ...(base.playerMentalities || {}) }, matchInstructions, sectorStyles };
+  normalized.captainId = normalizedCaptainIdForTactic(clubId, { ...normalized, captainId:base.captainId, captainSelectionMode });
   return applyStarterMentalities(normalized);
 }
 
+
+function bankruptcyModeEnabled(){ return Boolean(BANKRUPTCY_MODE_ENABLED); }
+function currentGameIsBankruptcyMode(){ return Boolean(game?.bankruptcyMode || game?.bankruptcy?.active); }
+function bankruptcyReducedPrestige(originalPrestige){
+  const value = Math.max(1, Math.round(Number(originalPrestige || 0) * (1 - Number(BANKRUPTCY_PRESTIGE_REDUCTION || 0))));
+  return clamp(value, 1, 99);
+}
+function bankruptcyReleasePlayer(player, reason='Modo Bancarrota'){
+  if(!player) return null;
+  const previousClubId = Number(player.clubId || 0);
+  if(typeof setPlayerClubId === 'function') setPlayerClubId(player, 0);
+  else player.clubId = 0;
+  player.freeAgent = true;
+  player.bankruptcyReleased = true;
+  player.origin = player.origin || reason;
+  if(typeof refreshPlayerClause === 'function') refreshPlayerClause(player);
+  if(typeof recordTransferHistory === 'function') recordTransferHistory(player, { fromClubId:previousClubId, toClubId:0, amount:0, kind:'bankruptcy_release', source:'bankruptcy' });
+  return { ...player };
+}
+function bankruptcyPositionPriority(position){
+  const group = typeof playerRoleGroup === 'function' ? playerRoleGroup(position) : String(position || '');
+  if(group === 'POR') return 0;
+  if(group === 'DEF') return 1;
+  if(group === 'MID') return 2;
+  return 3;
+}
+function selectBankruptcyLoyalPlayers(clubId){
+  const squad = playersByClub(clubId).slice().sort((a,b)=>
+    bankruptcyPositionPriority(a.position)-bankruptcyPositionPriority(b.position) ||
+    visibleOverall(b)-visibleOverall(a) ||
+    Number(a.salary || 0)-Number(b.salary || 0) ||
+    Number(a.id)-Number(b.id)
+  );
+  const keep = new Set();
+  const keepByGroup = (group, count) => {
+    squad.filter(p => (typeof playerRoleGroup === 'function' ? playerRoleGroup(p.position) : '') === group && !keep.has(Number(p.id))).slice(0, count).forEach(p => keep.add(Number(p.id)));
+  };
+  keepByGroup('POR', BANKRUPTCY_LOYAL_GK_MIN);
+  keepByGroup('DEF', 4);
+  keepByGroup('MID', 4);
+  keepByGroup('ATT', 3);
+  squad.filter(p => !keep.has(Number(p.id))).sort((a,b)=>visibleOverall(b)-visibleOverall(a) || Number(a.salary || 0)-Number(b.salary || 0)).forEach(player => {
+    if(keep.size < BANKRUPTCY_LOYAL_FIRST_TEAM_PLAYERS) keep.add(Number(player.id));
+  });
+  return keep;
+}
+function trimBankruptcyFirstTeam(clubId){
+  const loyal = selectBankruptcyLoyalPlayers(clubId);
+  const released = [];
+  (seed?.players || []).forEach(player => {
+    if(Number(player.clubId || 0) !== Number(clubId)) return;
+    if(loyal.has(Number(player.id))){
+      player.bankruptcyLoyal = true;
+      player.joinedClubSeason = game?.seasonNumber || 1;
+      return;
+    }
+    const free = bankruptcyReleasePlayer(player, 'Liberado por quiebra del club');
+    if(free) released.push(free);
+  });
+  if(Array.isArray(game?.marketPlayers)){
+    const existing = new Set(game.marketPlayers.map(p => Number(p.id)));
+    released.forEach(player => { if(!existing.has(Number(player.id))){ game.marketPlayers.push({ ...player }); existing.add(Number(player.id)); } });
+  }
+  return { kept:loyal.size, released:released.length };
+}
+function bankruptcyAcademyGroupForIndex(index){
+  if(index < BANKRUPTCY_ACADEMY_GK_MIN) return 'POR';
+  const pattern = ['DEF','MED','DEL','DEF','MED','DEL','MED','DEF','DEL'];
+  return pattern[(index - BANKRUPTCY_ACADEMY_GK_MIN) % pattern.length];
+}
+function createBankruptcyAcademyPlayers(count=BANKRUPTCY_ACADEMY_PLAYERS){
+  const created = [];
+  if(!game?.academy || typeof nextAcademyPlayerId !== 'function') return created;
+  let id = nextAcademyPlayerId();
+  for(let i=0;i<count;i++, id++){
+    const group = bankruptcyAcademyGroupForIndex(i);
+    const nationality = typeof academyNationality === 'function' ? academyNationality(id, { local:true }) : 'Argentina';
+    const overall = typeof academyOverallRoll === 'function' ? academyOverallRoll(id, 16) : 10;
+    const raw = {
+      id,
+      name:typeof academyName === 'function' ? academyName(id, nationality) : `Juvenil ${id}`,
+      nationality,
+      age:16,
+      group,
+      overall,
+      skills:typeof academySkillsFor === 'function' ? academySkillsFor(group, overall, id) : {},
+      status:'academy',
+      source:'modo_bancarrota_renacer',
+      bankruptcyYouth:true,
+      joinedSeason:game?.seasonNumber || 1,
+      joinedTurn:typeof currentTurnIndex === 'function' ? currentTurnIndex() : 0
+    };
+    created.push(typeof normalizeAcademyPlayer === 'function' ? normalizeAcademyPlayer(raw) : raw);
+  }
+  game.academy.players.push(...created);
+  created.forEach(player => { game.academy.trainingPlan[player.id] = game.academy.trainingPlan[player.id] || (typeof safeIndividualTrainingType === 'function' ? safeIndividualTrainingType(TRAINING_INDIVIDUAL_INITIAL) : 'balanced'); });
+  return created;
+}
+function applyBankruptcyModeSetup(selectedClubId){
+  if(!game || !bankruptcyModeEnabled()) return null;
+  const club = seed.clubs.find(c => Number(c.id) === Number(selectedClubId));
+  if(!club) return null;
+  const original = {
+    reputation:clubPrestigeValue(club),
+    budget:Number(club.budget || 0),
+    stadiumCapacity:typeof clubStadiumCapacity === 'function' ? clubStadiumCapacity(selectedClubId) : Number(club.stadiumCapacity || 0),
+    fans:typeof clubFansCurrent === 'function' ? clubFansCurrent(selectedClubId) : Number(club.fansBase || 0),
+    players:playersByClub(selectedClubId).length
+  };
+  const reducedPrestige = bankruptcyReducedPrestige(original.reputation);
+  club.reputation = reducedPrestige;
+  club.managerPrestige = reducedPrestige;
+  club.budget = BANKRUPTCY_INITIAL_BUDGET;
+  club.stadiumCapacity = BANKRUPTCY_INITIAL_CAPACITY;
+  club.fieldConditionScore = BANKRUPTCY_INITIAL_FIELD;
+  club.fieldCondition = typeof fieldConditionName === 'function' ? fieldConditionName(BANKRUPTCY_INITIAL_FIELD) : 'Óptimo';
+  game.bankruptcyMode = true;
+  game.bankruptcy = { active:true, label:'Bancarrota, Renacer', startedAt:{ season:game.seasonNumber || 1, date:game.currentDate || '', turn:game.globalTurn || 0 }, original, reducedPrestige, initialDebt:BANKRUPTCY_INITIAL_BUDGET };
+  game.clubBudgets[selectedClubId] = BANKRUPTCY_INITIAL_BUDGET;
+  game.budget = BANKRUPTCY_INITIAL_BUDGET;
+  game.seasonInitialBudget = BANKRUPTCY_INITIAL_BUDGET;
+  game.careerInitialBudget = BANKRUPTCY_INITIAL_BUDGET;
+  game.seasonBudgetStartBySeason = { 1:BANKRUPTCY_INITIAL_BUDGET };
+  if(game.stadium){
+    game.stadium.capacityOverrides = game.stadium.capacityOverrides || {};
+    game.stadium.fields = game.stadium.fields || {};
+    game.stadium.capacityOverrides[selectedClubId] = BANKRUPTCY_INITIAL_CAPACITY;
+    game.stadium.fields[selectedClubId] = BANKRUPTCY_INITIAL_FIELD;
+  }
+  if(typeof ensureFanState === 'function') ensureFanState(game);
+  const reducedFans = Math.max(0, Math.round(Number(original.fans || 0) * (1 - Number(BANKRUPTCY_FANS_REDUCTION || 0))));
+  if(game.fans?.clubs){
+    game.fans.clubs[selectedClubId] = { ...(game.fans.clubs[selectedClubId] || {}), base:reducedFans, current:reducedFans, lastDelta:reducedFans - Number(original.fans || 0), lastReason:'Modo Bancarrota' };
+  }
+  const roster = trimBankruptcyFirstTeam(selectedClubId);
+  const academyPlayers = createBankruptcyAcademyPlayers(BANKRUPTCY_ACADEMY_PLAYERS);
+  game.bankruptcy.roster = roster;
+  game.bankruptcy.academyPlayers = academyPlayers.length;
+  game.tactic = normalizeTactic(selectedClubId, DEFAULT_TACTIC);
+  if(game.managerStats){
+    game.managerStats.currentSeason = applyManagerObjectiveSeasonFields(game.managerStats.currentSeason || {}, game.managerStats, 1, selectedClubId);
+  }
+  return game.bankruptcy;
+}
+
 function newGame(selectedClubId, options={}){
+  const newGameSurnameVariety = typeof prepareNewGameSurnameVariety === 'function' ? prepareNewGameSurnameVariety(seed) : null;
   const selectedClub = seed.clubs.find(c => Number(c.id) === Number(selectedClubId)) || {};
-  if(!managerCanSelectClub(selectedClub, currentManagerPrestige())){
+  if(!options.ignorePrestige && !managerCanSelectClub(selectedClub, currentManagerPrestige())){
     showNotice(`Ese club requiere prestigio ${clubPrestigeValue(selectedClub)}. Tu prestigio actual es ${formatManagerPrestige(currentManagerPrestige())}.`);
     return;
   }
   const managerName = persistManagerName(options.managerName || storedManagerName());
+  const saveSlotId = typeof normalizeSaveSlotId === 'function' ? normalizeSaveSlotId(options.saveSlotId || currentSaveSlotId || (options.challengeId ? SAVE_SLOT_CAMPO_DESTRUIDO : SAVE_SLOT_CAREER)) : (options.challengeId ? 'challenge:campo_destruido' : 'career');
+  if(typeof setCurrentSaveSlot === 'function') setCurrentSaveSlot(saveSlotId);
   const tactic = normalizeTactic(selectedClubId, DEFAULT_TACTIC);
+  const initialFixtureSeedIndex = typeof leagueFixtureSeedIndexForSeasonNumber === 'function' ? leagueFixtureSeedIndexForSeasonNumber(1) : 0;
   game = {
     version:APP_VERSION,
+    saveSlotId,
     seedSignature:seed?.meta?.signature || '',
     selectedClubId,
     selectedCountry: options.country || clubCountry(selectedClub),
@@ -1963,22 +1093,48 @@ function newGame(selectedClubId, options={}){
     savedTactics: normalizeSavedTacticsState({}),
     savedTrainingPlans: normalizeSavedTrainingPlansState({}),
     standingsHistory: normalizeStandingsHistoryState({}),
+    competitionChampionsHistory: normalizeCompetitionChampionsHistoryState({}),
+    playerPalmares: normalizePlayerPalmaresState({ trackingStartedVersion:'V9.22', trackingStartedSeason:1, migrationVersion:1 }),
+    clubWorldCupHistory: normalizeClubWorldCupHistoryState({}),
+    libertadoresHistory: typeof normalizeLibertadoresHistoryState === 'function' ? normalizeLibertadoresHistoryState({}) : { version:1, editions:[] },
+    libertadores: typeof normalizeLibertadoresState === 'function' ? normalizeLibertadoresState({}, 1, seasonYearForNumber(1)) : null,
+    championsLeagueHistory: typeof normalizeChampionsLeagueHistoryState === 'function' ? normalizeChampionsLeagueHistoryState({}) : { version:1, editions:[] },
+    championsLeague: typeof normalizeChampionsLeagueState === 'function' ? normalizeChampionsLeagueState({}, 1, seasonYearForNumber(1)) : null,
     saveCode: generateSaveCode(),
     rankingUploads: {},
     rankingManagerName: managerName,
     rankingLastUploadGameDate: '',
+    rankingLastManualUploadGameDate: '',
+    rankingLastAutomaticUploadGameDate: '',
+    rankingScheduledCareerUploads: { version:2, events:{} },
+    rankingCareerActivitySync: { version:1, status:'idle', lastSuccessGameDate:'', lastSuccessAt:'', lastFingerprint:'', lastAttemptAt:'', lastAttemptGameDate:'', lastReason:'', error:'', attempts:0, loginPromptSent:false },
+    manualRetiredPlayerIds: [],
+    retiredPlayerPool: [],
+    surnameVarietyVersion: typeof PLAYER_SURNAME_VARIETY_VERSION !== 'undefined' ? PLAYER_SURNAME_VARIETY_VERSION : 'V8.17-surnames-x10',
+    surnameVarietyAppliedAtSeason: 1,
+    surnameVarietySummary: newGameSurnameVariety ? { changed:Number(newGameSurnameVariety.changed || 0), excluded:Number(newGameSurnameVariety.excluded || 0), references:0 } : null,
+    professionalQualityScaleVersion: typeof PROFESSIONAL_QUALITY_SCALE_VERSION !== 'undefined' ? PROFESSIONAL_QUALITY_SCALE_VERSION : 'V8.08',
+    professionalQualityScaleAppliedAtSeason: 1,
     seasonNumber: 1,
     seasonYear: seasonYearForNumber(1),
     calendarVersion: SEASON_CALENDAR_VERSION,
+    leagueFixtureSeedIndex: initialFixtureSeedIndex,
+    leagueFixtureSeedVersion: typeof LEAGUE_FIXTURE_SEED_VERSION !== 'undefined' ? LEAGUE_FIXTURE_SEED_VERSION : 'v970-20-seeds',
+    leagueFixtureSeedHistory: { 1:initialFixtureSeedIndex },
     seasonFinalized: false,
     seasonTransition: null,
     seasonPhase: 'preseason',
     phaseTurn: 0,
+    postseasonStartDate: '',
+    postseasonTotalTurns: 0,
     globalTurn: 0,
     preseasonFriendliesPlayed: 0,
     pendingFriendlyOpponentId: 0,
     clubDivisionOverrides: {},
+    leagueSeasonEconomy: { version:1, seasons:{} },
     managerStats: ensureManagerCurrentSeasonStats(createInitialManagerStats(), 1, selectedClubId),
+    managerPhilosophy: typeof createInitialManagerPhilosophyState === 'function' ? createInitialManagerPhilosophyState() : null,
+    assistantCoachAnalysis: typeof createInitialAssistantCoachAnalysisState === 'function' ? createInitialAssistantCoachAnalysisState() : null,
     gameOver: null,
     messages: [],
     eventLog: [],
@@ -1986,6 +1142,8 @@ function newGame(selectedClubId, options={}){
     playerImpactWindows: {},
     special: typeof createInitialSpecialState === 'function' ? createInitialSpecialState(managerName) : null,
     marketPlayers: [],
+    transferHistory: { version:'V8.99', nextId:1, entries:[] },
+    eliteBotMarket: { version:'V9.00', season:1, lastFreeReviewDate:'', lastTransferReviewDate:'', clubSeasonSignings:{}, log:[] },
     pendingTransfers: [],
     rejectedPurchaseOffers: {},
     rejectedFreeAgentOffers: {},
@@ -1997,13 +1155,18 @@ function newGame(selectedClubId, options={}){
     currentDate: firstAdvanceDateForSeason(seasonYearForNumber(1)),
     matchdayIndex: 0,
     tactic,
+    captaincyProgress: {},
+    captaincyAppliedMatches: {},
+    lastCaptaincyEffect: null,
     standings: createInitialStandings(),
     playerStats: createInitialPlayerStats(),
+    playerCareerStats: createInitialPlayerCareerStats(),
+    managerPlayerStatsHistory: createInitialManagerPlayerStatsHistory(),
     playerStatus: {},
     statusRebases: {},
     injuryRecoveryTurnsBySeason: {},
     matchHistory: [],
-    fixtures: generateFixturesForDivisions(seed.clubs, divisionOrderList(), { seasonYear:seasonYearForNumber(1) }),
+    fixtures: generateFixturesForDivisions(seed.clubs, divisionOrderList(), { seasonYear:seasonYearForNumber(1), fixtureSeedIndex:initialFixtureSeedIndex }),
     advanceLockedUntil: 0,
     advanceLockDurationMs: ADVANCE_LOCK_MS,
     mustReviewTactics: false,
@@ -2012,6 +1175,7 @@ function newGame(selectedClubId, options={}){
     clubBudgets: Object.fromEntries(seed.clubs.map(c => [c.id, Math.round(Number(c.budget || 0))])),
     budget: seed.clubs.find(c=>c.id===selectedClubId)?.budget || 0,
     seasonInitialBudget: seed.clubs.find(c=>c.id===selectedClubId)?.budget || 0,
+    careerInitialBudget: seed.clubs.find(c=>c.id===selectedClubId)?.budget || 0,
     seasonBudgetStartBySeason: { 1: seed.clubs.find(c=>c.id===selectedClubId)?.budget || 0 },
     lastBudgetDelta: 0,
     budgetHistory: [],
@@ -2020,7 +1184,8 @@ function newGame(selectedClubId, options={}){
     nextSeasonTransferBudgetUnlock: null,
     playerCondition: Object.fromEntries(seed.players.map(p => [p.id, 99])),
     playerMorale: Object.fromEntries(seed.players.map(p => [p.id, PLAYER_MORALE_START])),
-    playerSkillBoosts: Object.fromEntries(seed.players.map(p => [p.id, {}])),
+    playerSkillBoosts: {},
+    playerAgeSkillPenalties: {},
     trainingPlan: Object.fromEntries(seed.players.map(p => [p.id, safeIndividualTrainingType(TRAINING_INDIVIDUAL_INITIAL)])),
     trainingSchedule: defaultTrainingSchedule(),
     staffActions: {},
@@ -2031,11 +1196,19 @@ function newGame(selectedClubId, options={}){
     sponsors: createInitialSponsorState(),
     teamCohesion: Object.fromEntries(seed.clubs.map(c => [c.id, TEAM_COHESION_START])),
     lastMatchTactics: {},
+    managerTacticalAdaptation: { season:1, signature:'', streak:0, lastBonus:0, lastProspectiveStreak:0 },
+    playerBenchedStreak: { season:1, players:{} },
     founderMode: Boolean(options.founderMode),
     founderClubId: options.founderMode ? Number(selectedClubId) : 0,
     founderReplacedClub: options.founderReplacedClub || null,
-    founderGoals: null
+    founderGoals: null,
+    founderAdministrativeCosts: {},
+    bankruptcyMode: Boolean(options.bankruptcyMode),
+    bankruptcy: null,
+    challenge: null
   };
+  if(typeof applySharedManagerProfileToGame === 'function') applySharedManagerProfileToGame({ reason:'new_game' });
+  const newClubSpecialReset = typeof resetActiveSpecialCardsToReserveForNewClub === 'function' ? resetActiveSpecialCardsToReserveForNewClub({ reason:'new_game' }) : null;
   assignInitialBotFieldStates(selectedClubId);
   if(options.founderMode){
     const selected = seed.clubs.find(c => Number(c.id) === Number(selectedClubId));
@@ -2049,30 +1222,50 @@ function newGame(selectedClubId, options={}){
     game.clubBudgets[selectedClubId] = FOUNDER_CLUB_INITIAL_BUDGET;
     game.budget = FOUNDER_CLUB_INITIAL_BUDGET;
     game.seasonInitialBudget = FOUNDER_CLUB_INITIAL_BUDGET;
+    game.careerInitialBudget = FOUNDER_CLUB_INITIAL_BUDGET;
     game.seasonBudgetStartBySeason = { 1: FOUNDER_CLUB_INITIAL_BUDGET };
     game.stadium.capacityOverrides[selectedClubId] = FOUNDER_CLUB_INITIAL_CAPACITY;
     game.stadium.fields[selectedClubId] = FOUNDER_CLUB_INITIAL_FIELD;
     game.fans.clubs[selectedClubId] = { base:FOUNDER_CLUB_INITIAL_FANS, current:FOUNDER_CLUB_INITIAL_FANS, lastDelta:0, lastReason:'Modo fundador' };
   }
   game.marketPlayers = generateMarketPlayers(MARKET_FREE_AGENT_COUNT);
+  if(options.bankruptcyMode) applyBankruptcyModeSetup(selectedClubId, options);
   if(options.founderMode) ensureFounderFreeAgentPool(options.founderReleasedPlayers || []);
   else mergeMarketPlayersIntoSeed(game.marketPlayers);
   ensurePlayerStateForAll();
-  repairBotRosters({ reason: options.founderMode ? 'founder_new_game' : 'new_game' });
+  repairBotRosters({ reason: options.founderMode ? 'founder_new_game' : (options.challengeId ? 'challenge_new_game' : 'new_game') });
+  if(options.challengeId && typeof applyChallengePreset === 'function') applyChallengePreset(options.challengeId, selectedClubId);
+  if(typeof ensureLeagueSeasonEconomyForSeason === 'function') ensureLeagueSeasonEconomyForSeason(game, 1, { force:true, reason:'new_game' });
   generateOpeningSponsorOffers(true);
   if(options.founderMode){
     ensureFounderGoalsState();
     pushGameMessage({ type:'fundador', title:'Club fundado desde cero', body:`Fundaste ${clubName(selectedClubId)}. El club empieza sin jugadores, sin presupuesto, con estadio de capacidad 0, prestigio ${FOUNDER_CLUB_REPUTATION} y ${formatPlainNumber(FOUNDER_CLUB_INITIAL_FANS)} hinchas. No tendrás objetivos de directiva ni riesgo de despido.`, priority:'high' });
     pushGameMessage({ type:'fundador', title:`Primera meta: ${game.founderGoals.current.title}`, body:game.founderGoals.current.description, priority:'normal' });
+  } else if(options.bankruptcyMode) {
+    const info = game.bankruptcy || {};
+    pushGameMessage({ type:'directiva', title:'Bancarrota, Renacer', body:`Aceptaste refundar ${clubName(selectedClubId)} tras la quiebra. El club quedó con deuda extrema, sin estadio disponible, menor prestigio, menos hinchas, un plantel reducido de jugadores leales y una camada de juveniles de 16 años en Academia. La primera temporada la directiva sólo exige no descender.`, priority:'high' });
+    if(info.roster){
+      pushGameMessage({ type:'mercado', title:'Plantel reducido por la crisis', body:'Parte del plantel se marchó como agente libre. Los jugadores que permanecieron serán la base deportiva inmediata mientras formás juveniles y recuperás ingresos.', priority:'normal' });
+    }
+  } else if(options.challengeId) {
+    pushGameMessage({ type:'reto', title:'Reto activo', body:'La partida empezó desde un escenario predeterminado. Revisá las reglas del reto en Inicio antes de avanzar.', priority:'high' });
   } else {
-    pushGameMessage({ type:'system', title:'Bienvenido al club', body:'La temporada está por comenzar. Revisá táctica, mercado y mensajes antes del debut.', priority:'normal' });
+    pushGameMessage({ type:'directiva', title:'La directiva te da la bienvenida', body:'La temporada está por comenzar. La dirigencia espera que revises la táctica, el mercado y la situación del plantel antes del debut.', priority:'normal' });
+  }
+  const initialLeagueEconomyText = typeof leagueSeasonEconomyMessageForClub === 'function' ? leagueSeasonEconomyMessageForClub(selectedClubId, 1) : '';
+  if(initialLeagueEconomyText){
+    pushGameMessage({ type:'finanzas', title:'Economía anual de la liga', body:initialLeagueEconomyText, priority:'normal', id:`league-economy-1-${selectedClubId}` });
+  }
+  if(newClubSpecialReset?.returned){
+    pushGameMessage({ type:'especial', title:'Cartas activas devueltas', body:`Al comenzar en un nuevo club, ${newClubSpecialReset.returned} carta(s) activa(s) volvieron a la reserva. Los usos consumidos se conservaron.`, priority:'normal' });
   }
   if(typeof queueInitialAssistantAdviceMessages === 'function') queueInitialAssistantAdviceMessages();
+  if(typeof runScheduledSeasonGameVerifier === 'function') runScheduledSeasonGameVerifier({ reason:'new_game_day_1', scheduledDay:1, silent:true });
   activeTab = 'home';
   closeModal();
-  newGameModalShown = true;
   renderAll();
-  showNotice(options.founderMode ? 'Club fundado. Armá el plantel desde Mercado antes de competir.' : 'Carrera creada. Revisá táctica, titulares y mentalidades antes de avanzar.');
+  if(typeof saveLocal === 'function') saveLocal(true).catch?.(()=>{});
+  showNotice(options.founderMode ? 'Club fundado. Armá el plantel desde Mercado antes de competir.' : (options.bankruptcyMode ? 'Modo Bancarrota iniciado. Revisá Finanzas, Academia, Estadio y Táctica antes de avanzar.' : (options.challengeId ? 'Reto creado. Dirigí los 5 partidos y buscá el campeonato.' : 'Carrera creada. Revisá táctica, titulares y mentalidades antes de avanzar.')));
 }
 
 function createInitialStandings(){
@@ -2080,30 +1273,39 @@ function createInitialStandings(){
   seed.clubs.forEach(c => obj[c.id] = { clubId:c.id, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0, pts:0 });
   return obj;
 }
-function createEmptyPlayerStat(player){
+function createEmptyPlayerStat(player={}){
   return {
-    playerId:player.id,
-    clubId:player.clubId,
+    playerId:Math.max(0, Math.round(Number(player.id || player.playerId || 0))),
+    clubId:Math.max(0, Math.round(Number(player.clubId || 0))),
+    played:0,
+    starts:0,
+    minutes:0,
     goals:0,
     assists:0,
     yellow:0,
     red:0,
-    played:0,
     injuries:0,
     keySaves:0,
+    goalsConceded:0,
+    cleanSheets:0,
     errors:0,
-    goalErrors:0
+    goalErrors:0,
+    ratingTotal:0,
+    ratedMatches:0,
+    lastRating:0
   };
 }
-function normalizePlayerStatRecord(stat){
-  if(!stat) return stat;
-  if(stat.injuries === undefined) stat.injuries = 0;
-  if(stat.played === undefined) stat.played = 0;
-  if(stat.yellow === undefined) stat.yellow = 0;
-  if(stat.red === undefined) stat.red = 0;
-  if(stat.keySaves === undefined) stat.keySaves = 0;
-  if(stat.errors === undefined) stat.errors = 0;
-  if(stat.goalErrors === undefined) stat.goalErrors = 0;
+const PLAYER_STAT_INTEGER_FIELDS = ['played','starts','minutes','goals','assists','yellow','red','injuries','keySaves','goalsConceded','cleanSheets','errors','goalErrors','ratedMatches'];
+function normalizePlayerStatRecord(stat, player=null){
+  if(!stat || typeof stat !== 'object' || Array.isArray(stat)) return stat;
+  const fallbackPlayer = player || playerById(stat.playerId);
+  stat.playerId = Math.max(0, Math.round(Number(stat.playerId || fallbackPlayer?.id || 0)));
+  stat.clubId = Math.max(0, Math.round(Number(fallbackPlayer?.clubId ?? stat.clubId ?? 0)));
+  PLAYER_STAT_INTEGER_FIELDS.forEach(key => {
+    stat[key] = Math.max(0, Math.round(Number(stat[key] || 0)));
+  });
+  stat.ratingTotal = Math.round(Math.max(0, Number(stat.ratingTotal || 0)) * 1000) / 1000;
+  stat.lastRating = Number.isFinite(Number(stat.lastRating)) ? Math.round(clamp(Number(stat.lastRating), 0, 10) * 10) / 10 : 0;
   return stat;
 }
 function createInitialPlayerStats(){
@@ -2111,7 +1313,253 @@ function createInitialPlayerStats(){
   seed.players.forEach(p => obj[p.id] = createEmptyPlayerStat(p));
   return obj;
 }
-
+function playerCareerStatFromSeason(player, seasonStat=null){
+  const record = { ...createEmptyPlayerStat(player), ...(seasonStat && typeof seasonStat === 'object' ? seasonStat : {}) };
+  record.playerId = Number(player?.id || record.playerId || 0);
+  record.clubId = Number(player?.clubId ?? record.clubId ?? 0);
+  return normalizePlayerStatRecord(record, player);
+}
+function playerStatHasActivity(stat){
+  if(!stat || typeof stat !== 'object' || Array.isArray(stat)) return false;
+  return PLAYER_STAT_INTEGER_FIELDS.some(key => Number(stat[key] || 0) > 0)
+    || Number(stat.ratingTotal || 0) > 0
+    || Number(stat.lastRating || 0) > 0;
+}
+function createInitialPlayerCareerStats(){
+  return {};
+}
+function normalizePlayerCareerStats(raw, seasonStats={}){
+  const validRaw = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const migrateFromCurrentSeason = Object.keys(validRaw).length === 0;
+  const activeById = new Map(seed.players.map(player => [Number(player.id), player]));
+  const out = {};
+  Object.entries(validRaw).forEach(([key, value]) => {
+    const player = activeById.get(Number(value?.playerId || key || 0));
+    if(!player || !playerStatHasActivity(value)) return;
+    out[player.id] = playerCareerStatFromSeason(player, value);
+  });
+  if(migrateFromCurrentSeason){
+    Object.entries(seasonStats || {}).forEach(([key, value]) => {
+      const player = activeById.get(Number(value?.playerId || key || 0));
+      if(!player || !playerStatHasActivity(value)) return;
+      out[player.id] = playerCareerStatFromSeason(player, value);
+    });
+  }
+  return out;
+}
+function createInitialManagerPlayerStatsHistory(){
+  return { version:1, seasons:{} };
+}
+function normalizeManagerPlayerStatsEntry(raw, fallbackId=0){
+  const src = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const playerId = Math.max(0, Math.round(Number(src.playerId || fallbackId || 0)));
+  return {
+    playerId,
+    name:String(src.name || src.playerName || playerById(playerId)?.name || 'Jugador'),
+    position:String(src.position || playerById(playerId)?.position || '—'),
+    played:Math.max(0, Math.round(Number(src.played || 0))),
+    goals:Math.max(0, Math.round(Number(src.goals || 0))),
+    assists:Math.max(0, Math.round(Number(src.assists || 0))),
+    injuries:Math.max(0, Math.round(Number(src.injuries || 0))),
+    yellow:Math.max(0, Math.round(Number(src.yellow || 0))),
+    red:Math.max(0, Math.round(Number(src.red || 0))),
+    ratingTotal:Math.max(0, Number(src.ratingTotal || 0)),
+    ratedMatches:Math.max(0, Math.round(Number(src.ratedMatches || 0))),
+    lastRating:Number.isFinite(Number(src.lastRating)) ? Number(src.lastRating) : 0
+  };
+}
+function normalizeManagerPlayerStatsHistory(raw){
+  const src = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const out = { version:1, seasons:{} };
+  Object.entries(src.seasons || {}).forEach(([seasonKey, seasonRaw]) => {
+    if(!seasonRaw || typeof seasonRaw !== 'object' || Array.isArray(seasonRaw)) return;
+    const seasonNumber = Math.max(1, Math.round(Number(seasonRaw.seasonNumber || seasonKey || 1)));
+    const year = Math.round(Number(seasonRaw.year || seasonYearForNumber(seasonNumber) || 0));
+    const season = { seasonNumber, year, clubs:{} };
+    Object.entries(seasonRaw.clubs || {}).forEach(([clubKey, clubRaw]) => {
+      if(!clubRaw || typeof clubRaw !== 'object' || Array.isArray(clubRaw)) return;
+      const clubId = Math.max(0, Math.round(Number(clubRaw.clubId || clubKey || 0)));
+      if(!clubId) return;
+      const club = {
+        clubId,
+        clubName:String(clubRaw.clubName || clubName(clubId)),
+        divisionName:String(clubRaw.divisionName || clubDivision(clubId)?.name || '—'),
+        archived:Boolean(clubRaw.archived),
+        completedDate:String(clubRaw.completedDate || ''),
+        players:{},
+        recordedMatchKeys:{}
+      };
+      Object.entries(clubRaw.players || {}).forEach(([playerKey, playerRaw]) => {
+        const entry = normalizeManagerPlayerStatsEntry(playerRaw, playerKey);
+        if(entry.playerId) club.players[String(entry.playerId)] = entry;
+      });
+      if(Array.isArray(clubRaw.recordedMatchKeys)) clubRaw.recordedMatchKeys.forEach(key => { if(key) club.recordedMatchKeys[String(key)] = true; });
+      else if(clubRaw.recordedMatchKeys && typeof clubRaw.recordedMatchKeys === 'object') Object.keys(clubRaw.recordedMatchKeys).forEach(key => { if(key) club.recordedMatchKeys[String(key)] = true; });
+      season.clubs[String(clubId)] = club;
+    });
+    out.seasons[String(seasonNumber)] = season;
+  });
+  return out;
+}
+function managerPlayerStatsHistoryState(){
+  if(!game) return createInitialManagerPlayerStatsHistory();
+  const current = game.managerPlayerStatsHistory;
+  if(!current || typeof current !== 'object' || Array.isArray(current) || Number(current.version || 0) !== 1 || !current.seasons || typeof current.seasons !== 'object' || Array.isArray(current.seasons)){
+    game.managerPlayerStatsHistory = normalizeManagerPlayerStatsHistory(current);
+  }
+  return game.managerPlayerStatsHistory;
+}
+function managerPlayerStatsSeasonRecord(seasonNumber=game?.seasonNumber || 1, create=true){
+  const state = managerPlayerStatsHistoryState();
+  const season = Math.max(1, Math.round(Number(seasonNumber || 1)));
+  const key = String(season);
+  if(!state.seasons[key] && create){
+    state.seasons[key] = { seasonNumber:season, year:Number(game?.seasonNumber) === season ? Number(game?.seasonYear || seasonYearForNumber(season)) : Number(seasonYearForNumber(season)), clubs:{} };
+  }
+  return state.seasons[key] || null;
+}
+function managerPlayerStatsClubRecord(clubId=game?.selectedClubId, seasonNumber=game?.seasonNumber || 1, create=true){
+  const id = Math.max(0, Math.round(Number(clubId || 0)));
+  if(!id) return null;
+  const season = managerPlayerStatsSeasonRecord(seasonNumber, create);
+  if(!season) return null;
+  const key = String(id);
+  if(!season.clubs[key] && create){
+    season.clubs[key] = { clubId:id, clubName:clubName(id), divisionName:clubDivision(id)?.name || '—', archived:false, completedDate:'', players:{}, recordedMatchKeys:{} };
+  }
+  return season.clubs[key] || null;
+}
+function ensureManagerPlayerStatsEntry(clubRecord, playerId){
+  if(!clubRecord) return null;
+  const id = Math.max(0, Math.round(Number(playerId || 0)));
+  if(!id) return null;
+  const key = String(id);
+  if(!clubRecord.players[key]) clubRecord.players[key] = normalizeManagerPlayerStatsEntry({ playerId:id }, id);
+  const player = playerById(id);
+  if(player){
+    clubRecord.players[key].name = String(player.name || clubRecord.players[key].name || 'Jugador');
+    clubRecord.players[key].position = String(player.position || clubRecord.players[key].position || '—');
+  }
+  return clubRecord.players[key];
+}
+function managerPlayerStatsMatchKey(result){
+  if(!result) return '';
+  const explicit = String(result.id || result.matchId || '').trim();
+  if(explicit) return explicit;
+  return [result.season || game?.seasonNumber || 1, result.date || result.currentDate || '', result.seasonDay || '', result.round || result.matchday || '', result.homeId || 0, result.awayId || 0, result.engine || '', result.homeGoals ?? '', result.awayGoals ?? ''].join('|');
+}
+function managerPlayerStatsEventSummary(result, playerId){
+  const id = Number(playerId || 0);
+  const summary = { goals:0, assists:0, injuries:0, yellow:0, red:0, saves:0, errors:0, goalErrors:0 };
+  (result?.goals || []).forEach(goal => {
+    if(Number(goal.playerId || goal.scorerId || 0) === id) summary.goals += 1;
+    if(Number(goal.assistId || 0) === id) summary.assists += 1;
+  });
+  (result?.cards || []).forEach(card => {
+    if(Number(card.playerId || 0) !== id) return;
+    if(card.type === 'yellow') summary.yellow += 1;
+    else if(card.type === 'secondYellowRed'){ summary.yellow += 1; summary.red += 1; }
+    else if(card.type === 'red') summary.red += 1;
+  });
+  (result?.injuries || []).forEach(injury => { if(Number(injury.playerId || 0) === id) summary.injuries += 1; });
+  (result?.keySaves || []).forEach(save => { if(Number(save.playerId || save.goalkeeperId || 0) === id) summary.saves += 1; });
+  (result?.errors || []).forEach(error => {
+    if(Number(error.playerId || 0) !== id) return;
+    summary.errors += 1;
+    if(error.goal) summary.goalErrors += 1;
+  });
+  return summary;
+}
+function managerPlayerStoredRating(result, playerId){
+  const id = Number(playerId || 0);
+  const list = Array.isArray(result?.playerRatings) ? result.playerRatings : [];
+  const found = list.find(item => Number(item?.playerId || item?.id || 0) === id);
+  const value = Number(found?.rating);
+  return Number.isFinite(value) ? clamp(value, 3, 10) : null;
+}
+function managerPlayerFallbackRating(result, clubId, playerId, events){
+  const player = playerById(playerId);
+  if(!player) return 6;
+  const overall = clamp(Number(typeof effectiveOverall === 'function' ? effectiveOverall(player) : player.overall || 50), 1, 99);
+  const condition = clamp(Number(typeof currentCondition === 'function' ? currentCondition(playerId) : 75), 1, 100);
+  const morale = clamp(Number(typeof currentMorale === 'function' ? currentMorale(playerId) : 55), 1, 100);
+  const home = Number(clubId) === Number(result?.homeId);
+  const ownGoals = home ? Number(result?.homeGoals || 0) : Number(result?.awayGoals || 0);
+  const rivalGoals = home ? Number(result?.awayGoals || 0) : Number(result?.homeGoals || 0);
+  let rating = 6.05 + (overall - 62) * 0.012 + (morale - 55) * 0.006 + (condition - 70) * 0.005;
+  rating += Number(events.goals || 0) * 0.82 + Number(events.assists || 0) * 0.48 + Number(events.saves || 0) * 0.24;
+  rating -= Number(events.yellow || 0) * 0.22 + Number(events.red || 0) * 1.10 + Number(events.errors || 0) * 0.32 + Number(events.goalErrors || 0) * 0.42 + Number(events.injuries || 0) * 0.18;
+  rating += clamp(ownGoals - rivalGoals, -3, 3) * 0.08;
+  return clamp(rating, 3, 10);
+}
+function recordManagerPlayerMatchStatistics(clubId, playedIds=[], result=null, options={}){
+  if(!game || !result || result.friendly || !result.played) return null;
+  const id = Number(clubId || 0);
+  if(!id || (!options.force && id !== Number(game.selectedClubId || 0))) return null;
+  const seasonNumber = Math.max(1, Math.round(Number(options.seasonNumber || game.seasonNumber || 1)));
+  const clubRecord = managerPlayerStatsClubRecord(id, seasonNumber, true);
+  if(!clubRecord) return null;
+  const matchKey = managerPlayerStatsMatchKey(result);
+  if(matchKey && clubRecord.recordedMatchKeys[matchKey]) return clubRecord;
+  const uniquePlayed = [...new Set((playedIds || []).map(Number).filter(Boolean))];
+  uniquePlayed.forEach(playerId => {
+    const entry = ensureManagerPlayerStatsEntry(clubRecord, playerId);
+    if(!entry) return;
+    const events = managerPlayerStatsEventSummary(result, playerId);
+    entry.played += 1;
+    entry.goals += events.goals;
+    entry.assists += events.assists;
+    entry.injuries += events.injuries;
+    entry.yellow += events.yellow;
+    entry.red += events.red;
+    const stored = managerPlayerStoredRating(result, playerId);
+    const rating = stored === null ? managerPlayerFallbackRating(result, id, playerId, events) : stored;
+    entry.ratingTotal = Number(entry.ratingTotal || 0) + rating;
+    entry.ratedMatches = Number(entry.ratedMatches || 0) + 1;
+    entry.lastRating = rating;
+  });
+  if(matchKey) clubRecord.recordedMatchKeys[matchKey] = true;
+  clubRecord.clubName = clubName(id);
+  clubRecord.divisionName = clubDivision(id)?.name || clubRecord.divisionName || '—';
+  return clubRecord;
+}
+function managerPlayerPlayedIdsForResult(result, clubId){
+  const home = Number(clubId) === Number(result?.homeId);
+  const explicit = home ? result?.playedIdsHome : result?.playedIdsAway;
+  if(Array.isArray(explicit) && explicit.length) return [...new Set(explicit.map(Number).filter(Boolean))];
+  const starters = home ? (result?.starterIdsHome || []) : (result?.starterIdsAway || []);
+  const ins = (result?.substitutions || []).filter(sub => Number(sub.clubId || 0) === Number(clubId)).map(sub => Number(sub.inId || 0));
+  return [...new Set(starters.concat(ins).map(Number).filter(Boolean))];
+}
+function syncManagerPlayerStatsClubFromHistory(clubId=game?.selectedClubId, seasonNumber=game?.seasonNumber || 1){
+  if(!game) return null;
+  const id = Number(clubId || 0);
+  const clubRecord = managerPlayerStatsClubRecord(id, seasonNumber, true);
+  if(!clubRecord) return null;
+  if(Number(seasonNumber) === Number(game.seasonNumber || 1)){
+    (game.matchHistory || []).filter(result => result?.played && !result?.friendly && (Number(result.homeId) === id || Number(result.awayId) === id)).forEach(result => {
+      recordManagerPlayerMatchStatistics(id, managerPlayerPlayedIdsForResult(result, id), result, { force:true, seasonNumber });
+    });
+  }
+  return clubRecord;
+}
+function ensureManagerPlayerStatsRoster(clubRecord, clubId){
+  if(!clubRecord) return clubRecord;
+  playersByClub(clubId).filter(player => !player.retired).forEach(player => ensureManagerPlayerStatsEntry(clubRecord, player.id));
+  return clubRecord;
+}
+function archiveManagerPlayerStatsClub(clubId=game?.selectedClubId, options={}){
+  if(!game) return null;
+  const id = Number(clubId || 0);
+  if(!id) return null;
+  const clubRecord = syncManagerPlayerStatsClubFromHistory(id, game.seasonNumber || 1);
+  ensureManagerPlayerStatsRoster(clubRecord, id);
+  if(clubRecord){
+    clubRecord.archived = options.final !== false;
+    clubRecord.completedDate = String(game.currentDate || '');
+  }
+  return clubRecord;
+}
 
 function createInitialPlayerStarsState(){
   return { byPlayerId:{} };
@@ -2166,7 +1614,7 @@ function syncPlayerStarsWithClubs(targetGame=game){
   targetGame.playerImpactWindows = normalizePlayerImpactWindows(targetGame.playerImpactWindows || {});
   let removed = 0;
   Object.entries(targetGame.playerStars.byPlayerId).forEach(([id, rec]) => {
-    const player = seed?.players?.find(p => Number(p.id) === Number(id));
+    const player = typeof playerById === 'function' ? playerById(id) : (seed?.players || []).find(p => Number(p.id) === Number(id));
     if(!player || Number(player.clubId || 0) !== Number(rec.clubId || 0)){
       delete targetGame.playerStars.byPlayerId[id];
       if(targetGame.playerImpactWindows) delete targetGame.playerImpactWindows[id];
@@ -2177,11 +1625,16 @@ function syncPlayerStarsWithClubs(targetGame=game){
 }
 function playerStarRecord(playerOrId){
   if(!game) return null;
-  syncPlayerStarsWithClubs(game);
   const id = Number(typeof playerOrId === 'object' ? playerOrId?.id : playerOrId);
   const player = typeof playerOrId === 'object' ? playerOrId : playerById(id);
   const rec = game.playerStars?.byPlayerId?.[id];
-  if(!rec || !player || Number(player.clubId || 0) !== Number(rec.clubId || 0)) return null;
+  if(!rec || !player) return null;
+  if(Number(player.clubId || 0) !== Number(rec.clubId || 0)){
+    delete game.playerStars.byPlayerId[id];
+    if(game.playerImpactWindows) delete game.playerImpactWindows[id];
+    game._needsAutosave = true;
+    return null;
+  }
   return rec;
 }
 function playerStarLabel(type){
@@ -2205,7 +1658,7 @@ function transferListedMarkup(playerOrId){
   return isTransferListedPlayer(playerOrId) ? '<span class="transfer-listed-badge" title="Jugador transferible">EN VENTA</span>' : '';
 }
 function untransferableMarkup(playerOrId){
-  return isPlayerUntransferable(playerOrId) ? '<span class="untransferable-badge" title="Sólo se escuchan ofertas por cláusula completa">INTRANSFERIBLE</span>' : '';
+  return isPlayerUntransferable(playerOrId) ? '<span class="untransferable-lock" title="Jugador intransferible: sólo se escuchan ofertas por cláusula completa" aria-label="Jugador intransferible">🔒</span>' : '';
 }
 function playerNameWithStar(player){
   return `${playerStarMarkup(player)}${escapeHtml(player?.name || 'Jugador')}${transferListedMarkup(player)}${untransferableMarkup(player)}`;
@@ -2275,7 +1728,7 @@ function awardPlayerStar(player, eligibility){
       type:'deportivo',
       priority:'high',
       title:`${player.name} ganó una estrella`,
-      body:`${player.name} se convirtió en ${playerStarLabel(eligibility.type).toLowerCase()} del equipo. Motivo: ${reason}. Mientras siga en el club tendrá más peso como referencia del simulador.`
+      body:`${player.name} se convirtió en ${playerStarLabel(eligibility.type).toLowerCase()} del equipo. ${reason}.`
     });
   }
   return true;
@@ -2323,18 +1776,122 @@ function updatePlayerStarTrackingForMatch(result){
   });
 }
 
+function normalizeManagerTitleHistory(items=[]){
+  const source = Array.isArray(items) ? items : [];
+  const clean = [];
+  const seen = new Set();
+  source.forEach(item => {
+    const season = Math.max(1, Math.round(Number(item?.season || 0)) || 1);
+    const type = String(item?.type || 'league').trim() || 'league';
+    const competitionId = String(item?.competitionId || item?.divisionId || item?.id || `${type}-${season}`).trim();
+    const clubId = Number(item?.clubId || item?.championId || 0);
+    const key = `${season}:${type}:${competitionId}`;
+    if(seen.has(key)) return;
+    seen.add(key);
+    clean.push({
+      key,
+      season,
+      year:Math.round(Number(item?.year || 0)) || seasonYearForNumber(season),
+      type,
+      competitionId,
+      competitionName:String(item?.competitionName || item?.divisionName || item?.name || competitionId),
+      clubId,
+      clubName:String(item?.clubName || (clubId ? clubName(clubId) : '')),
+      createdAt:String(item?.createdAt || new Date().toISOString())
+    });
+  });
+  clean.sort((a,b)=>Number(a.season || 0)-Number(b.season || 0) || String(a.competitionName || '').localeCompare(String(b.competitionName || ''), 'es', { sensitivity:'base' }));
+  return clean;
+}
+function recordManagerOfficialTitleForState(targetGame, entry={}){
+  if(!targetGame || !entry) return false;
+  targetGame.managerStats = normalizeManagerStats(targetGame.managerStats || createInitialManagerStats());
+  const stats = targetGame.managerStats;
+  const season = Math.max(1, Math.round(Number(entry.season || targetGame.seasonNumber || 1)) || 1);
+  const type = String(entry.type || 'league').trim() || 'league';
+  const competitionId = String(entry.competitionId || entry.divisionId || `${type}-${season}`).trim();
+  const key = `${season}:${type}:${competitionId}`;
+  stats.titleHistory = normalizeManagerTitleHistory(stats.titleHistory || []);
+  if(stats.titleHistory.some(item => item.key === key)) return false;
+  const previousTitles = Math.max(0, Math.round(Number(stats.titles || 0)));
+  stats.titleHistory.push({
+    key,
+    season,
+    year:Math.round(Number(entry.year || targetGame.seasonYear || 0)) || seasonYearForNumber(season),
+    type,
+    competitionId,
+    competitionName:String(entry.competitionName || entry.divisionName || competitionId),
+    clubId:Number(entry.clubId || entry.championId || targetGame.selectedClubId || 0),
+    clubName:String(entry.clubName || clubName(entry.clubId || entry.championId || targetGame.selectedClubId)),
+    createdAt:String(entry.createdAt || new Date().toISOString())
+  });
+  stats.titleHistory = normalizeManagerTitleHistory(stats.titleHistory);
+  stats.titles = Math.max(previousTitles + 1, stats.titleHistory.length);
+  targetGame.managerStats = stats;
+  return true;
+}
+function syncManagerOfficialTitles(targetGame=game){
+  if(!targetGame) return false;
+  targetGame.managerStats = normalizeManagerStats(targetGame.managerStats || createInitialManagerStats());
+  const stats = targetGame.managerStats;
+  let changed = false;
+  (stats.seasons || []).filter(item => Boolean(item?.title) || Number(item?.position || 0) === 1).forEach(item => {
+    if(recordManagerOfficialTitleForState(targetGame, {
+      season:item.season,
+      year:item.year,
+      type:'league',
+      competitionId:item.divisionId || `league-${item.season}`,
+      competitionName:item.divisionName || 'Liga',
+      clubId:item.clubId,
+      clubName:item.clubName
+    })) changed = true;
+  });
+  const managedBySeason = new Map();
+  (targetGame.managerStats?.seasons || []).forEach(item => {
+    const season = Number(item?.season || 0);
+    const clubId = Number(item?.clubId || 0);
+    if(season && clubId){
+      if(!managedBySeason.has(season)) managedBySeason.set(season, new Set());
+      managedBySeason.get(season).add(clubId);
+    }
+  });
+  if(Number(targetGame.selectedClubId || 0)){
+    const season = Number(targetGame.seasonNumber || 1);
+    if(!managedBySeason.has(season)) managedBySeason.set(season, new Set());
+    managedBySeason.get(season).add(Number(targetGame.selectedClubId));
+  }
+  const entries = normalizeCompetitionChampionsHistoryState(targetGame.competitionChampionsHistory || {}).entries || [];
+  entries.filter(item => String(item.type || '') !== 'league').forEach(item => {
+    const clubs = managedBySeason.get(Number(item.season || 0));
+    if(!clubs || !clubs.has(Number(item.championId || 0))) return;
+    if(recordManagerOfficialTitleForState(targetGame, {
+      season:item.season,
+      year:item.year,
+      type:item.type || 'official_competition',
+      competitionId:item.competitionId,
+      competitionName:item.competitionName,
+      clubId:item.championId,
+      clubName:item.championName,
+      createdAt:item.createdAt
+    })) changed = true;
+  });
+  return changed;
+}
+
 function createInitialManagerStats(){
   return {
     totals:{ played:0, won:0, drawn:0, lost:0, gf:0, gc:0 },
     currentSeason:{ season:1, clubId:0, played:0, won:0, drawn:0, lost:0, gf:0, gc:0 },
     seasons:[],
     titles:0,
+    titleHistory:[],
     experience:0,
     prestige:0,
     prestigeWinMilestones:0,
     prestigeAdjustments:[],
     objectivePrestigeAwards:[],
-    careerHistory:[]
+    careerHistory:[],
+    achievements:{ unlocked:{}, lastCheckedDate:null }
   };
 }
 function normalizeManagerStats(stats){
@@ -2348,61 +1905,561 @@ function normalizeManagerStats(stats){
   const prestigeWinMilestones = Math.max(0, Math.round(Number(src.prestigeWinMilestones || 0)));
   const experience = Math.max(0, Math.round(Number(src.experience || 0)));
   const prestigeAdjustments = Array.isArray(src.prestigeAdjustments) ? src.prestigeAdjustments : [];
+  const seasons = Array.isArray(src.seasons) ? src.seasons : [];
+  const legacyLeagueTitles = seasons.filter(item => Boolean(item?.title) || Number(item?.position || 0) === 1).map(item => ({
+    season:Number(item?.season || 1),
+    year:Number(item?.year || 0) || seasonYearForNumber(item?.season || 1),
+    type:'league',
+    competitionId:String(item?.divisionId || `league-${Number(item?.season || 1)}`),
+    competitionName:String(item?.divisionName || 'Liga'),
+    clubId:Number(item?.clubId || 0),
+    clubName:String(item?.clubName || '')
+  }));
+  const titleHistory = normalizeManagerTitleHistory([...(Array.isArray(src.titleHistory) ? src.titleHistory : []), ...legacyLeagueTitles]);
   const normalized = {
     totals,
     currentSeason,
-    seasons:Array.isArray(src.seasons) ? src.seasons : [],
-    titles:Number.isFinite(Number(src.titles)) ? Number(src.titles) : (Array.isArray(src.seasons) ? src.seasons.filter(s => s.position === 1).length : 0),
+    seasons,
+    titles:Math.max(Number.isFinite(Number(src.titles)) ? Number(src.titles) : 0, titleHistory.length, legacyLeagueTitles.length),
+    titleHistory,
     experience,
     prestige:0,
     prestigeWinMilestones,
     prestigeAdjustments,
     objectivePrestigeAwards:Array.isArray(src.objectivePrestigeAwards) ? src.objectivePrestigeAwards : [],
-    careerHistory:Array.isArray(src.careerHistory) ? src.careerHistory : []
+    careerHistory:Array.isArray(src.careerHistory) ? src.careerHistory : [],
+    achievements:normalizeManagerAchievementsState(src.achievements)
   };
   normalized.prestige = managerPrestigeBreakdown(normalized).total;
   return normalized;
 }
+
+
+const MANAGER_GLOBAL_PROFILE_STORAGE_KEY = 'futbolManager.managerProfileGlobal.v1';
+
+function managerProfileStatsHasProgress(stats=null){
+  const src = stats || {};
+  const totals = src.totals || {};
+  return Boolean(
+    Number(src.experience || 0) > 0
+    || Number(src.titles || 0) > 0
+    || Number(totals.played || 0) > 0
+    || (Array.isArray(src.seasons) && src.seasons.length > 0)
+    || (Array.isArray(src.careerHistory) && src.careerHistory.length > 0)
+    || (Array.isArray(src.prestigeAdjustments) && src.prestigeAdjustments.length > 0)
+    || (src.achievements?.unlocked && Object.keys(src.achievements.unlocked || {}).length > 0)
+  );
+}
+function normalizeManagerChallengeRewardsState(value=null){
+  const raw = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const clean = {};
+  Object.entries(raw).forEach(([id, item]) => {
+    const key = String(id || '').trim();
+    if(!key) return;
+    const src = item && typeof item === 'object' && !Array.isArray(item) ? item : {};
+    clean[key] = {
+      completions:Math.max(0, Math.round(Number(src.completions || 0))),
+      successfulCompletions:Math.max(0, Math.round(Number(src.successfulCompletions || 0))),
+      rewardClaimed:Boolean(src.rewardClaimed),
+      rewardAmount:Math.max(0, Math.round(Number(src.rewardAmount || 0))),
+      rewardClaimedAt:src.rewardClaimedAt || null,
+      lastCompletedAt:src.lastCompletedAt || null
+    };
+  });
+  return clean;
+}
+function managerChallengeRewardRecord(challengeId=''){
+  const id = String(challengeId || '').trim();
+  if(!id) return null;
+  const profile = readManagerGlobalProfileState();
+  return profile?.challengeRewards?.[id] || null;
+}
+function managerChallengeRewardAlreadyClaimed(challengeId=''){
+  return Boolean(managerChallengeRewardRecord(challengeId)?.rewardClaimed);
+}
+function recordManagerChallengeCompletion(challengeId='', options={}){
+  const id = String(challengeId || '').trim();
+  if(!id) return null;
+  const profile = readManagerGlobalProfileState();
+  const rewards = normalizeManagerChallengeRewardsState(profile?.challengeRewards);
+  const previous = rewards[id] || { completions:0, successfulCompletions:0, rewardClaimed:false, rewardAmount:0, rewardClaimedAt:null, lastCompletedAt:null };
+  const success = options.success === true;
+  const rewardClaimedNow = options.rewardClaimed === true;
+  rewards[id] = {
+    completions:Math.max(0, Number(previous.completions || 0)) + 1,
+    successfulCompletions:Math.max(0, Number(previous.successfulCompletions || 0)) + (success ? 1 : 0),
+    rewardClaimed:Boolean(previous.rewardClaimed || rewardClaimedNow),
+    rewardAmount:Math.max(Number(previous.rewardAmount || 0), Math.max(0, Math.round(Number(options.rewardAmount || 0)))),
+    rewardClaimedAt:previous.rewardClaimedAt || (rewardClaimedNow ? new Date().toISOString() : null),
+    lastCompletedAt:new Date().toISOString()
+  };
+  return writeManagerGlobalProfileState({ ...profile, challengeRewards:rewards });
+}
+
+function normalizeManagerGlobalProfile(profile=null){
+  const raw = profile && typeof profile === 'object' && !Array.isArray(profile) ? profile : {};
+  const stats = normalizeManagerStats(raw.managerStats || createInitialManagerStats());
+  const skillPoints = Math.max(0, Math.round(Number(raw.skillPoints ?? raw.puntos_habilidad ?? raw.puntosHabilidad ?? 0)));
+  const managerCourses = typeof normalizeManagerCoursesState === 'function'
+    ? normalizeManagerCoursesState(raw.managerCourses || raw.cursosManager)
+    : (raw.managerCourses || raw.cursosManager || null);
+  const coursesProgress = typeof managerCoursesHasProgress === 'function' ? managerCoursesHasProgress(managerCourses) : Boolean(managerCourses);
+  const empty = !managerProfileStatsHasProgress(stats) && skillPoints <= 0 && !raw.saveCode && !raw.managerName && !coursesProgress;
+  return {
+    version:'V8.27',
+    managerName:String(raw.managerName || raw.nombre_manager || storedManagerName() || ''),
+    saveCode:String(raw.saveCode || raw.manager_id || ''),
+    managerStats:stats,
+    skillPoints,
+    challengeRewards:normalizeManagerChallengeRewardsState(raw.challengeRewards || raw.recompensasRetos),
+    managerCourses,
+    updatedAt:raw.updatedAt || null,
+    empty
+  };
+}
+function readManagerGlobalProfileState(){
+  try{
+    const raw = localStorage.getItem(MANAGER_GLOBAL_PROFILE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return normalizeManagerGlobalProfile(parsed);
+  }catch(err){ console.warn('No se pudo leer el perfil global del manager.', err); }
+  return normalizeManagerGlobalProfile(null);
+}
+function writeManagerGlobalProfileState(profile){
+  try{
+    const clean = normalizeManagerGlobalProfile(profile);
+    clean.version = 'V8.27';
+    clean.updatedAt = new Date().toISOString();
+    clean.empty = false;
+    localStorage.setItem(MANAGER_GLOBAL_PROFILE_STORAGE_KEY, JSON.stringify(clean));
+    return clean;
+  }catch(err){ console.warn('No se pudo guardar el perfil global del manager.', err); return null; }
+}
+function applySharedManagerProfileToGame(){
+  if(!game) return { changed:false };
+  const profile = readManagerGlobalProfileState();
+  if(!profile || profile.empty) return { changed:false };
+  const season = Math.max(1, Math.round(Number(game.seasonNumber || 1)));
+  const clubId = Number(game.selectedClubId || 0);
+  // no reemplazar managerStats por el perfil global.
+  // managerStats contiene el prestigio de esta carrera/slot; si se pisa, el prestigio se comparte.
+  const previousStats = normalizeManagerStats(game.managerStats || createInitialManagerStats());
+  game.managerStats = ensureManagerCurrentSeasonStats(previousStats, season, clubId);
+  const profileStats = normalizeManagerStats(profile.managerStats || createInitialManagerStats());
+  game.managerSharedProfile = {
+    version:'V8.27',
+    experience:Math.max(0, Math.round(Number(profileStats.experience || 0))),
+    careerHistory:Array.isArray(profileStats.careerHistory) ? profileStats.careerHistory.slice() : [],
+    updatedAt:profile.updatedAt || null
+  };
+  if(profile.managerName && !game.rankingManagerName) game.rankingManagerName = profile.managerName;
+  if(profile.saveCode && !game.saveCode) game.saveCode = profile.saveCode;
+  if(typeof normalizeSpecialState === 'function'){
+    game.special = normalizeSpecialState(game.special || createInitialSpecialState(game.rankingManagerName || profile.managerName || storedManagerName() || 'Manager'), game.rankingManagerName || profile.managerName || storedManagerName() || 'Manager');
+  } else if(!game.special) {
+    game.special = { puntos_habilidad:0, cartas_activas:[], cartas_reserva:[] };
+  }
+  if(game.special && typeof game.special === 'object'){
+    game.special.puntos_habilidad = Math.max(0, Math.round(Number(profile.skillPoints || 0)));
+    game.special.manager_id = String(game.saveCode || profile.saveCode || game.special.manager_id || '');
+    game.special.nombre_manager = String(game.rankingManagerName || profile.managerName || game.special.nombre_manager || storedManagerName() || 'Manager');
+  }
+  return { changed:true, profile };
+}
+function persistSharedManagerProfileFromGame(){
+  if(!game) return null;
+  const stats = normalizeManagerStats(game.managerStats || createInitialManagerStats());
+  let special = game.special;
+  if(typeof ensureSpecialState === 'function') special = ensureSpecialState();
+  const existingProfile = readManagerGlobalProfileState();
+  const profile = {
+    version:'V8.27',
+    managerName:String(game.rankingManagerName || storedManagerName() || ''),
+    saveCode:String(game.saveCode || ''),
+    managerStats:stats,
+    skillPoints:Math.max(0, Math.round(Number(special?.puntos_habilidad || 0))),
+    challengeRewards:normalizeManagerChallengeRewardsState(existingProfile?.challengeRewards),
+    managerCourses:typeof normalizeManagerCoursesState === 'function' ? normalizeManagerCoursesState(existingProfile?.managerCourses) : existingProfile?.managerCourses,
+    updatedAt:new Date().toISOString()
+  };
+  return writeManagerGlobalProfileState(profile);
+}
+
+function managerGlobalProfileScore(profile=null){
+  const clean = normalizeManagerGlobalProfile(profile);
+  const stats = clean.managerStats || {};
+  const totals = stats.totals || {};
+  const completedCourses = typeof normalizeManagerCoursesState === 'function'
+    ? Object.values(normalizeManagerCoursesState(clean.managerCourses).completed || {}).filter(Boolean).length
+    : 0;
+  return (Number(stats.experience || 0) * 1000)
+    + (Number(totals.played || 0) * 25)
+    + ((Array.isArray(stats.seasons) ? stats.seasons.length : 0) * 500)
+    + ((Array.isArray(stats.careerHistory) ? stats.careerHistory.length : 0) * 200)
+    + (Number(stats.titles || 0) * 1000)
+    + (completedCourses * 100)
+    + Number(clean.skillPoints || 0);
+}
+async function migrateAllSavedManagerProfilesToGlobal(){
+  if(typeof readLocalSaveRecord !== 'function') return false;
+  const candidates = [];
+  const currentGlobal = readManagerGlobalProfileState();
+  if(currentGlobal && !currentGlobal.empty) candidates.push(currentGlobal);
+  const slotIds = [];
+  if(typeof careerSaveSlotIds === 'function') slotIds.push(...careerSaveSlotIds());
+  else slotIds.push(typeof SAVE_SLOT_CAREER !== 'undefined' ? SAVE_SLOT_CAREER : 'career:1');
+  if(typeof SAVE_SLOT_CAMPO_DESTRUIDO !== 'undefined') slotIds.push(SAVE_SLOT_CAMPO_DESTRUIDO);
+  for(const rawSlot of Array.from(new Set(slotIds))){
+    const slotId = typeof normalizeSaveSlotId === 'function' ? normalizeSaveSlotId(rawSlot) : rawSlot;
+    const record = await readLocalSaveRecord(slotId).catch(()=>null);
+    if(!record || typeof record !== 'object') continue;
+    const profile = normalizeManagerGlobalProfile({
+      managerName:record.rankingManagerName || storedManagerName() || '',
+      saveCode:record.saveCode || '',
+      managerStats:record.managerStats || createInitialManagerStats(),
+      skillPoints:Math.max(0, Math.round(Number(record.special?.puntos_habilidad || 0)))
+    });
+    if(!profile.empty) candidates.push(profile);
+  }
+  if(!candidates.length) return false;
+  candidates.sort((a,b) => managerGlobalProfileScore(b) - managerGlobalProfileScore(a));
+  const best = candidates[0];
+  const currentScore = managerGlobalProfileScore(currentGlobal);
+  if(currentGlobal && !currentGlobal.empty && currentScore >= managerGlobalProfileScore(best)) return false;
+  writeManagerGlobalProfileState({
+    ...best,
+    challengeRewards:normalizeManagerChallengeRewardsState(currentGlobal?.challengeRewards),
+    managerCourses:typeof normalizeManagerCoursesState === 'function'
+      ? normalizeManagerCoursesState(currentGlobal?.managerCourses || best?.managerCourses)
+      : (currentGlobal?.managerCourses || best?.managerCourses)
+  });
+  return true;
+}
+
+function normalizeManagerAchievementsState(state){
+  const clean = state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+  const unlockedRaw = clean.unlocked && typeof clean.unlocked === 'object' && !Array.isArray(clean.unlocked) ? clean.unlocked : {};
+  const unlocked = {};
+  Object.entries(unlockedRaw).forEach(([id, item]) => {
+    if(!id) return;
+    unlocked[String(id)] = {
+      id:String(id),
+      unlockedAt:item?.unlockedAt || item?.date || null,
+      season:Number(item?.season || 0),
+      value:Number.isFinite(Number(item?.value)) ? Number(item.value) : 0
+    };
+  });
+  return { unlocked, lastCheckedDate:clean.lastCheckedDate || null };
+}
+function managerAchievementsCatalog(){
+  const db = managerAchievementsDatabase && typeof managerAchievementsDatabase === 'object' ? managerAchievementsDatabase : null;
+  return Array.isArray(db?.hitos) ? db.hitos : [];
+}
+function managerAchievementCareerSummary(statsInput=null){
+  const stats = normalizeManagerStats(statsInput || game?.managerStats || createInitialManagerStats());
+  const seasons = Array.isArray(stats.seasons) ? stats.seasons : [];
+  const career = Array.isArray(stats.careerHistory) ? stats.careerHistory : [];
+  const titles = Array.isArray(stats.titleHistory) ? stats.titleHistory : [];
+  const managedClubIds = new Set();
+  seasons.forEach(item => { const id = Number(item?.clubId || 0); if(id) managedClubIds.add(id); });
+  career.forEach(item => { const id = Number(item?.clubId || 0); if(id) managedClubIds.add(id); });
+  const currentClubId = Number(game?.selectedClubId || 0);
+  if(currentClubId) managedClubIds.add(currentClubId);
+
+  const leagueTitles = titles.filter(item => String(item?.type || '') === 'league');
+  const leagueClubIds = new Set();
+  const leagueIds = new Set();
+  const leagueCountries = new Set();
+  const topDivisionCountries = new Set();
+  leagueTitles.forEach(item => {
+    const clubId = Number(item?.clubId || 0);
+    if(clubId) leagueClubIds.add(clubId);
+    const competitionId = String(item?.competitionId || '').trim();
+    if(competitionId) leagueIds.add(competitionId);
+    else if(item?.competitionName) leagueIds.add(String(item.competitionName).trim().toLowerCase());
+    const club = (seed?.clubs || []).find(candidate => Number(candidate.id) === clubId);
+    const division = (seed?.divisions || []).find(candidate => String(candidate.id || '') === competitionId);
+    const country = String(division?.country || division?.pais || club?.country || club?.pais || '').trim();
+    if(country) leagueCountries.add(country.toLowerCase());
+    const divisionOrder = Number(division?.order || (String(club?.divisionId || '') === competitionId ? club?.divisionOrder : 0) || 0);
+    if(country && divisionOrder === 1) topDivisionCountries.add(country.toLowerCase());
+  });
+  const clubWorldCupTitles = titles.filter(item => String(item?.type || '') === 'club_world_cup' || String(item?.competitionId || '') === 'club-world-cup').length;
+  return {
+    managedClubs:managedClubIds.size,
+    dismissals:career.filter(item => String(item?.type || '') === 'dismissal').length,
+    resignations:career.filter(item => String(item?.type || '') === 'resignation').length,
+    leagueTitleClubs:leagueClubIds.size,
+    leagueTitleLeagues:leagueIds.size,
+    leagueTitleCountries:leagueCountries.size,
+    topDivisionTitleCountries:topDivisionCountries.size,
+    clubWorldCupTitles
+  };
+}
+function managerAchievementMetricValue(metric){
+  const stats = normalizeManagerStats(game?.managerStats || createInitialManagerStats());
+  const totals = stats.totals || {};
+  const seasons = Array.isArray(stats.seasons) ? stats.seasons : [];
+  const key = String(metric || '');
+  if(['managedClubs','dismissals','resignations','leagueTitleClubs','leagueTitleLeagues','leagueTitleCountries','topDivisionTitleCountries','clubWorldCupTitles'].includes(key)){
+    return Number(managerAchievementCareerSummary(stats)[key] || 0);
+  }
+  if(key === 'totals.played') return Number(totals.played || 0);
+  if(key === 'totals.won') return Number(totals.won || 0);
+  if(key === 'totals.drawn') return Number(totals.drawn || 0);
+  if(key === 'totals.lost') return Number(totals.lost || 0);
+  if(key === 'totals.gf') return Number(totals.gf || 0);
+  if(key === 'totals.gc') return Number(totals.gc || 0);
+  if(key === 'goalDiff') return Number(totals.gf || 0) - Number(totals.gc || 0);
+  if(key === 'titles') return Number(stats.titles || 0);
+  if(key === 'experience') return Number(stats.experience || 0);
+  if(key === 'prestige') return Number(stats.prestige || 0);
+  if(key === 'seasonsCompleted') return seasons.length;
+  if(key === 'objectivesAchieved') return seasons.filter(item => item?.objectiveAchieved === true).length;
+  if(key === 'bestSeasonPpg') return seasons.reduce((max, item) => Math.max(max, Number(item.ppg || 0)), 0);
+  if(key === 'bestSeasonPoints') return seasons.reduce((max, item) => Math.max(max, Number(item.pts || 0)), 0);
+  if(key === 'currentBudget') return Math.max(0, Math.round(Number(game?.budget || 0)));
+  if(key === 'stadiumCapacity') return typeof clubStadiumCapacity === 'function' ? clubStadiumCapacity(game?.selectedClubId) : 0;
+  if(key === 'fans') return typeof clubFansCurrent === 'function' ? clubFansCurrent(game?.selectedClubId) : 0;
+  if(key === 'skillPoints') return Math.max(0, Math.round(Number(game?.special?.puntos_habilidad || 0)));
+  if(key === 'activeSpecialCards') return Array.isArray(game?.special?.activeCards) ? game.special.activeCards.length : 0;
+  if(key === 'savedScoutingReports') return game?.scoutingCenter?.reports && typeof game.scoutingCenter.reports === 'object' ? Object.keys(game.scoutingCenter.reports).length : 0;
+  if(key === 'archivedScoutingReports'){
+    const listed = new Set(Array.isArray(game?.scoutingCenter?.listedPlayerIds) ? game.scoutingCenter.listedPlayerIds.map(Number) : []);
+    return game?.scoutingCenter?.reports && typeof game.scoutingCenter.reports === 'object' ? Object.keys(game.scoutingCenter.reports).filter(id => !listed.has(Number(id))).length : 0;
+  }
+  if(key === 'scoutedTeams') return game?.scoutingCenter?.teamReports && typeof game.scoutingCenter.teamReports === 'object' ? Object.keys(game.scoutingCenter.teamReports).length : 0;
+  if(key === 'academyPlayers') return Array.isArray(game?.academy?.players) ? game.academy.players.length : 0;
+  if(['academyTrainingPoints','academyConsultations','academyPromotions','academyYouthSales','academyYouthBenefits'].includes(key)){
+    const academyStats = typeof academyCareerStatsState === 'function' ? academyCareerStatsState({ reconcile:true }) : (game?.academy?.careerStats || {});
+    if(key === 'academyTrainingPoints') return Number(academyStats.trainingPoints || 0);
+    if(key === 'academyConsultations') return Number(academyStats.consultations || 0);
+    if(key === 'academyPromotions') return Number(academyStats.promotions || 0);
+    if(key === 'academyYouthSales') return Number(academyStats.sales || 0);
+    if(key === 'academyYouthBenefits') return Number(academyStats.directSaleIncome || 0) + Number(academyStats.futureSaleBenefits || 0);
+  }
+  if(key === 'employeesCount') return ['psychologist','kinesiologist','youthPreparer'].filter(key => game?.employees?.[key]).length;
+  return 0;
+}
+function checkManagerAchievements(options={}){
+  if(!game?.managerStats) return [];
+  game.managerStats = normalizeManagerStats(game.managerStats);
+  const state = game.managerStats.achievements || normalizeManagerAchievementsState();
+  const catalog = managerAchievementsCatalog();
+  const unlockedNow = [];
+  catalog.forEach(item => {
+    const id = String(item.id || '');
+    if(!id || state.unlocked[id]) return;
+    const value = managerAchievementMetricValue(item.metrica);
+    const target = Number(item.objetivo || 0);
+    if(Number(value) >= target){
+      state.unlocked[id] = { id, unlockedAt:currentCalendarDate(), season:Number(game.seasonNumber || 1), value:Number(value || 0) };
+      unlockedNow.push({ ...item, value:Number(value || 0) });
+    }
+  });
+  state.lastCheckedDate = currentCalendarDate();
+  game.managerStats.achievements = state;
+  if(unlockedNow.length && options.silent !== true){
+    const first = unlockedNow[0];
+    pushGameMessage({
+      type:'asistente',
+      priority:'normal',
+      title:'Nuevo hito desbloqueado',
+      body:`${first.titulo}${unlockedNow.length > 1 ? ` y ${unlockedNow.length - 1} hito(s) más` : ''}. Revisalo en Hitos.`,
+      id:`manager-achievement-${game.seasonNumber || 1}-${game.globalTurn || 0}-${first.id}`,
+      action:{ type:'openManagerAchievements', label:'Ver hitos' }
+    });
+  }
+  return unlockedNow;
+}
+function managerUnlockedAchievements(){
+  if(!game?.managerStats) return [];
+  game.managerStats = normalizeManagerStats(game.managerStats);
+  checkManagerAchievements({ silent:true });
+  const state = game.managerStats.achievements || normalizeManagerAchievementsState();
+  const catalog = managerAchievementsCatalog();
+  return catalog
+    .filter(item => state.unlocked?.[String(item.id || '')])
+    .map(item => ({ ...item, unlocked:state.unlocked[String(item.id || '')] }))
+    .sort((a,b)=>String(b.unlocked?.unlockedAt || '').localeCompare(String(a.unlocked?.unlockedAt || '')) || String(a.categoria || '').localeCompare(String(b.categoria || '')));
+}
+
 function addManagerPrestige(points, reason=''){
   if(!game?.managerStats || Number(points || 0) === 0) return 0;
   game.managerStats = normalizeManagerStats(game.managerStats);
-  game.managerStats.prestigeAdjustments = Array.isArray(game.managerStats.prestigeAdjustments) ? game.managerStats.prestigeAdjustments : [];
-  game.managerStats.prestigeAdjustments.push({ points:Number(points || 0), reason:String(reason || 'Ajuste de prestigio'), season:Number(game.seasonNumber || 1), clubId:Number(game.selectedClubId || 0), createdAt:new Date().toISOString() });
-  game.managerStats = normalizeManagerStats(game.managerStats);
-  const total = formatManagerPrestige(game.managerStats.prestige);
-  if(reason){
-    pushGameMessage({ type:'directiva', priority:Number(points || 0) > 0 ? 'normal' : 'high', title:Number(points || 0) > 0 ? 'Prestigio de manager aumentado' : 'Prestigio de manager reducido', body:`${reason}. Prestigio actual: ${total}.`, id:`manager-prestige-${game.seasonNumber || 1}-${game.globalTurn || 0}-${reason}` });
+  const legacyPoints = Number(points || 0);
+  const careerDelta = Math.round(legacyPoints * 4);
+  if(typeof normalizeManagerCareerProfile === 'function'){
+    const profile = normalizeManagerCareerProfile(game.managerStats.careerProfile || {}, game.managerStats);
+    const before = Number(profile.prestige || 0);
+    profile.prestige = clamp(before + careerDelta, 0, Number(typeof configValue === 'function' ? configValue('manager.carrera.prestigioMaximo', 1000) : 1000));
+    profile.progression = Array.isArray(profile.progression) ? profile.progression : [];
+    profile.progression.push({
+      key:`adjustment:${game.seasonNumber || 1}:${game.selectedClubId || 0}:${game.globalTurn || 0}:${reason || 'prestigio'}`,
+      season:Number(game.seasonNumber || 1), clubId:Number(game.selectedClubId || 0), evaluationScore:50,
+      prestigeBefore:before, prestigeDelta:careerDelta, prestigeAfter:profile.prestige,
+      momentBefore:Number(profile.moment || 0), momentAfter:Number(profile.moment || 0), capabilityDeltas:{},
+      weight:0, status:'adjustment', createdAt:new Date().toISOString()
+    });
+    profile.progression = profile.progression.slice(-120);
+    game.managerStats.careerProfile = profile;
+  }else{
+    game.managerStats.prestigeAdjustments = Array.isArray(game.managerStats.prestigeAdjustments) ? game.managerStats.prestigeAdjustments : [];
+    game.managerStats.prestigeAdjustments.push({ points:legacyPoints, reason:String(reason || 'Ajuste de prestigio'), season:Number(game.seasonNumber || 1), clubId:Number(game.selectedClubId || 0), createdAt:new Date().toISOString() });
   }
-  return Number(points || 0);
+  if(reason){
+    const careerTotal = Number(game.managerStats?.careerProfile?.prestige || 0);
+    pushGameMessage({ type:'directiva', priority:careerDelta > 0 ? 'normal' : 'high', title:careerDelta > 0 ? 'Prestigio de carrera aumentado' : 'Prestigio de carrera reducido', body:`${reason}. Prestigio de carrera: ${careerTotal}/1000.`, id:`manager-prestige-${game.seasonNumber || 1}-${game.globalTurn || 0}-${reason}` });
+  }
+  return careerDelta;
 }
 function updateManagerPrestigeFromWins(){
+  // V8.73: las victorias ya forman parte de la evaluación anual y no otorgan un segundo prestigio paralelo.
   if(!game?.managerStats) return 0;
   game.managerStats = normalizeManagerStats(game.managerStats);
   const wins = Math.max(0, Math.round(Number(game.managerStats.totals?.won || 0)));
   const step = Math.max(1, Number(MANAGER_PRESTIGE_WINS_STEP || 10));
-  const milestones = Math.floor(wins / step);
-  const current = Math.max(0, Math.round(Number(game.managerStats.prestigeWinMilestones || 0)));
-  if(milestones <= current) return 0;
-  const diff = milestones - current;
-  game.managerStats.prestigeWinMilestones = milestones;
-  pushGameMessage({ type:'directiva', priority:'normal', title:'Prestigio por victorias', body:`${wins} victorias acumuladas. Las victorias suman ${diff} punto(s) de prestigio por carrera. Prestigio actual: ${formatManagerPrestige(currentManagerPrestige())}.`, id:`manager-win-prestige-${game.seasonNumber || 1}-${game.globalTurn || 0}-${wins}` });
-  return diff;
+  game.managerStats.prestigeWinMilestones = Math.max(Number(game.managerStats.prestigeWinMilestones || 0), Math.floor(wins / step));
+  return 0;
 }
 function emptyManagerSeasonStats(season=game?.seasonNumber || 1, clubId=game?.selectedClubId || 0){
   return { season:Number(season || 1), clubId:Number(clubId || 0), played:0, won:0, drawn:0, lost:0, gf:0, gc:0 };
 }
-function managerObjectiveBaseForClubDivision(clubId){
-  const targetClubId = clubId || game?.selectedClubId;
-  if(isFoundedClubId(targetClubId)) return null;
-  let objective = null;
-  if(Number.isFinite(Number(MANAGER_OBJECTIVE_PPG)) && Number(MANAGER_OBJECTIVE_PPG) >= 0.3 && Number(MANAGER_OBJECTIVE_PPG) <= 2){
-    objective = Number(MANAGER_OBJECTIVE_PPG);
-  } else {
-    const division = clubDivision(targetClubId);
-    const order = Math.round(Number(division?.order || 3));
-    objective = order <= 1 ? Number(MANAGER_OBJECTIVE_DIVISION_1 || 1.4) : order === 2 ? Number(MANAGER_OBJECTIVE_DIVISION_2 || 1.1) : Number(MANAGER_OBJECTIVE_DIVISION_3 || 0.9);
+function managerBalanceObjectiveConfig(){
+  return (window.GAME_BALANCE_MANAGER && window.GAME_BALANCE_MANAGER.objetivos) ? window.GAME_BALANCE_MANAGER.objetivos : {};
+}
+function normalizeObjectiveText(value=''){
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+function managerObjectiveDivisionKey(order=3){
+  const value = Math.round(Number(order || 3));
+  if(value <= 1) return 'primera';
+  if(value === 2) return 'segunda';
+  return 'tercera';
+}
+function managerObjectiveLeagueClubs(clubId){
+  const targetClubId = Number(clubId || game?.selectedClubId || 0);
+  const club = seed?.clubs?.find(c => Number(c.id) === targetClubId);
+  if(!club) return [];
+  const divisionId = String(club.divisionId || 'default');
+  return (seed?.clubs || []).filter(item => String(item.divisionId || 'default') === divisionId);
+}
+function managerObjectiveAverageLeaguePrestige(clubId){
+  const clubs = managerObjectiveLeagueClubs(clubId);
+  if(!clubs.length) return clubPrestigeValue(clubId);
+  const total = clubs.reduce((sum, item) => sum + clubPrestigeValue(item), 0);
+  return total / clubs.length;
+}
+function managerObjectiveEntryForValue(list=[], value=0){
+  const n = Number(value || 0);
+  const items = Array.isArray(list) ? list : [];
+  const deltaRule = items.find(item => Number.isFinite(Number(item.minDelta)) && n >= Number(item.minDelta));
+  if(deltaRule) return deltaRule;
+  return items.find(item => n >= Number(item.min ?? -999) && n <= Number(item.max ?? 999)) || null;
+}
+function managerObjectiveBaseValueForDivision(division={}, clubId=0){
+  const cfg = managerBalanceObjectiveConfig();
+  const bases = cfg.basesPorDivision || {};
+  const order = Math.round(Number(division?.order || 3));
+  if(order <= 1){
+    const club = seed?.clubs?.find(c => Number(c.id) === Number(clubId || game?.selectedClubId || 0));
+    const country = normalizeObjectiveText(division?.country || division?.pais || clubCountry(club));
+    const strongCountries = Array.isArray(cfg.paisesPrimeraFuerte) ? cfg.paisesPrimeraFuerte.map(normalizeObjectiveText) : [];
+    return Number(strongCountries.includes(country) ? (bases.primeraFuerte ?? 1.25) : (bases.primeraMedia ?? 1.20));
   }
-  return Number.isFinite(Number(objective)) ? Number(Number(objective).toFixed(3)) : null;
+  if(order === 2) return Number(bases.segunda ?? 1.05);
+  return Number(bases.tercera ?? 0.90);
+}
+function managerObjectiveLimitsForDivision(division={}){
+  const cfg = managerBalanceObjectiveConfig();
+  const key = managerObjectiveDivisionKey(division?.order || 3);
+  const limits = (cfg.limitesPorDivision || {})[key] || {};
+  const fallback = key === 'primera' ? { min:0.95, max:2.10 } : key === 'segunda' ? { min:0.80, max:2.00 } : { min:0.70, max:1.90 };
+  return {
+    min:Number.isFinite(Number(limits.min)) ? Number(limits.min) : fallback.min,
+    max:Number.isFinite(Number(limits.max)) ? Number(limits.max) : fallback.max
+  };
+}
+function managerObjectiveManagerPrestigePressure(clubId){
+  const cfg = typeof configValue === 'function' ? configValue('manager.carrera.progresionLarga.presionExpectativas', {}) : {};
+  if(cfg?.activo === false) return { bonus:0, careerPrestige:0, accessPrestige:0, advantage:0 };
+  const careerPrestige = Number(typeof currentManagerCareerPrestige === 'function'
+    ? currentManagerCareerPrestige(game)
+    : game?.managerStats?.careerProfile?.prestige || 0);
+  const accessPrestige = Number(typeof managerCareerPrestigeToClubScale === 'function'
+    ? managerCareerPrestigeToClubScale(careerPrestige)
+    : currentManagerPrestige());
+  const advantage = accessPrestige - clubPrestigeValue(clubId);
+  const fromPrestige = Number(cfg?.prestigioCarreraDesde ?? 600);
+  const fromAdvantage = Number(cfg?.ventajaAccesoDesde ?? 10);
+  if(careerPrestige < fromPrestige || advantage < fromAdvantage) return { bonus:0, careerPrestige, accessPrestige, advantage };
+  const prestigeFactor = clamp((careerPrestige - fromPrestige) / Math.max(1, 1000 - fromPrestige), 0, 1);
+  const advantageFactor = clamp((advantage - fromAdvantage) / 30, 0, 1);
+  const maxBonus = Math.max(0, Number(cfg?.bonusPpgMaximo ?? 0.18));
+  const bonus = clamp(maxBonus * (prestigeFactor * 0.60 + advantageFactor * 0.40), 0, maxBonus);
+  return { bonus:Number(bonus.toFixed(3)), careerPrestige, accessPrestige, advantage };
+}
+function managerObjectiveBreakdownForClubDivision(clubId){
+  const targetClubId = clubId || game?.selectedClubId;
+  if(isFoundedClubId(targetClubId)) return { active:false, objective:null, reason:'fundador' };
+  const cfg = managerBalanceObjectiveConfig();
+  const division = clubDivision(targetClubId);
+  const manualAllowed = cfg.respetarObjetivoManualConfig !== false;
+  if(manualAllowed && Number.isFinite(Number(MANAGER_OBJECTIVE_PPG)) && Number(MANAGER_OBJECTIVE_PPG) >= 0.3 && Number(MANAGER_OBJECTIVE_PPG) <= 2){
+    const limits = managerObjectiveLimitsForDivision(division);
+    const manualObjective = clamp(Number(MANAGER_OBJECTIVE_PPG), limits.min, limits.max);
+    return {
+      active:true,
+      source:'manual',
+      objective:Number(manualObjective.toFixed(3)),
+      basePpg:Number(manualObjective.toFixed(3)),
+      modifierPpg:0,
+      prestige:clubPrestigeValue(targetClubId),
+      leagueAveragePrestige:managerObjectiveAverageLeaguePrestige(targetClubId),
+      prestigeRelative:0,
+      expectation:'Objetivo manual',
+      divisionKey:managerObjectiveDivisionKey(division?.order || 3),
+      minLimit:limits.min,
+      maxLimit:limits.max
+    };
+  }
+  if(cfg.activo === false || cfg.usarPrestigioRelativo === false){
+    const order = Math.round(Number(division?.order || 3));
+    const legacy = order <= 1 ? Number(MANAGER_OBJECTIVE_DIVISION_1 || 1.4) : order === 2 ? Number(MANAGER_OBJECTIVE_DIVISION_2 || 1.1) : Number(MANAGER_OBJECTIVE_DIVISION_3 || 0.9);
+    return { active:true, source:'legacy', objective:Number(legacy.toFixed(3)), basePpg:Number(legacy.toFixed(3)), modifierPpg:0, prestige:clubPrestigeValue(targetClubId), leagueAveragePrestige:managerObjectiveAverageLeaguePrestige(targetClubId), prestigeRelative:0, expectation:'Objetivo por división', divisionKey:managerObjectiveDivisionKey(division?.order || 3) };
+  }
+  const prestige = clubPrestigeValue(targetClubId);
+  const avg = managerObjectiveAverageLeaguePrestige(targetClubId);
+  const relative = Math.round(prestige - avg);
+  const base = managerObjectiveBaseValueForDivision(division, targetClubId);
+  const modEntry = managerObjectiveEntryForValue(cfg.modificadoresPrestigioRelativo, relative);
+  const modifier = Number(modEntry?.ppg || 0);
+  const managerPressure = managerObjectiveManagerPrestigePressure(targetClubId);
+  const limits = managerObjectiveLimitsForDivision(division);
+  const raw = base + modifier + Number(managerPressure.bonus || 0);
+  const objective = clamp(raw, limits.min, limits.max);
+  const expectationEntry = managerObjectiveEntryForValue(cfg.expectativasPrestigioRelativo, relative);
+  return {
+    active:true,
+    source:'prestigio_relativo',
+    objective:Number(objective.toFixed(3)),
+    basePpg:Number(base.toFixed(3)),
+    modifierPpg:Number(modifier.toFixed(3)),
+    rawPpg:Number(raw.toFixed(3)),
+    prestige,
+    leagueAveragePrestige:Number(avg.toFixed(2)),
+    prestigeRelative:relative,
+    managerExpectationBonusPpg:Number(managerPressure.bonus || 0),
+    managerCareerPrestige:Number(managerPressure.careerPrestige || 0),
+    expectation:managerPressure.bonus > 0 ? `${expectationEntry?.texto || 'Mitad de tabla'} · exigencia adicional por prestigio del mánager` : (expectationEntry?.texto || 'Mitad de tabla'),
+    divisionKey:managerObjectiveDivisionKey(division?.order || 3),
+    minLimit:limits.min,
+    maxLimit:limits.max
+  };
+}
+function managerObjectiveBaseForClubDivision(clubId){
+  const info = managerObjectiveBreakdownForClubDivision(clubId);
+  return Number.isFinite(Number(info?.objective)) ? Number(Number(info.objective).toFixed(3)) : null;
 }
 function managerObjectiveReductionForClub(clubId){
   const targetClubId = clubId || game?.selectedClubId;
@@ -2421,14 +2478,77 @@ function applyManagerObjectiveReduction(baseObjective, clubId){
 function managerObjectiveForClubDivision(clubId){
   return applyManagerObjectiveReduction(managerObjectiveBaseForClubDivision(clubId), clubId);
 }
-function buildManagerObjectiveSeasonFields(stats, season=game?.seasonNumber || 1, clubId=game?.selectedClubId || 0){
+function managerObjectiveMinMatchesForObjective(objective){
+  const cfg = managerBalanceObjectiveConfig();
+  const rules = Array.isArray(cfg.partidosMinimosEvaluacion) ? cfg.partidosMinimosEvaluacion : [];
+  const value = Number(objective || 0);
+  const rule = rules.find(item => value <= Number(item.maxObjetivo ?? 9.99));
+  if(rule && Number.isFinite(Number(rule.partidos))) return Math.max(1, Math.round(Number(rule.partidos)));
+  return Math.max(1, Number(MANAGER_OBJECTIVE_MIN_MATCHES || 5));
+}
+function bankruptcyFirstSeasonObjectiveActive(season=game?.seasonNumber || 1, clubId=game?.selectedClubId || 0){
+  return currentGameIsBankruptcyMode() && Number(season || 1) === 1 && Number(clubId || 0) === Number(game?.selectedClubId || 0);
+}
+function buildBankruptcyFirstSeasonObjectiveFields(stats, season=game?.seasonNumber || 1, clubId=game?.selectedClubId || 0){
   const normalized = normalizeManagerStats(stats);
   const generalPpg = ppgFromTotals(normalized.totals || {});
-  const baseObjective = managerObjectiveBaseForClubDivision(clubId);
-  const objective = applyManagerObjectiveReduction(baseObjective, clubId);
-  const baseMatches = Number(MANAGER_OBJECTIVE_MIN_MATCHES || 5);
-  const extraMatches = managerObjectiveExtraMatches(generalPpg);
+  const division = clubDivision(clubId);
+  const limits = managerObjectiveLimitsForDivision(division);
+  const objective = Number(Number(limits.min || 0.8).toFixed(3));
+  const baseMatches = managerObjectiveMinMatchesForObjective(objective);
   return {
+    objectiveBasePpg:objective,
+    objectivePpg:objective,
+    objectiveBonusReduction:0,
+    objectiveBaseMatches:baseMatches,
+    objectiveExtraMatches:0,
+    objectiveMinMatches:baseMatches,
+    objectiveGeneralPpgAtStart:generalPpg,
+    objectiveSeason:Number(season || 1),
+    objectiveClubId:Number(clubId || 0),
+    objectiveSource:'bancarrota',
+    objectiveExpectation:'No descender',
+    objectiveLabel:'No descender',
+    objectiveFixed:true,
+    objectivePrestigeRelative:null,
+    objectiveClubPrestige:clubPrestigeValue(clubId),
+    objectiveLeagueAveragePrestige:Number(managerObjectiveAverageLeaguePrestige(clubId).toFixed(2)),
+    objectiveModifierPpg:0,
+    objectiveDivisionKey:managerObjectiveDivisionKey(division?.order || 3)
+  };
+}
+function managerObjectiveResultDelta(ppg, objective){
+  const a = Number(ppg || 0);
+  const b = Number(objective || 0);
+  return Number.isFinite(a) && Number.isFinite(b) ? Number((a - b).toFixed(3)) : 0;
+}
+function managerObjectiveBoardState(delta){
+  const cfg = managerBalanceObjectiveConfig();
+  const entry = managerObjectiveEntryForValue(cfg.estadosDirectiva, Number(delta || 0));
+  return entry || { estado:'Cumple', clase:'ok', despido:false };
+}
+function managerObjectivePrestigeRewardForDelta(delta){
+  const cfg = managerBalanceObjectiveConfig();
+  const entry = managerObjectiveEntryForValue(cfg.prestigioPorResultado, Number(delta || 0));
+  if(!entry) return { points:0, label:'Sin ajuste por objetivo' };
+  return { points:Math.round(Number(entry.puntos || 0)), label:String(entry.etiqueta || 'Resultado de objetivo') };
+}
+function managerObjectiveBadSeasonPenalty({ relegated=false, last=false }={}){
+  const cfg = managerBalanceObjectiveConfig();
+  const penalties = cfg.penalizacionesTemporada || {};
+  const raw = (relegated ? Number(penalties.descenso ?? -8) : 0) + (last ? Number(penalties.ultimoPuestoAdicional ?? -5) : 0);
+  return Math.max(0, Math.abs(Math.round(raw)));
+}
+function buildManagerObjectiveSeasonFields(stats, season=game?.seasonNumber || 1, clubId=game?.selectedClubId || 0){
+  if(bankruptcyFirstSeasonObjectiveActive(season, clubId)) return buildBankruptcyFirstSeasonObjectiveFields(stats, season, clubId);
+  const normalized = normalizeManagerStats(stats);
+  const generalPpg = ppgFromTotals(normalized.totals || {});
+  const dynamicInfo = managerObjectiveBreakdownForClubDivision(clubId);
+  const baseObjective = Number.isFinite(Number(dynamicInfo?.objective)) ? Number(dynamicInfo.objective) : managerObjectiveBaseForClubDivision(clubId);
+  const objective = applyManagerObjectiveReduction(baseObjective, clubId);
+  const baseMatches = managerObjectiveMinMatchesForObjective(objective);
+  const extraMatches = 0;
+  const fields = {
     objectiveBasePpg:Number.isFinite(Number(baseObjective)) ? Number(baseObjective) : null,
     objectivePpg:Number.isFinite(Number(objective)) ? objective : null,
     objectiveBonusReduction:managerObjectiveReductionForClub(clubId),
@@ -2437,11 +2557,23 @@ function buildManagerObjectiveSeasonFields(stats, season=game?.seasonNumber || 1
     objectiveMinMatches:baseMatches + extraMatches,
     objectiveGeneralPpgAtStart:generalPpg,
     objectiveSeason:Number(season || 1),
-    objectiveClubId:Number(clubId || 0)
+    objectiveClubId:Number(clubId || 0),
+    objectiveSource:dynamicInfo?.source || 'division',
+    objectiveExpectation:dynamicInfo?.expectation || '',
+    objectivePrestigeRelative:Number.isFinite(Number(dynamicInfo?.prestigeRelative)) ? Number(dynamicInfo.prestigeRelative) : null,
+    objectiveClubPrestige:Number.isFinite(Number(dynamicInfo?.prestige)) ? Number(dynamicInfo.prestige) : null,
+    objectiveLeagueAveragePrestige:Number.isFinite(Number(dynamicInfo?.leagueAveragePrestige)) ? Number(dynamicInfo.leagueAveragePrestige) : null,
+    objectiveModifierPpg:Number.isFinite(Number(dynamicInfo?.modifierPpg)) ? Number(dynamicInfo.modifierPpg) : 0,
+    objectiveDivisionKey:dynamicInfo?.divisionKey || ''
   };
+  return typeof applyManagerJobContractToObjectiveFields === 'function' ? applyManagerJobContractToObjectiveFields(fields, clubId, season) : fields;
 }
 function applyManagerObjectiveSeasonFields(current, stats, season=game?.seasonNumber || 1, clubId=game?.selectedClubId || 0){
   const clean = { ...(current || {}) };
+  if(bankruptcyFirstSeasonObjectiveActive(season, clubId)){
+    Object.assign(clean, buildBankruptcyFirstSeasonObjectiveFields(stats, season, clubId));
+    return clean;
+  }
   const needsRefresh = !MANAGER_OBJECTIVE_FREEZE_BY_SEASON
     || !Number.isFinite(Number(clean.objectiveMinMatches || 0))
     || !Number.isFinite(Number(clean.objectivePpg || 0))
@@ -2450,12 +2582,19 @@ function applyManagerObjectiveSeasonFields(current, stats, season=game?.seasonNu
   if(needsRefresh){
     Object.assign(clean, buildManagerObjectiveSeasonFields(stats, season, clubId));
   } else {
+    const dynamicInfo = managerObjectiveBreakdownForClubDivision(clubId);
     const baseObjective = Number.isFinite(Number(clean.objectiveBasePpg)) ? Number(clean.objectiveBasePpg) : managerObjectiveBaseForClubDivision(clubId);
     clean.objectiveBasePpg = Number.isFinite(Number(baseObjective)) ? Number(baseObjective) : null;
     clean.objectiveBonusReduction = managerObjectiveReductionForClub(clubId);
     clean.objectivePpg = applyManagerObjectiveReduction(clean.objectiveBasePpg, clubId);
+    clean.objectiveExpectation = clean.objectiveExpectation || dynamicInfo?.expectation || '';
+    clean.objectivePrestigeRelative = Number.isFinite(Number(clean.objectivePrestigeRelative)) ? Number(clean.objectivePrestigeRelative) : (Number.isFinite(Number(dynamicInfo?.prestigeRelative)) ? Number(dynamicInfo.prestigeRelative) : null);
+    clean.objectiveClubPrestige = Number.isFinite(Number(clean.objectiveClubPrestige)) ? Number(clean.objectiveClubPrestige) : (Number.isFinite(Number(dynamicInfo?.prestige)) ? Number(dynamicInfo.prestige) : null);
+    clean.objectiveLeagueAveragePrestige = Number.isFinite(Number(clean.objectiveLeagueAveragePrestige)) ? Number(clean.objectiveLeagueAveragePrestige) : (Number.isFinite(Number(dynamicInfo?.leagueAveragePrestige)) ? Number(dynamicInfo.leagueAveragePrestige) : null);
+    clean.objectiveModifierPpg = Number.isFinite(Number(clean.objectiveModifierPpg)) ? Number(clean.objectiveModifierPpg) : (Number.isFinite(Number(dynamicInfo?.modifierPpg)) ? Number(dynamicInfo.modifierPpg) : 0);
+    clean.objectiveSource = clean.objectiveSource || dynamicInfo?.source || 'division';
   }
-  return clean;
+  return typeof applyManagerJobContractToObjectiveFields === 'function' ? applyManagerJobContractToObjectiveFields(clean, clubId, season) : clean;
 }
 function ensureManagerCurrentSeasonStats(stats, season=game?.seasonNumber || 1, clubId=game?.selectedClubId || 0){
   const normalized = normalizeManagerStats(stats);
@@ -2488,7 +2627,7 @@ function managerObjectiveForCurrentDivision(){
 function managerObjectiveIsActive(){
   if(currentGameIsFounderMode()) return false;
   const objective = managerObjectiveForCurrentDivision();
-  return Number.isFinite(objective) && objective >= 0.3 && objective <= 2;
+  return Number.isFinite(objective) && objective >= 0.3 && objective <= 3;
 }
 function managerOfficialTotals(){
   return normalizeManagerStats(game?.managerStats).totals;
@@ -2508,12 +2647,6 @@ function managerGeneralPPG(){
 function managerCurrentPPG(){
   return ppgFromTotals(managerSeasonObjectiveTotals());
 }
-function managerObjectiveExtraMatches(generalPpg=managerGeneralPPG()){
-  if(generalPpg > 1.9) return MANAGER_OBJECTIVE_EXTRA_190;
-  if(generalPpg > 1.5) return MANAGER_OBJECTIVE_EXTRA_150;
-  if(generalPpg > 1.2) return MANAGER_OBJECTIVE_EXTRA_120;
-  return 0;
-}
 function managerObjectiveProgressInfo(){
   const seasonTotals = managerSeasonObjectiveTotals();
   const played = Number(seasonTotals.played || 0);
@@ -2524,6 +2657,8 @@ function managerObjectiveProgressInfo(){
   const minMatches = Math.max(baseMinMatches, Number(seasonTotals.objectiveMinMatches || (baseMinMatches + extraMatches)));
   const generalPpg = Number.isFinite(Number(seasonTotals.objectiveGeneralPpgAtStart)) ? Number(seasonTotals.objectiveGeneralPpgAtStart) : managerGeneralPPG();
   const confidence = objective ? clamp((ppg / objective) * 100, 0, 140) : 0;
+  const delta = objective !== null ? managerObjectiveResultDelta(ppg, objective) : 0;
+  const boardState = managerObjectiveBoardState(delta);
   return {
     active:objective !== null,
     objective,
@@ -2535,24 +2670,38 @@ function managerObjectiveProgressInfo(){
     generalPpg,
     progress:confidence,
     confidence,
+    delta,
+    boardState:boardState.estado,
+    boardClass:boardState.clase,
+    expectation:seasonTotals.objectiveExpectation || '',
+    label:seasonTotals.objectiveLabel || '',
+    prestigeRelative:seasonTotals.objectivePrestigeRelative,
+    clubPrestige:seasonTotals.objectiveClubPrestige,
+    leagueAveragePrestige:seasonTotals.objectiveLeagueAveragePrestige,
+    modifierPpg:seasonTotals.objectiveModifierPpg,
+    bonusReduction:Math.max(0, Number(seasonTotals.objectiveBonusReduction || 0)),
+    contractObjective:Number.isFinite(Number(seasonTotals.objectiveContractPpg)) ? Number(seasonTotals.objectiveContractPpg) : null,
     remainingMatches:Math.max(0, minMatches - played),
-    failed:objective !== null && played >= minMatches && ppg <= objective
+    failed:objective !== null && played >= minMatches && Boolean(boardState.despido)
   };
 }
 
 function queueAutomaticRankingSubmission(eventType='season_end'){
   if(!game) return false;
   game.rankingUploads = game.rankingUploads && typeof game.rankingUploads === 'object' && !Array.isArray(game.rankingUploads) ? game.rankingUploads : {};
+  const label = typeof rankingEventLabel === 'function' ? rankingEventLabel(eventType) : (eventType === 'dismissal' ? 'Carrera cerrada por despido' : 'Carrera actualizada');
+  const capturedPayload = String(eventType || '') === 'dismissal' && game?.gameOver?.snapshot
+    ? { ...game.gameOver.snapshot, eventType:'dismissal', eventLabel:label, submittedAt:new Date().toISOString() }
+    : (typeof buildRankingPayload === 'function' ? buildRankingPayload(game?.rankingManagerName || storedManagerName() || 'Manager', { eventType, eventLabel:label }) : null);
   const run = () => {
     if(typeof submitRankingAutomatically === 'function'){
-      submitRankingAutomatically(eventType, { notifyErrors:true, forceRetry:true });
+      submitRankingAutomatically(eventType, { notifyErrors:false, forceRetry:true, payload:capturedPayload, eventLabel:label });
     }else if(typeof pushGameMessage === 'function'){
       pushGameMessage({ type:'sistema', priority:'normal', title:'Ranking pendiente', body:'El módulo de ranking no estaba listo. Volvé a abrir la partida o la pantalla Ranking para reintentar el envío automático.', id:`ranking-module-missing-${eventType}-${game.seasonNumber || 1}` });
       if(typeof saveLocal === 'function') saveLocal(true);
     }
   };
   setTimeout(run, 0);
-  setTimeout(run, 5000);
   return true;
 }
 
@@ -2586,13 +2735,14 @@ function gameOverSnapshot(){
   };
 }
 function checkManagerObjectiveGameOver(){
+  if(typeof managerChallengeIs === 'function' && managerChallengeIs()) return false;
   if(!game || game.gameOver?.active || !managerObjectiveIsActive()) return false;
   const info = managerObjectiveProgressInfo();
   if(!info.failed) return false;
   game.gameOver = {
     active:true,
     type:'dismissal',
-    reason:`La directiva perdió confianza: promedio ${info.ppg.toFixed(2)} / objetivo ${info.objective.toFixed(2)} tras ${info.played} partidos oficiales de la temporada.`,
+    reason:`La directiva perdió confianza: promedio ${info.ppg.toFixed(2)} / objetivo ${info.objective.toFixed(2)} (${info.delta.toFixed(2)}) tras ${info.played} partidos oficiales de la temporada.`,
     triggeredAt:new Date().toISOString(),
     objective:info.objective,
     ppg:info.ppg,
@@ -2600,9 +2750,12 @@ function checkManagerObjectiveGameOver(){
     snapshot:gameOverSnapshot()
   };
   game.mustReviewTactics = false;
-  activeTab = 'home';
+  if(typeof archiveManagerPlayerStatsClub === 'function') archiveManagerPlayerStatsClub(game.selectedClubId, { final:true });
+  if(typeof clearScoutedSigningChances === 'function') clearScoutedSigningChances();
+  prepareManagerWithoutClubUi('dismissal');
   recordDismissedCareerStep();
-  pushGameMessage({ type:'directiva', priority:'high', title:'Despido del manager', body:`La directiva decidió terminar el ciclo por falta de resultados y pérdida de confianza. El despido resta ${MANAGER_PRESTIGE_DISMISSAL_PENALTY} puntos de prestigio. Podés buscar otro club sin reiniciar el mundo de la partida.`, id:`dismissal-${game.seasonNumber || 1}-${game.selectedClubId}-${info.played}` });
+  if(typeof resetOutgoingClubStateAfterManagerExit === 'function') resetOutgoingClubStateAfterManagerExit(game.selectedClubId, 'dismissal');
+  pushGameMessage({ type:'directiva', priority:'high', title:'Despido del manager', body:`La directiva decidió terminar el ciclo por falta de resultados y pérdida de confianza. El impacto profesional se calculará dentro de la evaluación integral de esta etapa. Podés buscar otro club sin reiniciar el mundo de la partida.`, id:`dismissal-${game.seasonNumber || 1}-${game.selectedClubId}-${info.played}` });
   queueAutomaticRankingSubmission('dismissal');
   return true;
 }
@@ -2645,6 +2798,7 @@ function recordDismissedCareerStep(){
     createdAt:new Date().toISOString()
   });
   game.managerStats = normalizeManagerStats(game.managerStats);
+  if(typeof checkManagerAchievements === 'function') checkManagerAchievements({ silent:false });
 }
 function resetClubSpecificCareerStateForNewClub(newClubId){
   if(!game) return;
@@ -2652,12 +2806,10 @@ function resetClubSpecificCareerStateForNewClub(newClubId){
   game.staffContracts = {};
   if(typeof resetScoutingCenterForNewClub === 'function') resetScoutingCenterForNewClub(newClubId);
   game.monthlyExpenses = {};
-  if(typeof createInitialAcademyState === 'function'){
-    game.academy = createInitialAcademyState();
-  }else{
-    game.academy = { players:[], scoutingJobs:[], unlockedStats:{}, trainingPlan:{}, youthPreparer:null, lastConsultTurn:null, lastArrivalTurn:null, lastConsultReveal:null, exceptionalYouthGrantedSeason:null, residences:0, residenceLastChargeDate:null, youthInjurySeason:null, youthInjuriesTarget:null, youthInjuriesCount:0 };
-  }
+  game.academy = normalizeAcademyState(game.academy);
   game.lastOwnPlayerOffer = null;
+  if(typeof closeTransferOfferMessagesForClubExit === 'function') closeTransferOfferMessagesForClubExit();
+  if(typeof clearPendingTransferAgreementFlags === 'function') clearPendingTransferAgreementFlags(game);
   game.pendingTransfers = [];
   game.rejectedPurchaseOffers = {};
   game.rejectedFreeAgentOffers = {};
@@ -2695,33 +2847,58 @@ function resignCurrentClub(){
     snapshot:gameOverSnapshot()
   };
   game.mustReviewTactics = false;
+  if(typeof archiveManagerPlayerStatsClub === 'function') archiveManagerPlayerStatsClub(game.selectedClubId, { final:true });
+  if(typeof clearScoutedSigningChances === 'function') clearScoutedSigningChances();
+  prepareManagerWithoutClubUi('resignation');
   recordDismissedCareerStep();
-  activeTab = 'home';
+  if(typeof resetOutgoingClubStateAfterManagerExit === 'function') resetOutgoingClubStateAfterManagerExit(game.selectedClubId, 'resignation');
   pushGameMessage({ type:'directiva', priority:'high', title:'Renuncia del manager', body:'Presentaste la renuncia. El mundo de la partida sigue activo y podés buscar otro club.', id:`resignation-${game.seasonNumber || 1}-${game.selectedClubId}-${game.globalTurn || 0}` });
   saveLocal(true);
   renderAll();
   showNotice('Renuncia registrada. Usá Buscar club para continuar tu carrera.');
 }
 function continueCareerAtClub(selectedClubId, options={}){
-  if(!game?.gameOver?.active){ showNotice('Sólo podés buscar otro club cuando estás sin cargo.'); return; }
+  const employedTransition = Boolean(options.allowEmployedTransition && game && !game.gameOver?.active && Number(game.selectedClubId || 0) !== Number(selectedClubId || 0));
+  if(!game?.gameOver?.active && !employedTransition){ showNotice('Sólo podés buscar otro club cuando estás sin cargo o aceptar una oferta laboral activa.'); return; }
+  const previousClubId = Number(game?.selectedClubId || 0);
   const newClub = seed.clubs.find(c => Number(c.id) === Number(selectedClubId));
   if(!newClub){ showNotice('Club no encontrado.'); return; }
+  if(typeof managerClubCareerEligible === 'function' && !managerClubCareerEligible(newClub)){
+    showNotice('Ese equipo no pertenece a una liga jugable y no puede contratar managers.');
+    return;
+  }
   const rehireBlock = managerClubRehireBlockInfo(newClub);
   if(rehireBlock.blocked){
     const cause = rehireBlock.type === 'resignation' ? 'renuncia' : 'despido';
     showNotice(`${newClub.name} no acepta tu regreso todavía: bloqueo por ${cause} hasta la temporada ${rehireBlock.untilSeason}.`);
     return;
   }
-  if(!managerCanSelectClub(newClub, currentManagerPrestige())){
+  const canSignNormally = managerCanSelectClub(newClub, currentManagerPrestige());
+  const highRiskOffer = options.jobOffer && String(options.jobOffer.contractType || '') === 'high_risk';
+  if(!canSignNormally && !(options.allowHighRiskContract && highRiskOffer)){
     showNotice(`Ese club requiere prestigio ${clubPrestigeValue(newClub)}. Tu prestigio actual es ${formatManagerPrestige(currentManagerPrestige())}.`);
     return;
   }
   ensureClubBudgetsState();
-  recordDismissedCareerStep();
-  game.clubBudgets[game.selectedClubId] = Math.round(Number(game.budget || 0));
+  if(employedTransition){
+    if(typeof archiveManagerPlayerStatsClub === 'function') archiveManagerPlayerStatsClub(previousClubId, { final:true });
+    if(typeof clearScoutedSigningChances === 'function') clearScoutedSigningChances();
+    if(typeof managerCareerFinalizeCurrentStint === 'function'){
+      managerCareerFinalizeCurrentStint({
+        status:'club_change',
+        partial:true,
+        key:`club_change:${game.seasonNumber || 1}:${previousClubId}:${game.managerStats?.currentSeason?.careerStintId || game.globalTurn || 0}`
+      });
+    }
+    if(typeof resetOutgoingClubStateAfterManagerExit === 'function') resetOutgoingClubStateAfterManagerExit(previousClubId, 'job_offer');
+  }else{
+    recordDismissedCareerStep();
+  }
+  // La caja del club saliente ya quedó persistida antes de limpiar el estado del mánager.
   game.selectedClubId = Number(newClub.id);
   game.selectedCountry = clubCountry(newClub);
   game.selectedLeagueId = newClub.divisionId || 'default';
+  const newClubSpecialReset = typeof resetActiveSpecialCardsToReserveForNewClub === 'function' ? resetActiveSpecialCardsToReserveForNewClub({ reason:'new_job' }) : null;
   game.budget = budgetForCareerClub(newClub.id);
   game.seasonInitialBudget = Math.round(Number(game.budget || 0));
   game.lastBudgetDelta = 0;
@@ -2729,11 +2906,48 @@ function continueCareerAtClub(selectedClubId, options={}){
   game.managerStats = ensureManagerCurrentSeasonStats(game.managerStats, game.seasonNumber || 1, newClub.id);
   game.transferBudget = typeof createTransferBudgetState === 'function' ? createTransferBudgetState(newClub.id, game.seasonNumber || 1, 0) : game.transferBudget;
   resetClubSpecificCareerStateForNewClub(newClub.id);
+  const inheritedSponsors = typeof initializeInheritedSponsorsForNewClub === 'function'
+    ? initializeInheritedSponsorsForNewClub(newClub.id, { reason:employedTransition ? 'job_offer' : (game.gameOver?.type || 'new_job') })
+    : { count:0, totalPlaces:0, ratio:0 };
+  const inheritedCaptains = typeof initializeCaptaincyExperienceForNewClub === 'function'
+    ? initializeCaptaincyExperienceForNewClub(newClub.id, { reason:employedTransition ? 'job_offer' : (game.gameOver?.type || 'new_job') })
+    : { count:0, players:[] };
+  if(highRiskOffer){
+    game.managerJobContract = {
+      clubId:Number(newClub.id),
+      season:Number(game.seasonNumber || 1),
+      contractType:'high_risk',
+      signedDate:game.currentDate || '',
+      objectiveBonus:Number(options.jobOffer.objectiveBonus || 0.25),
+      transferBudgetRate:Number(options.jobOffer.transferBudgetRate || 0.05),
+      source:String(options.jobOffer.source || 'application')
+    };
+    if(game.transferBudget && typeof game.transferBudget === 'object'){
+      game.transferBudget.baseRate = Math.min(Number(game.transferBudget.baseRate || 1), Number(game.managerJobContract.transferBudgetRate || 0.05));
+      game.transferBudget.unlockedRate = 0;
+      game.transferBudget.history = Array.isArray(game.transferBudget.history) ? game.transferBudget.history : [];
+      game.transferBudget.history.push({ type:'job_restriction', text:'Contrato exigente: presupuesto de fichajes muy restringido', amount:0, rate:game.transferBudget.baseRate, date:game.currentDate || '' });
+    }
+  }else{
+    game.managerJobContract = null;
+  }
+  game.managerStats = ensureManagerCurrentSeasonStats(game.managerStats, game.seasonNumber || 1, newClub.id);
+  if(typeof checkManagerAchievements === 'function') checkManagerAchievements({ silent:false });
+  if(typeof removeManagerJobOffer === 'function' && options.jobOffer?.id) removeManagerJobOffer(options.jobOffer.id);
+  if(game.managerJobMarket){ game.managerJobMarket.applications = []; }
   game.gameOver = null;
   game.mustReviewTactics = true;
   activeTab = 'home';
   closeModal();
-  pushGameMessage({ type:'directiva', priority:'high', title:'Nuevo cargo aceptado', body:`Firmaste con ${newClub.name}. La partida continúa desde la misma temporada. Se reiniciaron empleados, academia, acciones de staff, sponsors, préstamos y cooldowns vinculados al club anterior.`, id:`new-job-${game.seasonNumber || 1}-${newClub.id}-${game.globalTurn || 0}` });
+  const specialResetText = newClubSpecialReset?.returned ? ` ${newClubSpecialReset.returned} carta(s) activa(s) volvieron a la reserva.` : '';
+  const inheritedStateText = ` El club conserva ${Number(inheritedSponsors.count || 0)} sponsor(s) activo(s) de ${Number(inheritedSponsors.totalPlaces || 0)} espacios habilitados y ${Number(inheritedCaptains.count || 0)} jugador(es) con experiencia previa de capitanía.`;
+  const acceptedTitle = employedTransition ? 'Cambio de club confirmado' : 'Nuevo cargo aceptado';
+  const acceptedBody = highRiskOffer
+    ? `Firmaste con ${newClub.name} con contrato exigente: objetivo superior al normal y fichajes muy restringidos. La partida continúa desde la misma temporada.${inheritedStateText}${specialResetText}`
+    : employedTransition
+      ? `Aceptaste la propuesta de ${newClub.name} y dejaste ${clubName(previousClubId)}. La carrera continúa desde la misma fecha y temporada. Se reiniciaron empleados, acciones de staff, préstamos y cooldowns vinculados al club anterior.${inheritedStateText}${specialResetText}`
+      : `Firmaste con ${newClub.name}. La partida continúa desde la misma temporada. Se reiniciaron empleados, acciones de staff, préstamos y cooldowns vinculados al club anterior.${inheritedStateText}${specialResetText}`;
+  pushGameMessage({ type:'directiva', priority:'high', title:acceptedTitle, body:acceptedBody, id:`new-job-${game.seasonNumber || 1}-${newClub.id}-${game.globalTurn || 0}` });
   saveLocal(true);
   renderAll();
   showNotice(`Contrato firmado con ${newClub.name}. La carrera continúa desde la misma partida. Revisá la táctica antes de avanzar.`);
@@ -2760,7 +2974,10 @@ function updateManagerMatchStats(match){
   game.managerStats.currentSeason = seasonTotals;
   updateManagerPrestigeFromWins();
   if(typeof updateTransferBudgetPerformanceUnlocks === 'function') updateTransferBudgetPerformanceUnlocks();
+  if(typeof processSponsorSpecialAfterOwnMatch === 'function') processSponsorSpecialAfterOwnMatch(match);
+  if(typeof managerChallengeAfterOwnMatch === 'function') managerChallengeAfterOwnMatch(match);
   if(currentGameIsFounderMode()) evaluateFounderGoals({ silent:false });
+  checkManagerAchievements({ silent:false });
   checkManagerObjectiveGameOver();
 }
 function divisionOrderList(){
@@ -2775,6 +2992,7 @@ function applyClubDivisionOverrides(overrides={}){
   const divisions = divisionOrderList();
   const byId = Object.fromEntries(divisions.map(d => [d.id, d]));
   seed.clubs.forEach(club => {
+    if(typeof isSpecialCompetitionOnlyClub === 'function' && isSpecialCompetitionOnlyClub(club)) return;
     const override = overrides[club.id];
     const currentDivision = byId[club.divisionId] || divisions.find(d => d.name === club.divisionName);
     let division = currentDivision || null;
@@ -2790,8 +3008,17 @@ function applyClubDivisionOverrides(overrides={}){
     setClubIntegrityDivision(club, division);
   });
 }
+function sanitizeClubDivisionOverrides(overrides={}){
+  if(!overrides || typeof overrides !== 'object' || Array.isArray(overrides)) return {};
+  return Object.fromEntries(Object.entries(overrides).filter(([clubId]) => {
+    const club = (seed?.clubs || []).find(item => Number(item.id) === Number(clubId));
+    return !(club && isSpecialCompetitionOnlyClub(club));
+  }));
+}
 function snapshotClubDivisionOverrides(){
-  return Object.fromEntries(seed.clubs.map(c => [c.id, { divisionId:c.divisionId || 'default', divisionName:c.divisionName || 'Liga única' }]));
+  return Object.fromEntries((seed.clubs || [])
+    .filter(club => !isSpecialCompetitionOnlyClub(club))
+    .map(club => [club.id, { divisionId:club.divisionId || 'default', divisionName:club.divisionName || 'Liga única' }]));
 }
 function playoffRoundMatchdayLabel(index){
   const regularCount = regularFixtureLength();
@@ -2806,10 +3033,29 @@ function isPromotionPlayoffMatch(match){
 function isPromotionPlayoffRound(round){
   return Boolean(round?.playoffRound || (round?.matches || []).some(isPromotionPlayoffMatch));
 }
+function isClubWorldCupRound(round){
+  return Boolean(round?.clubWorldCupRound || (round?.matches || []).some(match => match?.clubWorldCup));
+}
+function isNationalCupRound(round){
+  return Boolean(round?.nationalCupRound || (round?.matches || []).some(match => match?.nationalCup));
+}
+function isLibertadoresRound(round){
+  return Boolean(round?.libertadoresRound || (round?.matches || []).some(match => match?.libertadores));
+}
+function isChampionsLeagueRound(round){
+  return Boolean(round?.championsLeagueRound || (round?.matches || []).some(match => match?.championsLeague));
+}
+function isPostRegularRound(round){
+  return isPromotionPlayoffRound(round) || isClubWorldCupRound(round);
+}
+function isRegularLeagueRound(round){
+  return Boolean(round) && !isPromotionPlayoffRound(round) && !isClubWorldCupRound(round) && !isNationalCupRound(round) && !isLibertadoresRound(round) && !isChampionsLeagueRound(round);
+}
+function regularFixtureRounds(fixtures=game?.fixtures || []){
+  return (Array.isArray(fixtures) ? fixtures : []).filter(isRegularLeagueRound);
+}
 function regularFixtureLength(fixtures=game?.fixtures || []){
-  const list = Array.isArray(fixtures) ? fixtures : [];
-  const firstPlayoffIndex = list.findIndex(isPromotionPlayoffRound);
-  return firstPlayoffIndex >= 0 ? firstPlayoffIndex : list.length;
+  return regularFixtureRounds(fixtures).length;
 }
 function argentinaDivisions(){
   return divisionOrderList().filter(division => normalizeScheduleText(division.country || '') === 'argentina').sort((a,b)=>(a.order || 0)-(b.order || 0));
@@ -2904,28 +3150,62 @@ function playoffFixtureMatch(tie, leg, date, matchday){
     played:false
   };
 }
-function lastRegularFixtureDate(){
-  const regularCount = regularFixtureLength();
-  const regularRounds = (game?.fixtures || []).slice(0, regularCount);
+function lastRegularFixtureDate(state=game){
+  const fixtures = regularFixtureRounds(state?.fixtures || []);
   const dates = [];
-  regularRounds.forEach(round => {
+  fixtures.forEach(round => {
     if(validIsoDate(round?.endDate)) dates.push(round.endDate);
     if(validIsoDate(round?.date)) dates.push(round.date);
     (round?.matches || []).forEach(match => { if(validIsoDate(match.date)) dates.push(match.date); });
   });
-  if(!dates.length) return currentCalendarDate?.() || dateForSeasonState(game);
-  return dates.sort((a,b)=>daysBetweenIsoDates(a,b))[dates.length - 1];
+  if(!dates.length) return validIsoDate(state?.currentDate) ? state.currentDate : dateForSeasonState(state);
+  return dates.sort((a,b)=>daysBetweenIsoDates(b,a))[dates.length - 1];
+}
+function repairPromotionPlayoffScheduleForState(state){
+  if(!state || !Array.isArray(state.fixtures)) return false;
+  const playoffRounds = state.fixtures.filter(isPromotionPlayoffRound);
+  if(!playoffRounds.length) return false;
+  const playoffMatches = playoffRounds.flatMap(round => round.matches || []).filter(isPromotionPlayoffMatch);
+  if(!playoffMatches.length || playoffMatches.some(match => match.played)) return false;
+  const regularEndDate = lastRegularFixtureDate(state);
+  if(!validIsoDate(regularEndDate)) return false;
+  const expectedDates = {
+    IDA:addDaysToIsoDate(regularEndDate, 7),
+    VUELTA:addDaysToIsoDate(regularEndDate, 14)
+  };
+  let changed = false;
+  playoffRounds.forEach((round, index) => {
+    const stage = String(round?.playoffStage || round?.matches?.[0]?.playoffStage || (index === 0 ? 'IDA' : 'VUELTA')).toUpperCase();
+    const expectedDate = expectedDates[stage];
+    if(!validIsoDate(expectedDate)) return;
+    if(round.date !== expectedDate || round.startDate !== expectedDate || round.endDate !== expectedDate) changed = true;
+    round.date = expectedDate;
+    round.startDate = expectedDate;
+    round.endDate = expectedDate;
+    (round.matches || []).forEach(match => {
+      if(!isPromotionPlayoffMatch(match)) return;
+      if(match.date !== expectedDate || match.roundDate !== expectedDate) changed = true;
+      match.date = expectedDate;
+      match.roundDate = expectedDate;
+    });
+  });
+  if(state.argentinaPlayoffs?.created){
+    if(state.argentinaPlayoffs.firstLegDate !== expectedDates.IDA || state.argentinaPlayoffs.secondLegDate !== expectedDates.VUELTA) changed = true;
+    state.argentinaPlayoffs.firstLegDate = expectedDates.IDA;
+    state.argentinaPlayoffs.secondLegDate = expectedDates.VUELTA;
+  }
+  if(changed) state._needsAutosave = true;
+  return changed;
 }
 function regularFixturesComplete(){
-  const regularCount = regularFixtureLength();
-  return (game?.fixtures || []).slice(0, regularCount).every(round => (round.matches || []).every(match => match.played));
+  const rounds = regularFixtureRounds();
+  return rounds.length > 0 && rounds.every(round => (round.matches || []).every(match => match.played));
 }
 function createArgentinePromotionPlayoffsIfNeeded(){
   if(!game || game.seasonFinalized || !Array.isArray(game.fixtures)) return false;
   const season = Number(game.seasonNumber || 1);
   const regularCount = regularFixtureLength();
   if(game.fixtures.some(isPromotionPlayoffRound)) return false;
-  if(Number(game.matchdayIndex || 0) < regularCount) return false;
   if(game.argentinaPlayoffs?.season === season && game.argentinaPlayoffs?.created) return false;
   if(!regularFixturesComplete()) return false;
   const ties = buildArgentinePlayoffTies();
@@ -2959,6 +3239,8 @@ function createArgentinePromotionPlayoffsIfNeeded(){
     title:'Playoffs VUELTA',
     matches:secondLegMatches
   });
+  if(typeof sortFixturesAfterNationalCupChange === 'function') sortFixturesAfterNationalCupChange();
+  else repairFixtureCursorForState(game, { reason:'promotion_playoffs_created' });
   game.argentinaPlayoffs = { season, created:true, regularFixtureCount:regularCount, firstLegDate, secondLegDate, ties };
   pushGameMessage({
     type:'deportivo',
@@ -2967,1032 +3249,6 @@ function createArgentinePromotionPlayoffsIfNeeded(){
     body:'Terminó la liga argentina. Se agregaron Playoffs IDA y Playoffs VUELTA entre Primera/Segunda y Segunda/Tercera. Asciende quien haga más goles en el global; si empatan, cada club permanece en su liga actual.',
     id:`arg-playoffs-${season}`
   });
+
   return true;
 }
-function findPlayedMatchById(matchId){
-  const id = String(matchId || '');
-  for(const round of (game?.fixtures || [])){
-    const match = (round.matches || []).find(item => String(item.id) === id);
-    if(match?.played) return match;
-  }
-  return (game?.matchHistory || []).find(item => String(item.id) === id && item.played) || null;
-}
-function playoffTieResult(tie){
-  if(!tie?.matchIds?.length) return null;
-  const matches = tie.matchIds.map(findPlayedMatchById).filter(Boolean);
-  if(matches.length < tie.matchIds.length) return null;
-  const totals = { [tie.upperClubId]:0, [tie.lowerClubId]:0 };
-  matches.forEach(match => {
-    totals[match.homeId] = Number(totals[match.homeId] || 0) + Number(match.homeGoals || 0);
-    totals[match.awayId] = Number(totals[match.awayId] || 0) + Number(match.awayGoals || 0);
-  });
-  const upperGoals = Number(totals[tie.upperClubId] || 0);
-  const lowerGoals = Number(totals[tie.lowerClubId] || 0);
-  const winnerClubId = upperGoals === lowerGoals ? Number(tie.advantageClubId || tie.upperClubId) : (upperGoals > lowerGoals ? Number(tie.upperClubId) : Number(tie.lowerClubId));
-  const loserClubId = winnerClubId === Number(tie.upperClubId) ? Number(tie.lowerClubId) : Number(tie.upperClubId);
-  return { winnerClubId, loserClubId, upperGoals, lowerGoals, tied:upperGoals === lowerGoals };
-}
-function argentinaPlayoffTiesForSeason(){
-  const stored = game?.argentinaPlayoffs;
-  if(stored?.season === Number(game?.seasonNumber || 1) && Array.isArray(stored.ties)) return stored.ties;
-  return [];
-}
-function computeArgentinaSeasonMovements(){
-  const first = argentinaDivisionByOrder(1);
-  const second = argentinaDivisionByOrder(2);
-  const third = argentinaDivisionByOrder(3);
-  const movements = [];
-  if(first && second){
-    [1,2].forEach(position => {
-      const row = standingAtPosition(second.id, position);
-      if(row) addUniqueMovement(movements, movementRecord('promotion', row.clubId, second, first, position === 1 ? 'Campeón / ascenso directo' : 'Ascenso directo'));
-    });
-    [17,18].forEach(position => {
-      const row = standingAtPosition(first.id, position);
-      if(row) addUniqueMovement(movements, movementRecord('relegation', row.clubId, first, second, 'Descenso directo'));
-    });
-  }
-  if(second && third){
-    [1,2].forEach(position => {
-      const row = standingAtPosition(third.id, position);
-      if(row) addUniqueMovement(movements, movementRecord('promotion', row.clubId, third, second, position === 1 ? 'Campeón / ascenso directo' : 'Ascenso directo'));
-    });
-    [17,18].forEach(position => {
-      const row = standingAtPosition(second.id, position);
-      if(row) addUniqueMovement(movements, movementRecord('relegation', row.clubId, second, third, 'Descenso directo'));
-    });
-  }
-  argentinaPlayoffTiesForSeason().forEach(tie => {
-    const result = playoffTieResult(tie);
-    if(!result) return;
-    const upperDivision = (seed?.divisions || []).find(d => d.id === tie.upperDivisionId);
-    const lowerDivision = (seed?.divisions || []).find(d => d.id === tie.lowerDivisionId);
-    if(!upperDivision || !lowerDivision) return;
-    if(Number(result.winnerClubId) === Number(tie.lowerClubId)){
-      addUniqueMovement(movements, movementRecord('promotion', tie.lowerClubId, lowerDivision, upperDivision, 'Ganó playoff de promoción'));
-      addUniqueMovement(movements, movementRecord('relegation', tie.upperClubId, upperDivision, lowerDivision, 'Perdió playoff de promoción'));
-    }
-  });
-  return movements;
-}
-function divisionUsesArgentinaRules(division){
-  return normalizeScheduleText(division?.country || '') === 'argentina' && [1,2,3].includes(Number(division?.order || 0));
-}
-function divisionCountryGroupsForSeason(){
-  const groups = new Map();
-  (seed?.divisions || []).forEach(division => {
-    const country = divisionCountryKey(division);
-    if(!country) return;
-    if(!groups.has(country)) groups.set(country, []);
-    groups.get(country).push(division);
-  });
-  return Array.from(groups.entries()).map(([country, divisions]) => ({
-    country,
-    divisions:divisions.slice().sort((a,b)=>(a.order || 0)-(b.order || 0))
-  }));
-}
-function computeSeasonMovements(){
-  const movements = [];
-  let argentinaHandled = false;
-  divisionCountryGroupsForSeason().forEach(group => {
-    const isArgentinaGroup = group.country === 'argentina';
-    if(isArgentinaGroup){
-      if(!argentinaHandled && argentinaDivisions().length >= 3){
-        computeArgentinaSeasonMovements().forEach(move => addUniqueMovement(movements, move));
-      }
-      argentinaHandled = true;
-      return;
-    }
-    const divisions = group.divisions || [];
-    if(divisions.length < 2) return;
-    for(let i=1; i<divisions.length; i++){
-      const upper = divisions[i-1];
-      const lower = divisions[i];
-      if(divisionCountryKey(upper) !== divisionCountryKey(lower)) continue;
-      const lowerTable = sortedStandings(lower.id);
-      const upperTable = sortedStandings(upper.id);
-      const lowerChampion = lowerTable[0];
-      const upperLast = upperTable[upperTable.length - 1];
-      if(lowerChampion){
-        addUniqueMovement(movements, movementRecord('promotion', lowerChampion.clubId, lower, upper, 'Campeón'));
-      }
-      if(upperLast){
-        addUniqueMovement(movements, movementRecord('relegation', upperLast.clubId, upper, lower, 'Descenso'));
-      }
-    }
-  });
-  return movements;
-}
-function argentineStandingStatusClass(divisionId, index, total){
-  const division = (seed?.divisions || []).find(d => d.id === divisionId);
-  if(!divisionUsesArgentinaRules(division)) return '';
-  const position = Number(index || 0) + 1;
-  const order = Number(division.order || 0);
-  if(order === 1){
-    if(position === 1) return 'champion-row';
-    if(position >= 2 && position <= 4) return 'continental-row';
-    if(position >= 15 && position <= 16) return 'playoff-row';
-    if(position >= 17 && position <= 18) return 'relegation-row';
-  }
-  if(order === 2){
-    if(position >= 1 && position <= 2) return 'promotion-row';
-    if(position >= 3 && position <= 4) return 'playoff-row';
-    if(position >= 15 && position <= 16) return 'playoff-row';
-    if(position >= 17 && position <= 18) return 'relegation-row';
-  }
-  if(order === 3){
-    if(position >= 1 && position <= 2) return 'promotion-row';
-    if(position >= 3 && position <= 4) return 'playoff-row';
-  }
-  return '';
-}
-function decayTrainedSkillBoosts(){
-  if(!game?.playerSkillBoosts) return { players:0, lost:0, remaining:0 };
-  let players = 0;
-  let lost = 0;
-  let remaining = 0;
-  Object.entries(game.playerSkillBoosts).forEach(([playerId, boosts]) => {
-    if(!boosts || typeof boosts !== 'object') return;
-    let affected = false;
-    Object.keys(boosts).forEach(skill => {
-      const oldValue = Math.max(0, Math.round(Number(boosts[skill]) || 0));
-      if(oldValue <= 0){ delete boosts[skill]; return; }
-      const nextValue = Math.max(0, Math.round(oldValue * 0.30));
-      lost += Math.max(0, oldValue - nextValue);
-      remaining += nextValue;
-      affected = true;
-      if(nextValue > 0) boosts[skill] = nextValue;
-      else delete boosts[skill];
-    });
-    if(affected) players += 1;
-    if(Object.keys(boosts).length === 0) delete game.playerSkillBoosts[playerId];
-  });
-  return { players, lost, remaining };
-}
-function applySeasonalAging(){
-  if(!game) return 0;
-  let count = 0;
-  seed.players.forEach(player => {
-    player.age = Math.max(15, Number(player.age || 18) + 1);
-    count += 1;
-  });
-  return count;
-}
-
-function applySeasonSalaryAdjustments(){
-  if(!game?.playerStats || !seed?.players) return { players:0, increased:0, decreased:0, totalDelta:0, details:[] };
-  let players = 0;
-  let increased = 0;
-  let decreased = 0;
-  let totalDelta = 0;
-  const details = [];
-  seed.players.forEach(player => {
-    if(!player || Number(player.clubId || 0) <= 0 || player.sold) return;
-    const oldSalary = Math.max(0, Math.round(Number(player.salary || 0)));
-    if(oldSalary <= 0) return;
-    const played = Math.max(0, Math.round(Number(game.playerStats[player.id]?.played || 0)));
-    const pct = (played * SEASON_SALARY_MATCH_BONUS) - SEASON_SALARY_BASE_REDUCTION;
-    const nextSalary = Math.max(0, Math.round(oldSalary * (1 + pct)));
-    const delta = nextSalary - oldSalary;
-    player.salary = nextSalary;
-    refreshPlayerClause(player);
-    players += 1;
-    totalDelta += delta;
-    if(delta > 0) increased += 1;
-    if(delta < 0) decreased += 1;
-    if(Number(player.clubId) === Number(game.selectedClubId)){
-      details.push({ playerId:player.id, name:player.name, played, oldSalary, nextSalary, delta, pct });
-    }
-  });
-  return { players, increased, decreased, totalDelta, details };
-}
-function retireSeasonVeterans(){
-  if(!game || !seed?.players) return [];
-  const clubId = Number(game.selectedClubId);
-  const retirees = seed.players
-    .filter(player => !player.sold)
-    .filter(player => {
-      const age = Math.round(Number(player.age || 0));
-      const retirementAge = age >= RETIREMENT_MIN_AGE && age <= RETIREMENT_MAX_AGE;
-      if(!retirementAge) return false;
-      const ownPlayer = Number(player.clubId) === clubId && !player.freeAgent;
-      const freePlayer = Number(player.clubId || 0) === 0 || Boolean(player.freeAgent) || Boolean(player.youthFreeAgent);
-      return ownPlayer || freePlayer;
-    })
-    .map(player => ({ id:player.id, name:player.name, age:player.age, position:player.position, salary:player.salary || 0, freeAgent:Number(player.clubId || 0) === 0 || Boolean(player.freeAgent) || Boolean(player.youthFreeAgent) }));
-  if(!retirees.length) return [];
-  const retiredIds = new Set(retirees.map(p => Number(p.id)));
-  seed.players = seed.players.filter(player => !retiredIds.has(Number(player.id)));
-  game.marketPlayers = (game.marketPlayers || []).filter(player => !retiredIds.has(Number(player.id)));
-  retirees.forEach(player => {
-    removePlayerFromCurrentTactic(player.id);
-    delete game.playerCondition?.[player.id];
-    delete game.playerMorale?.[player.id];
-    delete game.playerSkillBoosts?.[player.id];
-    delete game.trainingPlan?.[player.id];
-    delete game.playerStats?.[player.id];
-    delete game.playerStatus?.[player.id];
-  });
-  const ownRetirees = retirees.filter(player => !player.freeAgent);
-  const freeRetirees = retirees.filter(player => player.freeAgent);
-  if(ownRetirees.length){
-    const names = ownRetirees.slice(0,5).map(p => `${p.name} (${p.age})`).join(', ');
-    pushGameMessage({
-      type:'plantel',
-      priority:'normal',
-      title:'Retiros al finalizar la temporada',
-      body:`${ownRetirees.length === 1 ? 'Un jugador informó' : `${ownRetirees.length} jugadores informaron`} su retiro del fútbol: ${names}${ownRetirees.length > 5 ? '...' : ''}`
-    });
-  }
-  if(freeRetirees.length){
-    pushGameMessage({
-      type:'mercado',
-      priority:'normal',
-      title:'Retiros en el mercado libre',
-      body:`${freeRetirees.length} jugadores libres se retiraron al finalizar la temporada.`
-    });
-  }
-  return retirees;
-}
-function nextPlayerId(){
-  const ids = [0]
-    .concat((seed?.players || []).map(p => Number(p.id) || 0))
-    .concat((game?.marketPlayers || []).map(p => Number(p.id) || 0));
-  return Math.max(...ids) + 1;
-}
-function currentFreeMarketPlayers(){
-  return (game?.marketPlayers || []).filter(player => player && Number(player.clubId || 0) === 0 && !player.sold);
-}
-function removeFreeMarketPlayersById(ids=[]){
-  const remove = new Set((ids || []).map(Number));
-  if(!remove.size) return [];
-  const removed = currentFreeMarketPlayers().filter(player => remove.has(Number(player.id)));
-  game.marketPlayers = (game.marketPlayers || []).filter(player => !remove.has(Number(player.id)));
-  if(seed?.players){
-    seed.players = seed.players.filter(player => {
-      if(!remove.has(Number(player.id))) return true;
-      return !(Number(player.clubId || 0) === 0 && player.freeAgent);
-    });
-  }
-  removed.forEach(player => {
-    delete game.playerCondition?.[player.id];
-    delete game.playerMorale?.[player.id];
-    delete game.playerSkillBoosts?.[player.id];
-    delete game.trainingPlan?.[player.id];
-    delete game.playerStats?.[player.id];
-    delete game.playerStatus?.[player.id];
-  });
-  return removed;
-}
-
-function freeAgentPrunePriority(player){
-  const media = typeof visibleOverall === 'function' ? visibleOverall(player) : Number(player.overall || player.media || 50);
-  const age = Number(player.age || 0);
-  let score = 0;
-  if(player.youthFreeAgent) score += 900;
-  if(player.founderReleased) score += 250;
-  score += Math.max(0, age - 27) * 18;
-  score += Math.max(0, 60 - media) * 4;
-  score += Number(player.id || 0) / 1000000;
-  return score;
-}
-function pruneFreeAgentMarketArrayToHardMax(players=[], maxCount=MARKET_FREE_AGENT_HARD_MAX){
-  const safeMax = Math.max(0, Math.min(300, Math.round(Number(maxCount) || 0)));
-  if(!Array.isArray(players) || safeMax <= 0) return [];
-  const free = players.filter(player => player && Number(player.clubId || 0) === 0 && !player.sold && !player.retired);
-  const excess = free.length - safeMax;
-  if(excess <= 0) return players;
-  const remove = new Set(free.slice().sort((a,b) => freeAgentPrunePriority(b) - freeAgentPrunePriority(a)).slice(0, excess).map(player => Number(player.id)));
-  return players.filter(player => !remove.has(Number(player.id)));
-}
-function syncSeedFreeAgentCleanup(activeMarketPlayers=[]){
-  if(!seed?.players || !Array.isArray(activeMarketPlayers)) return;
-  const activeMarketIds = new Set(activeMarketPlayers.map(player => Number(player.id)));
-  seed.players = seed.players.filter(player => {
-    if(!player || Number(player.clubId || 0) !== 0 || !player.freeAgent) return true;
-    return activeMarketIds.has(Number(player.id));
-  });
-}
-function pruneFreeAgentMarketToMax(maxCount=SEASON_FREE_AGENT_MARKET_MAX){
-  if(!game || !SEASON_FREE_AGENT_CLEANUP_ENABLED || !Number.isFinite(Number(maxCount)) || Number(maxCount) <= 0) return [];
-  const safeMax = Math.max(0, Math.min(300, Math.round(Number(maxCount) || 0)));
-  const freePlayers = currentFreeMarketPlayers();
-  const excess = freePlayers.length - safeMax;
-  if(excess <= 0) return [];
-  const candidates = freePlayers.slice().sort((a,b) => freeAgentPrunePriority(b) - freeAgentPrunePriority(a));
-  return removeFreeMarketPlayersById(candidates.slice(0, excess).map(player => player.id));
-}
-function initializeFreePlayerState(players=[]){
-  if(!game) return;
-  game.playerCondition = game.playerCondition || {};
-  game.playerMorale = game.playerMorale || {};
-  game.playerSkillBoosts = game.playerSkillBoosts || {};
-  game.trainingPlan = game.trainingPlan || {};
-  game.playerStats = game.playerStats || {};
-  players.forEach(p => {
-    game.playerCondition[p.id] = 5;
-    game.playerMorale[p.id] = 5;
-    game.playerSkillBoosts[p.id] = game.playerSkillBoosts[p.id] || {};
-    game.trainingPlan[p.id] = safeIndividualTrainingType(game.trainingPlan[p.id]);
-    game.playerStats[p.id] = game.playerStats[p.id] || createEmptyPlayerStat(p);
-    normalizePlayerStatRecord(game.playerStats[p.id]);
-  });
-}
-function generateSeasonYouthFreeAgents(count=SEASON_YOUTH_FREE_AGENT_COUNT){
-  const totalCount = Math.max(0, Math.round(Number(count) || 0));
-  const activePlayers = (seed?.players || []).filter(player => player && !player.retired && !player.sold && Number(player.clubId || 0) >= 0);
-  const generationContext = createPlayerGenerationContext(activePlayers.length + totalCount, activePlayers);
-  const players = [];
-  let id = nextPlayerId();
-  const season = Number(game?.seasonNumber || 1);
-  for(let i=0;i<totalCount;i++, id++){
-    const group = pickPositionGroupForGeneration(id, `season-youth-${season}`, generationContext);
-    const position = pickPositionFromGroup(group, id, `season-youth-${season}`);
-    const club = seed?.clubs?.length ? seed.clubs[i % seed.clubs.length] : null;
-    const division = club ? clubDivision(club.id) : null;
-    const ageSpan = Math.max(1, SEASON_YOUTH_FREE_AGENT_AGE_MAX - SEASON_YOUTH_FREE_AGENT_AGE_MIN + 1);
-    const player = generatedPlayerFactory({
-      id,
-      position,
-      clubId:0,
-      age:SEASON_YOUTH_FREE_AGENT_AGE_MIN + hashNumber(`season-youth-age-${season}-${id}`, ageSpan),
-      prestige:50,
-      nameContext:`Juveniles libres ${season}`,
-      divisionName:division?.name || 'Juveniles libres',
-      divisionOrder:division?.order || null,
-      generationContext,
-      salaryFactor:FREE_YOUTH_SALARY_FACTOR,
-      freeAgent:true,
-      youthFreeAgent:true,
-      nationalityOverride:freeAgentNationalityForIndex(i, `season-youth-${season}`),
-      localCountry:club ? clubCountry(club) : null
-    });
-    player.originClubId = club?.id || 0;
-    players.push(player);
-  }
-  return players;
-}
-function generateSeasonYouthFreeAgentsByClub(perClub=SEASON_YOUTH_FREE_AGENTS_PER_CLUB){
-  const clubs = (seed?.clubs || []).filter(club => Number(club.id || 0) > 0);
-  const available = Math.max(0, MARKET_FREE_AGENT_HARD_MAX - currentFreeMarketPlayers().length);
-  const total = Math.min(available, Math.max(0, Math.round(Number(perClub || 0))) * clubs.length);
-  if(total <= 0) return [];
-  return generateSeasonYouthFreeAgents(total);
-}
-function addSeasonYouthFreeAgents(count=SEASON_YOUTH_FREE_AGENT_COUNT){
-  if(!game) return [];
-  const newPlayers = generateSeasonYouthFreeAgents(count);
-  game.marketPlayers = (game.marketPlayers || []).concat(newPlayers);
-  mergeMarketPlayersIntoSeed(newPlayers);
-  initializeFreePlayerState(newPlayers);
-  if(newPlayers.length){
-    pushGameMessage({ type:'mercado', title:'Nuevos juveniles libres', body:`Aparecieron ${newPlayers.length} jóvenes libres de ${SEASON_YOUTH_FREE_AGENT_AGE_MIN} a ${SEASON_YOUTH_FREE_AGENT_AGE_MAX} años en el mercado.`, priority:'normal' });
-  }
-  return newPlayers;
-}
-function topUpSeasonFreeAgentsToMax(maxCount=SEASON_FREE_AGENT_MARKET_MAX){
-  if(!game || !SEASON_FREE_AGENT_TOP_UP_ENABLED || !Number.isFinite(Number(maxCount)) || Number(maxCount) <= 0) return [];
-  const target = Math.min(MARKET_FREE_AGENT_HARD_MAX, Math.round(Number(maxCount)));
-  const needed = Math.max(0, target - currentFreeMarketPlayers().length);
-  if(needed <= 0) return [];
-  const newPlayers = generateMarketPlayers(needed, { startId:nextPlayerId(), label:`season-market-${game.seasonNumber || 1}`, nameContext:'Mercado Libre' });
-  game.marketPlayers = (game.marketPlayers || []).concat(newPlayers);
-  mergeMarketPlayersIntoSeed(newPlayers);
-  initializeFreePlayerState(newPlayers);
-  return newPlayers;
-}
-function renewFreeAgentMarketForSeason(retiredCount=0){
-  if(!game) return { removed:[], youth:[], regular:[] };
-  pruneFreeAgentMarketToMax(MARKET_FREE_AGENT_HARD_MAX);
-  const youth = generateSeasonYouthFreeAgentsByClub(SEASON_YOUTH_FREE_AGENTS_PER_CLUB);
-  game.marketPlayers = (game.marketPlayers || []).concat(youth);
-  mergeMarketPlayersIntoSeed(youth);
-  initializeFreePlayerState(youth);
-  pruneFreeAgentMarketToMax(MARKET_FREE_AGENT_HARD_MAX);
-  const regular = topUpSeasonFreeAgentsToMax(SEASON_FREE_AGENT_MARKET_MAX);
-  const finalPruned = pruneFreeAgentMarketToMax(MARKET_FREE_AGENT_HARD_MAX);
-  const legacyExtra = retiredCount > 0 && SEASON_YOUTH_FREE_AGENT_COUNT > 0 ? addSeasonYouthFreeAgents(Math.max(SEASON_YOUTH_FREE_AGENT_COUNT, retiredCount)) : [];
-  if(legacyExtra.length) pruneFreeAgentMarketToMax(MARKET_FREE_AGENT_HARD_MAX);
-  const totalYouth = youth.length + legacyExtra.length;
-  const totalRegular = regular.length;
-  if(totalYouth || totalRegular || finalPruned.length){
-    pushGameMessage({
-      type:'mercado',
-      title:'Mercado libre renovado',
-      body:`Se incorporaron ${totalYouth} jóvenes y ${totalRegular} jugadores libres al mercado.`,
-      priority:'normal'
-    });
-  }
-  return { removed:finalPruned, youth:youth.concat(legacyExtra), regular };
-}
-function clubSeasonPrestigeDeltaByPosition(position){
-  const pos = Math.max(1, Math.round(Number(position || 0)));
-  if(pos >= 1 && pos <= 5) return 2;
-  if(pos >= 6 && pos <= 10) return 1;
-  if(pos >= 11 && pos <= 15) return -1;
-  if(pos >= 16 && pos <= 20) return -2;
-  return 0;
-}
-function updateClubPrestigeAfterSeason(){
-  if(!game || !seed?.clubs) return [];
-  const changes = [];
-  divisionOrderList().forEach(division => {
-    const multiplier = Math.max(1, Math.round(Number(division.order || 1)));
-    sortedStandings(division.id).forEach((row, index) => {
-      const club = seed.clubs.find(c => Number(c.id) === Number(row.clubId));
-      if(!club) return;
-      const position = index + 1;
-      const rawDelta = clubSeasonPrestigeDeltaByPosition(position);
-      const delta = rawDelta * multiplier;
-      if(delta === 0) return;
-      const oldValue = clubPrestigeValue(club);
-      const next = clamp(oldValue + delta, 1, 99);
-      club.reputation = next;
-      club.managerPrestige = next;
-      changes.push({ clubId:club.id, clubName:club.name, divisionId:division.id, divisionName:division.name, position, oldValue, next, delta:next-oldValue });
-    });
-  });
-  return changes;
-}
-function finalizeSeasonIfNeeded(){
-  if(!game || game.seasonFinalized || game.matchdayIndex < game.fixtures.length) return;
-  repairCrossCountryClubAssignments({ restoreNativeIfNeeded:false });
-  game.clubDivisionOverrides = snapshotClubDivisionOverrides();
-  game.managerStats = normalizeManagerStats(game.managerStats);
-  const division = clubDivision(game.selectedClubId);
-  const table = sortedStandings(division.id);
-  const index = table.findIndex(row => row.clubId === game.selectedClubId);
-  const row = table[index] || game.standings[game.selectedClubId] || {};
-  const position = index >= 0 ? index + 1 : null;
-  const champion = position === 1;
-  const movementsPreview = computeSeasonMovements();
-  const totalTeams = table.length || 0;
-  const relegatedOrLast = Boolean(movementsPreview.some(move => move.type === 'relegation' && Number(move.clubId) === Number(game.selectedClubId)) || (position && totalTeams && position === totalTeams));
-  const record = {
-    season:game.seasonNumber || 1,
-    clubId:game.selectedClubId,
-    clubName:clubName(game.selectedClubId),
-    divisionId:division.id,
-    divisionName:division.name,
-    divisionOrder:division.order || divisionOrderFromName(division.name),
-    position,
-    label:champion ? 'Campeón' : (position ? `${position}°` : '—'),
-    pts:row.pts || 0,
-    pg:row.pg || 0,
-    pe:row.pe || 0,
-    pp:row.pp || 0,
-    gf:row.gf || 0,
-    gc:row.gc || 0,
-    title:champion,
-    managerPrestigeChampionReward: champion ? championPrestigeRewardByDivisionOrder(division.order || divisionOrderFromName(division.name)) : 0,
-    managerPrestigeBadSeasonPenalty: relegatedOrLast ? badSeasonPrestigePenaltyByDivisionOrder(division.order || divisionOrderFromName(division.name)) : 0
-  };
-  if(!game.managerStats.seasons.some(s => s.season === record.season)){
-    const objective = managerObjectiveForClubDivision(game.selectedClubId);
-    const seasonPpg = ppgFromTotals(game.managerStats.currentSeason || record);
-    record.objectivePpg = objective;
-    record.objectiveAchieved = !currentGameIsFounderMode() && Number.isFinite(Number(objective)) && seasonPpg >= Number(objective);
-    record.ppg = seasonPpg;
-    game.managerStats.seasons.push(record);
-    if(champion) game.managerStats.titles += 1;
-    game.managerStats = normalizeManagerStats(game.managerStats);
-    if(record.objectiveAchieved && MANAGER_PRESTIGE_OBJECTIVE_REWARD > 0){
-      const awardKey = `${record.season}-${record.clubId}`;
-      if(!game.managerStats.objectivePrestigeAwards.includes(awardKey)){
-        game.managerStats.objectivePrestigeAwards.push(awardKey);
-        pushGameMessage({ type:'directiva', priority:'normal', title:'Objetivo cumplido', body:`Objetivo cumplido con ${record.clubName}. Suma ${MANAGER_PRESTIGE_OBJECTIVE_REWARD} puntos de prestigio de manager.`, id:`objective-prestige-${record.season}-${record.clubId}` });
-      }
-    }
-  }
-  if(champion){
-    pushGameMessage({ type:'deportivo', priority:'high', title:'Has salido campeón', body:`Felicitaciones: ${clubName(game.selectedClubId)} salió campeón de ${division.name}. Suma ${record.managerPrestigeChampionReward} puntos de prestigio de manager.`, id:`champion-${game.seasonNumber || 1}-${game.selectedClubId}` });
-    if(typeof awardSpecialChampionPoints === 'function') awardSpecialChampionPoints(division);
-  }
-  if(record.managerPrestigeBadSeasonPenalty > 0){
-    pushGameMessage({ type:'directiva', priority:'high', title:'Prestigio de manager reducido', body:`Descender o terminar último resta ${record.managerPrestigeBadSeasonPenalty} puntos de prestigio de manager.`, id:`bad-season-prestige-${game.seasonNumber || 1}-${game.selectedClubId}` });
-  }
-  snapshotStandingsHistoryForCurrentSeason();
-  const prestigeChanges = updateClubPrestigeAfterSeason();
-  const movements = movementsPreview;
-  const promoted = movements.some(move => move.type === 'promotion' && Number(move.clubId) === Number(game.selectedClubId));
-  if(currentGameIsFounderMode() && promoted){
-    ensureFounderGoalsState();
-    game.founderGoals.promotions = Math.max(0, Math.round(Number(game.founderGoals.promotions || 0))) + 1;
-  }
-  if(typeof queueNextSeasonTransferBudgetUnlock === 'function'){
-    if(promoted) queueNextSeasonTransferBudgetUnlock('promotion', transferBudgetConfig().unlockPromotion, 'Ascenso');
-    if(champion) queueNextSeasonTransferBudgetUnlock('champion', transferBudgetConfig().unlockChampion, 'Campeón');
-  }
-  const salariesPaid = paySeasonSalaries();
-  const salaryAdjustments = applySeasonSalaryAdjustments();
-  const retirements = retireSeasonVeterans();
-  const trainingDecay = decayTrainedSkillBoosts();
-  game.seasonTransition = {
-    season:game.seasonNumber || 1,
-    userRecord:record,
-    movements,
-    salariesPaid,
-    salaryAdjustments,
-    retirements,
-    trainingDecay,
-    prestigeChanges,
-    agingApplied: true
-  };
-  game.seasonFinalized = true;
-  game.seasonPhase = 'finalized';
-  game.seasonEndModalShown = false;
-  queueAutomaticRankingSubmission('season_end');
-}
-function applySeasonMovements(){
-  const movements = game?.seasonTransition?.movements || [];
-  const divisions = divisionOrderList();
-  const byId = Object.fromEntries(divisions.map(d => [d.id, d]));
-  movements.forEach(move => {
-    const club = seed.clubs.find(c => Number(c.id) === Number(move.clubId));
-    const from = byId[move.fromDivisionId];
-    const target = byId[move.toDivisionId];
-    if(!club || !target) return;
-    const clubCountry = clubCountryKeyForIntegrity(club);
-    const targetCountry = divisionCountryKey(target);
-    const fromCountry = from ? divisionCountryKey(from) : clubCountry;
-    if(clubCountry && targetCountry && clubCountry !== targetCountry) return;
-    if(from && fromCountry && targetCountry && fromCountry !== targetCountry) return;
-    setClubIntegrityDivision(club, target);
-  });
-  repairCrossCountryClubAssignments({ restoreNativeIfNeeded:false });
-  game.clubDivisionOverrides = snapshotClubDivisionOverrides();
-}
-
-function statusObjectIsEmpty(status){
-  return !status || Object.keys(status).length === 0;
-}
-function removeInjuryFieldsFromStatus(status){
-  const clean = { ...(status || {}) };
-  delete clean.injuredThrough;
-  delete clean.injuryLabel;
-  delete clean.injuryChance;
-  delete clean.injuredAtMatchday;
-  delete clean.carriedFromPreviousSeason;
-  delete clean.carriedFromSeason;
-  delete clean.rebasedForSeason;
-  return clean;
-}
-function removeSuspensionFieldsFromStatus(status){
-  const clean = { ...(status || {}) };
-  delete clean.suspendedThrough;
-  return clean;
-}
-function rebaseAvailabilityStatusesForSeasonStart(statuses={}, previousMatchdayIndex=0, injuryRecoveryTurns=0, meta={}){
-  const safePreviousIndex = Math.max(0, Math.round(Number(previousMatchdayIndex) || 0));
-  const safeRecovery = Math.max(0, Math.round(Number(injuryRecoveryTurns) || 0));
-  const nextStatuses = {};
-  const summary = {
-    changed:false,
-    injuriesCleared:0,
-    injuriesCarried:0,
-    suspensionsCleared:0,
-    suspensionsCarried:0
-  };
-  Object.entries(statuses || {}).forEach(([playerId, rawStatus]) => {
-    let status = { ...(rawStatus || {}) };
-    const injuryThrough = Number(status.injuredThrough);
-    if(Number.isFinite(injuryThrough)){
-      const remainingTurns = Math.max(0, Math.round(injuryThrough) - safePreviousIndex + 1);
-      const remainingAfterRecovery = Math.max(0, remainingTurns - safeRecovery);
-      summary.changed = true;
-      if(remainingAfterRecovery <= 0){
-        status = removeInjuryFieldsFromStatus(status);
-        summary.injuriesCleared += 1;
-      } else {
-        status.injuredThrough = remainingAfterRecovery - 1;
-        status.injuredAtMatchday = 0;
-        status.carriedFromPreviousSeason = true;
-        status.carriedFromSeason = meta.previousSeason || status.carriedFromSeason || null;
-        status.rebasedForSeason = meta.nextSeason || null;
-        summary.injuriesCarried += 1;
-      }
-    }
-    const suspendedThrough = Number(status.suspendedThrough);
-    if(Number.isFinite(suspendedThrough)){
-      const remainingSuspension = Math.max(0, Math.round(suspendedThrough) - safePreviousIndex + 1);
-      summary.changed = true;
-      if(remainingSuspension <= 0){
-        status = removeSuspensionFieldsFromStatus(status);
-        summary.suspensionsCleared += 1;
-      } else {
-        status.suspendedThrough = remainingSuspension - 1;
-        summary.suspensionsCarried += 1;
-      }
-    }
-    if(!statusObjectIsEmpty(status)) nextStatuses[playerId] = status;
-  });
-  return { statuses:nextStatuses, summary };
-}
-function reduceInjuryDurationsByTurns(turns=1){
-  if(!game?.playerStatus) return { changed:false, cleared:0, reduced:0 };
-  const amount = Math.max(0, Math.round(Number(turns) || 0));
-  if(amount <= 0) return { changed:false, cleared:0, reduced:0 };
-  const result = { changed:false, cleared:0, reduced:0 };
-  Object.entries(game.playerStatus || {}).forEach(([playerId, rawStatus]) => {
-    let status = { ...(rawStatus || {}) };
-    const injuryThrough = Number(status.injuredThrough);
-    if(!Number.isFinite(injuryThrough)) return;
-    const nextThrough = Math.round(injuryThrough) - amount;
-    result.changed = true;
-    if(nextThrough < Number(game.matchdayIndex || 0)){
-      status = removeInjuryFieldsFromStatus(status);
-      result.cleared += 1;
-    } else {
-      status.injuredThrough = nextThrough;
-      result.reduced += 1;
-    }
-    if(statusObjectIsEmpty(status)) delete game.playerStatus[playerId];
-    else game.playerStatus[playerId] = status;
-  });
-  return result;
-}
-function registerInjuryRecoveryTurn(phase='recovery'){
-  if(!game) return;
-  game.injuryRecoveryTurnsBySeason = game.injuryRecoveryTurnsBySeason || {};
-  const key = `${game.seasonNumber || 1}:${phase}`;
-  game.injuryRecoveryTurnsBySeason[key] = Math.max(0, Math.round(Number(game.injuryRecoveryTurnsBySeason[key] || 0))) + 1;
-}
-function injuryRecoveryTurnsRegistered(seasonNumber=game?.seasonNumber || 1, phase='postseason'){
-  const key = `${seasonNumber || 1}:${phase}`;
-  return Math.max(0, Math.round(Number(game?.injuryRecoveryTurnsBySeason?.[key] || 0)));
-}
-function applySeasonStartAvailabilityRebase(previousMatchdayIndex, extraInjuryRecoveryTurns=0){
-  if(!game) return { changed:false };
-  game.playerStatus = game.playerStatus || {};
-  const nextSeason = (game.seasonNumber || 1) + 1;
-  const rebaseKey = `season-${nextSeason}`;
-  game.statusRebases = game.statusRebases || {};
-  if(game.statusRebases[rebaseKey]) return { changed:false, skipped:true };
-  const result = rebaseAvailabilityStatusesForSeasonStart(game.playerStatus, previousMatchdayIndex, extraInjuryRecoveryTurns, { previousSeason:game.seasonNumber || 1, nextSeason });
-  game.playerStatus = result.statuses;
-  game.statusRebases[rebaseKey] = {
-    previousSeason:game.seasonNumber || 1,
-    nextSeason,
-    previousMatchdayIndex:Math.max(0, Math.round(Number(previousMatchdayIndex) || 0)),
-    extraInjuryRecoveryTurns:Math.max(0, Math.round(Number(extraInjuryRecoveryTurns) || 0)),
-    ...result.summary
-  };
-  if(result.summary.changed){
-    const cleared = result.summary.injuriesCleared;
-    const carried = result.summary.injuriesCarried;
-    pushGameMessage({
-      type:'medico',
-      priority:'normal',
-      title:'Parte médico de inicio de temporada',
-      body:`Se recalcularon las lesiones pendientes al cambiar de temporada. Recuperados: ${cleared}. Siguen en recuperación: ${carried}.`
-    });
-  }
-  return { changed:result.summary.changed, ...result.summary };
-}
-function repairLegacySeasonStartAvailability(normalized){
-  if(!normalized || normalized.seasonPhase !== 'preseason' || Number(normalized.matchdayIndex || 0) !== 0) return normalized;
-  normalized.statusRebases = normalized.statusRebases || {};
-  const key = `legacy-season-start-${normalized.seasonNumber || 1}`;
-  if(normalized.statusRebases[key]) return normalized;
-  const statuses = normalized.playerStatus || {};
-  const hasLegacyCarry = Object.values(statuses).some(status => {
-    const injuredThrough = Number(status?.injuredThrough);
-    const injuredAt = Number(status?.injuredAtMatchday);
-    const suspendedThrough = Number(status?.suspendedThrough);
-    return (Number.isFinite(injuredThrough) && Number.isFinite(injuredAt) && injuredAt > 0 && injuredThrough > 0)
-      || (Number.isFinite(suspendedThrough) && suspendedThrough > 5);
-  });
-  if(!hasLegacyCarry) return normalized;
-  const previousFixtureCount = Math.max(0, Array.isArray(normalized.fixtures) ? normalized.fixtures.length : currentSeasonFixtureCount());
-  const previousSeason = Math.max(1, Math.round(Number(normalized.seasonNumber || 1)) - 1);
-  const postseasonRecovery = postseasonTurnsForSeason(previousSeason, previousFixtureCount);
-  const result = rebaseAvailabilityStatusesForSeasonStart(statuses, previousFixtureCount, postseasonRecovery, { previousSeason, nextSeason:normalized.seasonNumber || 1 });
-  normalized.playerStatus = result.statuses;
-  normalized.statusRebases[key] = {
-    previousSeason,
-    nextSeason:normalized.seasonNumber || 1,
-    previousMatchdayIndex:previousFixtureCount,
-    extraInjuryRecoveryTurns:postseasonRecovery,
-    legacyRepair:true,
-    ...result.summary
-  };
-  if(result.summary.changed){
-    normalized._needsAutosave = true;
-    normalized.messages = Array.isArray(normalized.messages) ? normalized.messages : [];
-    normalized.messages.unshift({
-      id:`legacy-medical-repair-${normalized.seasonNumber || 1}-${Date.now()}`,
-      turn:0,
-      season:normalized.seasonNumber || 1,
-      date:normalized.currentDate || '',
-      read:false,
-      priority:'normal',
-      type:'medico',
-      title:'Parte médico corregido',
-      body:`Se corrigió el arrastre de lesiones al inicio de temporada. Recuperados: ${result.summary.injuriesCleared}. Siguen en recuperación: ${result.summary.injuriesCarried}.`,
-      action:null,
-      createdAt:Date.now()
-    });
-  }
-  return normalized;
-}
-
-
-function botBalanceDifficultyProfile(){
-  if(BOT_BALANCE_DIFFICULTY === 'dificil' || BOT_BALANCE_DIFFICULTY === 'difícil') return { morale:4, condition:3, cohesion:5, development:1.35, label:'difícil' };
-  if(BOT_BALANCE_DIFFICULTY === 'suave' || BOT_BALANCE_DIFFICULTY === 'facil' || BOT_BALANCE_DIFFICULTY === 'fácil') return { morale:-4, condition:-3, cohesion:-6, development:0.75, label:'suave' };
-  return { morale:0, condition:0, cohesion:0, development:1, label:'normal' };
-}
-function botBalanceRandomOffset(seedValue, spread){
-  const cleanSpread = Math.max(0, Math.round(Number(spread || 0)));
-  if(cleanSpread <= 0) return 0;
-  return hashNumber(seedValue, cleanSpread * 2 + 1) - cleanSpread;
-}
-function botBalanceManagedDivisionId(selectedClubId=game?.selectedClubId){
-  return seed?.clubs?.find(c => Number(c.id) === Number(selectedClubId))?.divisionId || 'default';
-}
-function botBalanceClubIds(selectedClubId=game?.selectedClubId){
-  const ownId = Number(selectedClubId || game?.selectedClubId || 0);
-  const divisionId = botBalanceManagedDivisionId(ownId);
-  return (seed?.clubs || [])
-    .filter(club => Number(club.id) !== ownId)
-    .filter(club => !BOT_BALANCE_ONLY_MANAGER_DIVISION || (club.divisionId || 'default') === divisionId)
-    .map(club => Number(club.id));
-}
-function botBalanceReference(selectedClubId=game?.selectedClubId){
-  const ownSquad = playersByClub(Number(selectedClubId || game?.selectedClubId || 0));
-  return {
-    morale: Math.round(avg(ownSquad.map(p => currentMorale(p.id))) || PLAYER_MORALE_START),
-    condition: Math.round(avg(ownSquad.map(p => currentCondition(p.id))) || 85),
-    cohesion: cohesionValue(Number(selectedClubId || game?.selectedClubId || 0)) || TEAM_COHESION_START
-  };
-}
-function botBalanceRankMap(){
-  const map = {};
-  if(typeof sortedStandings !== 'function') return map;
-  (divisionOrderList() || []).forEach(division => {
-    const table = sortedStandings(division.id) || [];
-    const total = Math.max(1, table.length);
-    table.forEach((row, index) => {
-      const normalized = total <= 1 ? 0 : ((total - 1 - index) / (total - 1));
-      const bonus = Math.round(((normalized - 0.5) * 2) * BOT_BALANCE_POSITION_BONUS_MAX);
-      map[Number(row.clubId)] = {
-        rank:index + 1,
-        total,
-        bonus,
-        divisionId:division.id
-      };
-    });
-  });
-  return map;
-}
-function botBalancePositionBonus(clubId, rankMap={}){
-  return Math.round(Number(rankMap?.[Number(clubId)]?.bonus || 0));
-}
-function botBalanceTargetValue(kind, referenceValue, clubId, rankMap={}, purpose='season_start'){
-  const profile = botBalanceDifficultyProfile();
-  const spread = kind === 'condition' ? BOT_BALANCE_CONDITION_SPREAD : kind === 'cohesion' ? BOT_BALANCE_COHESION_SPREAD : BOT_BALANCE_MORALE_SPREAD;
-  const floor = kind === 'condition' ? BOT_BALANCE_CONDITION_FLOOR : kind === 'cohesion' ? BOT_BALANCE_COHESION_FLOOR : BOT_BALANCE_MORALE_FLOOR;
-  const max = kind === 'cohesion' ? 100 : 99;
-  const profileOffset = Number(profile[kind] || 0);
-  const positionBonus = botBalancePositionBonus(clubId, rankMap);
-  const positionFactor = purpose === 'maintenance' ? 0.45 : 0.75;
-  const random = botBalanceRandomOffset(`bot-balance-${purpose}-${game?.seasonNumber || 1}-${clubId}-${kind}`, spread);
-  return clamp(Math.round(Number(referenceValue || 0) + profileOffset + random + (positionBonus * positionFactor)), floor, max);
-}
-function botBalanceSkillPool(player){
-  if(typeof trainableSkillsForPlayer === 'function') return trainableSkillsForPlayer(player);
-  if(player.position === 'POR') return ['porteria','posicionamiento','serenidad','paseLargo','liderazgo','resistencia'];
-  if(['LD','LI','DFC'].includes(player.position)) return ['marca','entradas','posicionamiento','fuerza','cabezazo','resistencia','trabajoEquipo'];
-  if(['MCD','MC','MCO'].includes(player.position)) return ['paseCorto','paseLargo','vision','tecnica','trabajoEquipo','posicionamiento','resistencia'];
-  return ['remate','regate','posicionamiento','serenidad','cabezazo','fuerza','resistencia','tecnica'];
-}
-function applyBotSeasonDevelopment(clubIds, rankMap={}){
-  if(!BOT_BALANCE_ENABLED || BOT_BALANCE_DEVELOPMENT_CHANCE <= 0) return { players:0, gains:0 };
-  game.playerSkillBoosts = game.playerSkillBoosts || {};
-  const profile = botBalanceDifficultyProfile();
-  let players = 0;
-  let gains = 0;
-  (clubIds || []).forEach(clubId => {
-    const positionBonus = botBalancePositionBonus(clubId, rankMap);
-    const positionScale = BOT_BALANCE_POSITION_BONUS_MAX > 0 ? (positionBonus / BOT_BALANCE_POSITION_BONUS_MAX) : 0;
-    const squad = playersByClub(clubId)
-      .filter(player => !player.freeAgent && !player.retired)
-      .sort((a,b)=> visibleOverall(b) - visibleOverall(a))
-      .slice(0, Math.max(18, Math.min(28, playersByClub(clubId).length)));
-    squad.forEach(player => {
-      const youngBonus = Number(player.age || 0) <= 23 ? 0.05 : 0;
-      const chance = clamp((BOT_BALANCE_DEVELOPMENT_CHANCE + (positionScale * BOT_BALANCE_POSITION_DEVELOPMENT_BONUS) + youngBonus) * profile.development, 0, 0.80);
-      const roll = hashNumber(`bot-development-${game?.seasonNumber || 1}-${clubId}-${player.id}`, 10000) / 10000;
-      if(roll >= chance) return;
-      const gainCount = 1 + (roll < chance * 0.18 ? 1 : 0);
-      const skills = botBalanceSkillPool(player).filter(skill => Number.isFinite(baseSkill(player, skill)) && baseSkill(player, skill) < 98);
-      if(!skills.length) return;
-      if(!game.playerSkillBoosts[player.id]) game.playerSkillBoosts[player.id] = {};
-      let playerGains = 0;
-      for(let i=0; i<gainCount; i++){
-        const skill = skills[hashNumber(`bot-development-skill-${game?.seasonNumber || 1}-${player.id}-${i}`, skills.length)];
-        const current = Math.round(Number(game.playerSkillBoosts[player.id][skill] || 0));
-        if(current >= BOT_BALANCE_MAX_SKILL_BOOST) continue;
-        game.playerSkillBoosts[player.id][skill] = clamp(current + 1, 0, BOT_BALANCE_MAX_SKILL_BOOST);
-        playerGains += 1;
-      }
-      if(playerGains > 0){
-        players += 1;
-        gains += playerGains;
-      }
-    });
-  });
-  return { players, gains };
-}
-function balanceBotsForSeasonStart(selectedClubId=game?.selectedClubId, rankMap={}){
-  if(!game || !BOT_BALANCE_ENABLED || !BOT_BALANCE_ON_SEASON_START) return null;
-  ensurePlayerStateForAll();
-  ensureTeamCohesion();
-  const clubIds = botBalanceClubIds(selectedClubId);
-  const reference = botBalanceReference(selectedClubId);
-  let playersAdjusted = 0;
-  let clubsAdjusted = 0;
-  clubIds.forEach(clubId => {
-    const targetMorale = botBalanceTargetValue('morale', reference.morale, clubId, rankMap, 'season_start');
-    const targetCondition = botBalanceTargetValue('condition', reference.condition, clubId, rankMap, 'season_start');
-    const targetCohesion = botBalanceTargetValue('cohesion', reference.cohesion, clubId, rankMap, 'season_start');
-    game.teamCohesion[clubId] = targetCohesion;
-    const squad = playersByClub(clubId).filter(player => !player.freeAgent && !player.retired);
-    squad.forEach(player => {
-      const moraleVariance = botBalanceRandomOffset(`bot-balance-morale-player-${game?.seasonNumber || 1}-${clubId}-${player.id}`, 4);
-      const conditionVariance = botBalanceRandomOffset(`bot-balance-condition-player-${game?.seasonNumber || 1}-${clubId}-${player.id}`, 4);
-      game.playerMorale[player.id] = clamp(Math.round((currentMorale(player.id) * 0.30) + ((targetMorale + moraleVariance) * 0.70)), 1, 99);
-      game.playerCondition[player.id] = clamp(Math.round((currentCondition(player.id) * 0.25) + ((targetCondition + conditionVariance) * 0.75)), 0, 99);
-      playersAdjusted += 1;
-    });
-    clubsAdjusted += 1;
-  });
-  const development = applyBotSeasonDevelopment(clubIds, rankMap);
-  const summary = {
-    season:game.seasonNumber || 1,
-    date:game.currentDate || '',
-    clubs:clubsAdjusted,
-    players:playersAdjusted,
-    reference,
-    development,
-    difficulty:botBalanceDifficultyProfile().label,
-    createdAt:Date.now()
-  };
-  game.botBalanceLog = Array.isArray(game.botBalanceLog) ? game.botBalanceLog : [];
-  game.botBalanceLog.unshift(summary);
-  game.botBalanceLog = game.botBalanceLog.slice(0, 20);
-  return summary;
-}
-function maintainBotBalanceDuringSeason(options={}){
-  if(!game || !BOT_BALANCE_ENABLED || !BOT_BALANCE_DURING_SEASON) return null;
-  const force = Boolean(options.force);
-  if(!force && isRegularSeason() && ((Number(game.matchdayIndex || 0) + 1) % BOT_BALANCE_MAINTENANCE_INTERVAL_MATCHDAYS !== 0)) return null;
-  if(!force && !isRegularSeason()) return null;
-  ensurePlayerStateForAll();
-  ensureTeamCohesion();
-  const rankMap = botBalanceRankMap();
-  const reference = botBalanceReference(game.selectedClubId);
-  const clubIds = botBalanceClubIds(game.selectedClubId);
-  let playersAdjusted = 0;
-  let clubsAdjusted = 0;
-  clubIds.forEach(clubId => {
-    const targetMorale = botBalanceTargetValue('morale', reference.morale, clubId, rankMap, 'maintenance');
-    const targetCondition = botBalanceTargetValue('condition', reference.condition, clubId, rankMap, 'maintenance');
-    const targetCohesion = botBalanceTargetValue('cohesion', reference.cohesion, clubId, rankMap, 'maintenance');
-    const currentCohesion = cohesionValue(clubId);
-    if(currentCohesion < targetCohesion){
-      game.teamCohesion[clubId] = clamp(Math.round(Math.min(targetCohesion, currentCohesion + BOT_BALANCE_MAINTENANCE_COHESION_GAIN)), 0, 100);
-      clubsAdjusted += 1;
-    }
-    playersByClub(clubId).forEach(player => {
-      if(player.freeAgent || player.retired) return;
-      let changed = false;
-      const cond = currentCondition(player.id);
-      if(cond < targetCondition){
-        game.playerCondition[player.id] = clamp(Math.round(Math.min(targetCondition, cond + BOT_BALANCE_MAINTENANCE_CONDITION_GAIN)), 0, 99);
-        changed = true;
-      }
-      const morale = currentMorale(player.id);
-      if(morale < targetMorale){
-        game.playerMorale[player.id] = clamp(Math.round(Math.min(targetMorale, morale + BOT_BALANCE_MAINTENANCE_MORALE_GAIN)), 1, 99);
-        changed = true;
-      }
-      if(changed) playersAdjusted += 1;
-    });
-  });
-  return { clubs:clubsAdjusted, players:playersAdjusted, reference, forced:force };
-}
-
-function startNextSeason(selectedClubId){
-  if(!game?.seasonFinalized) return;
-  const retiredCount = game.seasonTransition?.retirements?.length || 0;
-  const previousClubId = Number(game.selectedClubId || 0);
-  const nextClubId = Number(selectedClubId || game.selectedClubId);
-  const previousMatchdayIndex = Number(game.matchdayIndex || game.fixtures?.length || 0);
-  const previousBotBalanceRanks = botBalanceRankMap();
-  const configuredPostseasonRecovery = postseasonTurnsForCurrentSeason();
-  const appliedPostseasonRecovery = injuryRecoveryTurnsRegistered(game.seasonNumber || 1, 'postseason');
-  const missingPostseasonRecovery = Math.max(0, configuredPostseasonRecovery - appliedPostseasonRecovery);
-  applySeasonStartAvailabilityRebase(previousMatchdayIndex, missingPostseasonRecovery);
-  assignBotFieldStatesForNextSeason(nextClubId, previousClubId);
-  repairInvalidBotFieldStates(game, 'season_transition', { message:false });
-  applySeasonMovements();
-  repairCrossCountryClubAssignments({ restoreNativeIfNeeded:false });
-  game.clubDivisionOverrides = snapshotClubDivisionOverrides();
-  const aging = applySeasonalAging();
-  applyAcademyAgingIfNeeded();
-  refreshAllPlayerClauses();
-  game.selectedClubId = nextClubId;
-  game.seasonNumber = (game.seasonNumber || 1) + 1;
-  const transferUnlock = typeof consumeNextSeasonTransferBudgetUnlock === 'function' ? consumeNextSeasonTransferBudgetUnlock() : { rate:0, reasons:[] };
-  game.managerStats = ensureManagerCurrentSeasonStats(game.managerStats, game.seasonNumber, game.selectedClubId);
-  game.transferBudget = typeof createTransferBudgetState === 'function' ? createTransferBudgetState(game.selectedClubId, game.seasonNumber, transferUnlock.rate || 0) : (game.transferBudget || null);
-  game.bankLoan = typeof refreshBankLoanOffersForSeason === 'function' ? refreshBankLoanOffersForSeason(game.bankLoan, game.seasonNumber) : (game.bankLoan || null);
-  if(transferUnlock?.rate && typeof transferBudgetAddHistory === 'function'){
-    transferBudgetAddHistory('season_bonus', `Bonus de directiva: ${(transferUnlock.reasons || []).map(r => r.reason).filter(Boolean).join(' + ') || 'temporada anterior'}`, 0, transferUnlock.rate);
-  }
-  game.seasonYear = seasonYearForNumber(game.seasonNumber);
-  game.calendarVersion = SEASON_CALENDAR_VERSION;
-  game.seasonInitialBudget = Math.max(0, Math.round(Number(game.budget || 0)));
-  game.seasonBudgetStartBySeason = game.seasonBudgetStartBySeason || {};
-  game.seasonBudgetStartBySeason[game.seasonNumber] = game.seasonInitialBudget;
-  game.seasonFinalized = false;
-  game.seasonTransition = null;
-  game.argentinaPlayoffs = null;
-  game.seasonEndModalShown = false;
-  game.seasonPhase = 'preseason';
-  game.phaseTurn = 0;
-  game.preseasonFriendliesPlayed = 0;
-  game.pendingFriendlyOpponentId = 0;
-  game.matchdayIndex = 0;
-  game.fixtures = generateFixturesForDivisions(seed.clubs, divisionOrderList(), { seasonYear:game.seasonYear });
-  const previousDate = validIsoDate(game.currentDate) ? game.currentDate : seasonEndDateForYear(seasonYearForNumber((game.seasonNumber || 2) - 1));
-  const nextSeasonStart = firstAdvanceDateForSeason(game.seasonYear);
-  game.currentDate = validIsoDate(previousDate) && daysBetweenIsoDates(previousDate, nextSeasonStart) <= 0 ? nextSeasonStart : addDaysToIsoDate(previousDate, 1);
-  game.lastCalendarDate = game.currentDate;
-  game.standings = createInitialStandings();
-  game.playerStats = createInitialPlayerStats();
-  game.playerStars = normalizePlayerStarsState(game.playerStars || {});
-  game.playerImpactWindows = normalizePlayerImpactWindows(game.playerImpactWindows || {});
-  syncPlayerStarsWithClubs(game);
-  game.matchHistory = [];
-  game.lastOwnProblems = [];
-  game.lastTurnSummary = null;
-  game.mustReviewTactics = false;
-  game.seasonEndPlayerOffers = null;
-  game.rejectedPurchaseOffers = {};
-  game.rejectedFreeAgentOffers = {};
-  resetAcademySeasonState();
-  resetStaffSeasonState();
-  if(typeof resetScoutingCenterForNewSeason === 'function') resetScoutingCenterForNewSeason();
-  game.monthlyExpenses = {};
-  game.advanceLockedUntil = 0;
-  game.lastBudgetDelta = 0;
-  game.tactic = normalizeTactic(nextClubId, DEFAULT_TACTIC);
-  mergeMarketPlayersIntoSeed(game.marketPlayers || []);
-  renewFreeAgentMarketForSeason(retiredCount);
-  ensurePlayerStateForAll();
-  balanceBotsForSeasonStart(nextClubId, previousBotBalanceRanks);
-  generateOpeningSponsorOffers(true);
-  pushGameMessage({ type:'deportivo', title:`Temporada ${game.seasonNumber} iniciada`, body:`Comienza una nueva temporada con ${clubName(game.selectedClubId)}.`, priority:'normal' });
-  activeTab = 'home';
-  closeModal();
-  saveLocal(true);
-  renderAll();
-  showNotice(`Temporada ${game.seasonNumber} iniciada.`);
-}
-function seasonEndPanelMarkup(){
-  const record = game?.seasonTransition?.userRecord;
-  const movements = game?.seasonTransition?.movements || [];
-  const retirements = game?.seasonTransition?.retirements || [];
-  const salaryAdjustments = game?.seasonTransition?.salaryAdjustments || null;
-  const moveRows = movements.map(move => `<li><strong>${escapeHtml(clubName(move.clubId))}</strong>: ${move.type === 'promotion' ? 'asciende' : 'desciende'} a ${escapeHtml(move.toDivisionName)}${move.reason ? ` · ${escapeHtml(move.reason)}` : ''}</li>`).join('');
-  const retirementRows = retirements.map(p => `<li><strong>${escapeHtml(p.name)}</strong> se retiró del fútbol a los ${p.age} años.</li>`).join('');
-  return `<div class="card season-end-card">
-    <div class="row"><div><p class="label">Fin de temporada</p><h3>${record?.title ? 'Campeón' : `Posición final: ${escapeHtml(record?.label || '—')}`}</h3></div><span class="pill">Temporada ${game.seasonNumber || 1}</span></div>
-    <p class="muted">Podés seguir en ${escapeHtml(clubName(game.selectedClubId))} o elegir otro club para la próxima temporada.</p>
-    ${game.seasonTransition?.salariesPaid ? `<p class="tagline">Pago anual de sueldos descontado: <strong>${formatMoney(game.seasonTransition.salariesPaid)}</strong>.</p>` : ''}
-    ${salaryAdjustments ? `<p class="tagline">Sueldos ajustados para la próxima temporada según partidos jugados: ${salaryAdjustments.increased || 0} suben, ${salaryAdjustments.decreased || 0} bajan.</p>` : ''}
-    ${retirementRows ? `<ul class="season-movement-list">${retirementRows}</ul>` : ''}
-    ${moveRows ? `<ul class="season-movement-list">${moveRows}</ul>` : ''}
-    <div class="row" style="margin-top:12px"><button class="primary" data-continue-season>Seguir en este club</button><button class="ghost" data-open-season-modal>Cambiar club</button></div>
-  </div>`;
-}
-function openSeasonEndModal(){
-  if(!game?.seasonFinalized) return;
-  const record = game.seasonTransition?.userRecord;
-  const body = `<div class="season-end-modal">
-    <p class="label">Fin de temporada ${game.seasonNumber || 1}</p>
-    <h2>${record?.title ? 'Saliste campeón' : `Finalizaste ${escapeHtml(record?.label || '—')}`}</h2>
-    <p class="muted">Elegí cómo continuar la próxima temporada.</p>
-    <div class="row" style="margin-top:14px"><button id="btnContinueSameClub" class="primary">Seguir en ${escapeHtml(clubName(game.selectedClubId))}</button></div>
-    <hr>
-    <label for="seasonClubSelect">Cambiar de club</label>
-    <select id="seasonClubSelect">${clubSelectOptionsMarkup()}</select>
-    <div class="row" style="margin-top:12px"><button id="btnStartNextSeasonOther" class="ghost">Empezar nueva temporada con este club</button></div>
-  </div>`;
-  openModal(body);
-  $('btnContinueSameClub')?.addEventListener('click', () => startNextSeason(game.selectedClubId));
-  $('btnStartNextSeasonOther')?.addEventListener('click', () => startNextSeason(Number($('seasonClubSelect')?.value || game.selectedClubId)));
-}
-

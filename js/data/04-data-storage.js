@@ -1,24 +1,692 @@
-/* V5.01 · Carga de JSON, calendario anual, hinchadas, estadios, persistencia local e inicialización optimizada. */
+/* Carga de JSON, calendario anual, hinchadas, estadios, persistencia local e inicialización optimizada. */
 
+function versionedDataRequestUrl(url){
+  const clean = String(url || '').trim();
+  if(!clean || !/^data\//i.test(clean) || /[?&]v=/i.test(clean)) return clean;
+  const version = String(window.GAME_CONFIG?.version || 'V8.57').replace(/^v/i, '');
+  return `${clean}${clean.includes('?') ? '&' : '?'}v=${encodeURIComponent(version)}`;
+}
 async function fetchJsonIfExists(url){
   try{
-    const res = await fetch(url, { cache:DATA_CACHE_MODE });
+    const res = await fetch(versionedDataRequestUrl(url), { cache:DATA_CACHE_MODE });
     if(!res.ok) return null;
-    const raw = await res.text();
-    if(!raw.trim()) return null;
-    return JSON.parse(raw);
+    return await res.json();
   }catch(error){
     console.warn(`No se pudo cargar ${url}`, error);
     return null;
   }
 }
 
-async function loadPlayersDatabase(){
-  const raw = await fetchJsonIfExists(PLAYERS_DATABASE_URL);
+function playersPayloadArray(raw){
+  if(Array.isArray(raw)) return raw;
+  if(Array.isArray(raw?.players)) return raw.players;
+  if(Array.isArray(raw?.jugadores)) return raw.jugadores;
+  return [];
+}
+function playersManifestFiles(raw){
+  if(!raw || typeof raw !== 'object') return [];
+  const files = Array.isArray(raw.files) ? raw.files : (Array.isArray(raw.playerFiles) ? raw.playerFiles : (Array.isArray(raw.jugadoresFiles) ? raw.jugadoresFiles : []));
+  return files
+    .map(item => typeof item === 'string' ? item : (item?.path || item?.url || item?.file || ''))
+    .map(item => String(item || '').trim())
+    .filter(Boolean);
+}
+function resolveDataUrl(baseUrl='', childUrl=''){
+  const child = String(childUrl || '').trim();
+  if(!child) return '';
+  if(/^https?:\/\//i.test(child) || child.startsWith('/') || child.startsWith('data/')) return child;
+  const base = String(baseUrl || '');
+  const slash = base.lastIndexOf('/');
+  return slash >= 0 ? `${base.slice(0, slash + 1)}${child}` : child;
+}
+async function loadPlayersDatabaseFile(url, visited=new Set()){
+  const cleanUrl = String(url || '').trim();
+  if(!cleanUrl || visited.has(cleanUrl)) return null;
+  visited.add(cleanUrl);
+  const raw = await fetchJsonIfExists(cleanUrl);
   if(!raw) return null;
-  const players = Array.isArray(raw) ? raw : raw.players;
-  if(!Array.isArray(players) || !players.length) return null;
-  return { raw, players, source:PLAYERS_DATABASE_URL };
+  const directPlayers = playersPayloadArray(raw);
+  if(directPlayers.length) return { raw, players:directPlayers, source:cleanUrl };
+  const files = playersManifestFiles(raw);
+  if(!files.length) return null;
+  const loaded = await Promise.all(files.map(file => loadPlayersDatabaseFile(resolveDataUrl(cleanUrl, file), visited)));
+  const valid = loaded.filter(item => item?.players?.length);
+  if(!valid.length) return null;
+  return {
+    raw,
+    players:valid.flatMap(item => item.players),
+    source:valid.map(item => item.source).join(', ')
+  };
+}
+async function loadPlayersDatabase(){
+  const urls = PLAYERS_DATABASE_URLS.length ? PLAYERS_DATABASE_URLS : [PLAYERS_DATABASE_URL];
+  const loaded = await Promise.all(urls.map(url => loadPlayersDatabaseFile(url)));
+  const valid = loaded.filter(item => item?.players?.length);
+  if(!valid.length) return null;
+  const players = valid.flatMap(item => item.players);
+  return {
+    raw:{
+      metadata:{ version:GAME_CONFIG.version || 'V6', splitFiles:valid.length },
+      validation:databaseValidationCounts(players)
+    },
+    players,
+    source:valid.map(item => item.source).join(', ')
+  };
+}
+
+
+async function loadManualPlayersDatabase(){
+  const raw = await fetchJsonIfExists(MANUAL_PLAYERS_DATABASE_URL);
+  if(!raw || typeof raw !== 'object') return null;
+  const players = Array.isArray(raw.jugadores) ? raw.jugadores : (Array.isArray(raw.players) ? raw.players : []);
+  if(!players.length || raw?.uso?.cargaAutomatica === false) return null;
+  return { raw, players, source:MANUAL_PLAYERS_DATABASE_URL };
+}
+function manualValue(value, fallback=50, min=1, max=99){
+  const raw = Number(value);
+  const clean = Number.isFinite(raw) ? raw : Number(fallback);
+  return clamp(Math.round(clean), min, max);
+}
+function manualSkill(manualSkills, key, fallback=50, min=1, max=99){
+  if(!manualSkills || typeof manualSkills !== 'object') return manualValue(fallback, fallback, min, max);
+  return manualValue(manualSkills[key], fallback, min, max);
+}
+function resolveManualClubId(seedData, player){
+  const direct = Number(player?.clubId || 0);
+  const validIds = new Set((seedData?.clubs || []).map(club => Number(club.id)));
+  if(direct && validIds.has(direct)) return direct;
+  const teamName = player?.equipo || player?.club || player?.clubName || player?.teamName || '';
+  const teamKey = lookupNameKey(teamName);
+  if(!teamKey) return 0;
+  const club = (seedData?.clubs || []).find(item => lookupNameKey(item?.name || item?.nombre || '') === teamKey);
+  return club ? Number(club.id || 0) : 0;
+}
+function manualVisibleSkillsToInternal(position, manualSkills={}, media=50){
+  const base = manualValue(media, 50, 1, 99);
+  const ataque = manualSkill(manualSkills, 'ataque', base);
+  const defensa = manualSkill(manualSkills, 'defensa', base);
+  const tiro = manualSkill(manualSkills, 'tiro', base);
+  const pase = manualSkill(manualSkills, 'pase', base);
+  const velocidad = manualSkill(manualSkills, 'velocidad', base);
+  const cabezazo = manualSkill(manualSkills, 'cabezazo', base);
+  const resistencia = manualSkill(manualSkills, 'resistencia', base);
+  const liderazgo = manualSkill(manualSkills, 'liderazgo', base);
+  const disciplina = manualSkill(manualSkills, 'disciplina', base);
+  const trabajoEquipo = manualSkill(manualSkills, 'trabajoEquipo', base);
+  const potencial = manualSkill(manualSkills, 'potencial', base);
+  const serenidad = manualValue(Math.round((disciplina + liderazgo + base) / 3), base);
+  const pos = normalizePlayerPosition(position, 0);
+  const skills = {
+    porteria: pos === 'POR' ? defensa : 1,
+    entradas:defensa,
+    marca:defensa,
+    posicionamiento:manualValue(Math.round((ataque + defensa) / 2), base),
+    paseCorto:pase,
+    paseLargo:pase,
+    vision:pase,
+    regate:ataque,
+    tecnica:manualValue(Math.round((ataque + pase) / 2), base),
+    remate:tiro,
+    cabezazo,
+    velocidad,
+    aceleracion:velocidad,
+    fuerza:manualValue(Math.round((cabezazo + resistencia + base) / 3), base),
+    resistencia,
+    trabajoEquipo,
+    serenidad,
+    disciplina,
+    liderazgo,
+    potencial,
+    agresividad:manualSkill(manualSkills, 'agresividad', Math.max(1, 100 - disciplina)),
+    genetica:manualSkill(manualSkills, 'genetica', base),
+    factorSorpresa:manualSkill(manualSkills, 'factorSorpresa', 0, 0, 20)
+  };
+  if(pos === 'POR'){
+    skills.cabezazo = manualValue(Math.round((ataque + cabezazo) / 2), base);
+    skills.fuerza = manualValue(Math.round((ataque + tiro) / 2), base);
+    skills.porteria = manualValue(Math.round((defensa + velocidad) / 2), base);
+    skills.posicionamiento = defensa;
+    skills.paseCorto = pase;
+    skills.paseLargo = manualValue(Math.round((pase + tiro) / 2), base);
+    skills.vision = pase;
+    skills.velocidad = velocidad;
+    skills.aceleracion = velocidad;
+    skills.serenidad = manualValue(Math.round((velocidad + liderazgo + disciplina) / 3), base);
+    skills.liderazgo = manualValue(Math.round((cabezazo + liderazgo) / 2), base);
+    skills.trabajoEquipo = manualValue(Math.round((cabezazo + trabajoEquipo) / 2), base);
+    skills.remate = 1;
+    skills.regate = 1;
+    skills.tecnica = pase;
+    skills.marca = defensa;
+    skills.entradas = defensa;
+  }
+  return skills;
+}
+function normalizeManualDatabasePlayer(player, seedData){
+  if(!player || typeof player !== 'object') return null;
+  const id = Number(player.id || 0);
+  if(!Number.isFinite(id) || id <= 0) return null;
+  const position = normalizePlayerPosition(player.posicion || player.position, id);
+  const clubId = resolveManualClubId(seedData, player);
+  const freeAgent = Boolean(player.jugadorLibre || player.freeAgent || !clubId);
+  const media = manualValue(player.media ?? player.overall, 50, 1, 99);
+  const economy = player.economia && typeof player.economia === 'object' ? player.economia : {};
+  const salary = Math.max(0, Math.round(Number(economy.sueldo ?? player.salary ?? 0)));
+  const clause = Math.max(0, Math.round(Number(economy.clausula ?? player.clause ?? 0)));
+  const value = Math.max(0, Math.round(Number(economy.valor ?? player.value ?? clause)));
+  const mercado = player.mercado && typeof player.mercado === 'object' ? player.mercado : {};
+  return {
+    id,
+    name:String(player.nombre || player.name || `Jugador Manual ${id}`).trim(),
+    age:Math.max(15, Math.round(Number(player.edad ?? player.age ?? 18))),
+    position,
+    clubId:freeAgent ? 0 : clubId,
+    freeAgent,
+    nationality:String(player.nacionalidad || player.nationality || 'Argentina').trim(),
+    overall:media,
+    manualOverallLocked:true,
+    skills:manualVisibleSkillsToInternal(position, player.habilidades || player.skills || {}, media),
+    salary:salary || initialAnnualSalaryForMedia(media, 1),
+    clause:clause || value || 0,
+    value:value || clause || 0,
+    fixedClause:Boolean(economy.clausulaBloqueada ?? player.clausulaBloqueada ?? player.fixedClause ?? true),
+    manualFixedClause:Boolean(economy.clausulaBloqueada ?? player.clausulaBloqueada ?? player.manualFixedClause ?? true),
+    economyLocked:Boolean(economy.clausulaBloqueada ?? player.economyLocked ?? true),
+    transferListed:Boolean(mercado.transferible ?? player.transferListed ?? false),
+    intransferible:Boolean(mercado.intransferible ?? player.intransferible ?? false),
+    sold:Boolean(mercado.vendido ?? player.sold ?? false),
+    retired:Boolean(mercado.retirado ?? player.retired ?? false),
+    manualPlayer:true,
+    manualRespawnAfterRetirement:Boolean(mercado.reapareceAlRetirarse ?? mercado.respawnAfterRetirement ?? player.reapareceAlRetirarse ?? player.manualRespawnAfterRetirement ?? false),
+    generation:{ ...(player.origen || player.generation || {}), source:player?.origen?.source || MANUAL_PLAYERS_DATABASE_URL, rulesVersion:player?.origen?.rulesVersion || 'V8.08-manual-webp-retired-player-pool', tipo:player?.origen?.tipo || 'manual_activo' }
+  };
+}
+function manualRetiredPlayerIdSet(options={}){
+  const source = options.retiredManualPlayerIds || options.manualRetiredPlayerIds || game?.manualRetiredPlayerIds || game?.retiredManualPlayerIds || [];
+  return new Set((Array.isArray(source) ? source : []).map(id => Number(id)).filter(id => Number.isFinite(id) && id > 0));
+}
+function refreshExistingManualPlayerFromDatabase(existing, manual){
+  if(!existing || !manual) return existing;
+  const currentClubId = Number(existing.clubId || 0);
+  const currentFreeAgent = Boolean(existing.freeAgent) || currentClubId === 0;
+  const currentAge = Math.max(15, Math.round(Number(existing.age || manual.age || 20)));
+  const currentSold = Boolean(existing.sold);
+  const currentRetired = Boolean(existing.retired);
+  const currentTransferListed = Boolean(existing.transferListed);
+  const currentIntransferible = Boolean(existing.intransferible);
+  const refreshed = {
+    ...existing,
+    name:String(manual.name || existing.name || '').trim() || existing.name,
+    position:manual.position || existing.position,
+    nationality:String(manual.nationality || existing.nationality || '').trim() || existing.nationality,
+    manualPlayer:true,
+    manualRespawnAfterRetirement:Boolean(manual.manualRespawnAfterRetirement),
+    manualOverallLocked:Boolean(manual.manualOverallLocked ?? existing.manualOverallLocked ?? true),
+    overall:Number.isFinite(Number(manual.overall)) ? Number(manual.overall) : existing.overall,
+    skills:manual.skills && typeof manual.skills === 'object' ? { ...manual.skills } : existing.skills,
+    salary:Number.isFinite(Number(manual.salary)) ? Number(manual.salary) : existing.salary,
+    clause:Number.isFinite(Number(manual.clause)) ? Number(manual.clause) : existing.clause,
+    value:Number.isFinite(Number(manual.value)) ? Number(manual.value) : existing.value,
+    fixedClause:Boolean(manual.fixedClause ?? existing.fixedClause ?? true),
+    manualFixedClause:Boolean(manual.manualFixedClause ?? existing.manualFixedClause ?? true),
+    economyLocked:Boolean(manual.economyLocked ?? existing.economyLocked ?? true),
+    generation:{ ...(existing.generation || {}), ...(manual.generation || {}), refreshedFromManualDatabase:true }
+  };
+  refreshed.clubId = currentClubId;
+  refreshed.freeAgent = currentFreeAgent;
+  refreshed.age = currentAge;
+  refreshed.sold = currentSold;
+  refreshed.retired = currentRetired;
+  refreshed.transferListed = currentTransferListed;
+  refreshed.intransferible = currentIntransferible;
+  return normalizeDatabasePlayer(refreshed);
+}
+function manualDatabasePlayersById(seedData=seed){
+  const map = new Map();
+  if(!seedData || !manualPlayersDatabase?.players?.length) return map;
+  manualPlayersDatabase.players.forEach(rawPlayer => {
+    const manual = normalizeManualDatabasePlayer(rawPlayer, seedData);
+    if(manual) map.set(Number(manual.id), manual);
+  });
+  return map;
+}
+function manualPlayerCanonicalSignature(player={}){
+  const skills = player?.skills && typeof player.skills === 'object' && !Array.isArray(player.skills)
+    ? Object.keys(player.skills).sort().map(key => `${key}:${Number(player.skills[key])}`).join('|')
+    : '';
+  return [
+    String(player?.name || ''),
+    String(player?.position || ''),
+    String(player?.nationality || ''),
+    Number(player?.overall || 0),
+    skills,
+    Number(player?.salary || 0),
+    Number(player?.clause || 0),
+    Number(player?.value || 0),
+    Boolean(player?.manualPlayer),
+    Boolean(player?.manualOverallLocked),
+    Boolean(player?.manualFixedClause)
+  ].join('::');
+}
+function refreshManualRecycledIdentity(player, manualById){
+  if(!player || !manualById?.size || !player.manualIdentityRecycled) return player;
+  const previousId = Number(player.previousPlayerId || player?.generation?.previousPlayerId || 0);
+  const manual = manualById.get(previousId);
+  if(!manual) return player;
+  return {
+    ...player,
+    name:String(manual.name || player.name || '').trim() || player.name,
+    position:manual.position || player.position,
+    nationality:String(manual.nationality || player.nationality || '').trim() || player.nationality,
+    generation:{ ...(player.generation || {}), manualIdentitySourceId:previousId, refreshedFromManualDatabase:true }
+  };
+}
+function synchronizeManualPlayerReferences(state, seedData=seed, options={}){
+  const manualById = manualDatabasePlayersById(seedData);
+  if(!manualById.size) return { changed:false, seedChanged:0, marketChanged:0, retiredChanged:0, historyChanged:0 };
+  let seedChanged = 0;
+  let marketChanged = 0;
+  let retiredChanged = 0;
+  let historyChanged = 0;
+  const refreshArray = (source=[], mode='seed') => {
+    if(!Array.isArray(source)) return [];
+    const out = [];
+    const byId = new Map();
+    source.forEach(rawPlayer => {
+      if(!rawPlayer || typeof rawPlayer !== 'object') return;
+      const id = Number(rawPlayer.id || 0);
+      if(!Number.isFinite(id) || id <= 0) return;
+      const manual = manualById.get(id);
+      let next = manual ? refreshExistingManualPlayerFromDatabase(rawPlayer, manual) : refreshManualRecycledIdentity(rawPlayer, manualById);
+      if(byId.has(id)){
+        const index = byId.get(id);
+        const merged = { ...out[index], ...next };
+        next = manual ? refreshExistingManualPlayerFromDatabase(merged, manual) : refreshManualRecycledIdentity(merged, manualById);
+        out[index] = next;
+        if(mode === 'seed') seedChanged += 1;
+        else marketChanged += 1;
+        return;
+      }
+      byId.set(id, out.length);
+      out.push(next);
+      const before = manualPlayerCanonicalSignature(rawPlayer);
+      const after = manualPlayerCanonicalSignature(next);
+      if(before !== after){
+        if(mode === 'seed') seedChanged += 1;
+        else marketChanged += 1;
+      }
+    });
+    return out;
+  };
+  if(seedData?.players){
+    const previousLength = seedData.players.length;
+    seedData.players = refreshArray(seedData.players, 'seed');
+    if(seedData.players.length !== previousLength) seedChanged += Math.abs(previousLength - seedData.players.length);
+  }
+  if(state && typeof state === 'object'){
+    if(Array.isArray(state.marketPlayers)){
+      const previousLength = state.marketPlayers.length;
+      state.marketPlayers = refreshArray(state.marketPlayers, 'market');
+      if(state.marketPlayers.length !== previousLength) marketChanged += Math.abs(previousLength - state.marketPlayers.length);
+    }
+    if(Array.isArray(state.retiredPlayerPool)){
+      state.retiredPlayerPool = state.retiredPlayerPool.map(entry => {
+        if(!entry || typeof entry !== 'object' || !entry.manualIdentity) return entry;
+        const manual = manualById.get(Number(entry.previousPlayerId || entry.id || 0));
+        if(!manual) return entry;
+        const next = {
+          ...entry,
+          name:String(manual.name || entry.name || '').trim() || entry.name,
+          position:manual.position || entry.position,
+          nationality:String(manual.nationality || entry.nationality || '').trim() || entry.nationality
+        };
+        if(String(entry.name || '') !== String(next.name || '') || String(entry.position || '') !== String(next.position || '') || String(entry.nationality || '') !== String(next.nationality || '')) retiredChanged += 1;
+        return next;
+      });
+    }
+    const seasons = state?.managerPlayerStatsHistory?.seasons;
+    if(seasons && typeof seasons === 'object' && !Array.isArray(seasons)){
+      Object.values(seasons).forEach(season => {
+        Object.values(season?.clubs || {}).forEach(club => {
+          Object.values(club?.players || {}).forEach(entry => {
+            const manual = manualById.get(Number(entry?.playerId || 0));
+            if(!manual || !entry) return;
+            const nextName = String(manual.name || entry.name || '').trim() || entry.name;
+            const nextPosition = manual.position || entry.position;
+            if(String(entry.name || '') !== String(nextName || '') || String(entry.position || '') !== String(nextPosition || '')) historyChanged += 1;
+            entry.name = nextName;
+            entry.position = nextPosition;
+          });
+        });
+      });
+    }
+  }
+  const changed = Boolean(seedChanged || marketChanged || retiredChanged || historyChanged);
+  if(changed && typeof invalidatePlayerIndexes === 'function') invalidatePlayerIndexes();
+  if(state && typeof state === 'object') state.manualPlayerReferenceSyncVersion = 'V8.66';
+  return { changed, seedChanged, marketChanged, retiredChanged, historyChanged };
+}
+
+function applyManualPlayersDatabase(seedData, database=manualPlayersDatabase, options={}){
+  if(!seedData || !database?.players?.length) return seedData;
+  const preserveExisting = Boolean(options?.preserveExisting);
+  const retiredManualIds = manualRetiredPlayerIdSet(options);
+  const manualPlayers = database.players
+    .map(player => normalizeManualDatabasePlayer(player, seedData))
+    .filter(Boolean)
+    .filter(player => !retiredManualIds.has(Number(player.id)));
+  if(!manualPlayers.length) return seedData;
+  const manualIds = new Set(manualPlayers.map(player => Number(player.id)));
+  const manualById = new Map(manualPlayers.map(player => [Number(player.id), player]));
+  const existingIds = new Set((seedData.players || []).map(player => Number(player.id)));
+  const kept = (seedData.players || [])
+    .filter(player => !manualIds.has(Number(player.id)) || preserveExisting)
+    .map(player => preserveExisting && manualById.has(Number(player.id)) ? refreshExistingManualPlayerFromDatabase(player, manualById.get(Number(player.id))) : player);
+  const toAdd = preserveExisting ? manualPlayers.filter(player => !existingIds.has(Number(player.id))) : manualPlayers;
+  seedData.players = kept.concat(toAdd);
+  seedData.meta = {
+    ...(seedData.meta || {}),
+    manualPlayersSource:database.source,
+    manualPlayersVersion:database.raw?.metadata?.version || 'local',
+    manualPlayersApplied:manualPlayers.length,
+    manualPlayersInserted:toAdd.length,
+    manualPlayersRespawned:0
+  };
+  seedData.meta.signature = `${seedSignature(seedData)}-${playersDatabaseHash(seedData.players)}`;
+  return seedData;
+}
+function syncManualPlayersIntoSeed(options={}){
+  if(!seed || !manualPlayersDatabase?.players?.length) return { inserted:0, refreshed:0, changed:false };
+  const beforeLength = seed.players?.length || 0;
+  const beforeById = new Map((seed.players || []).map(player => [Number(player.id), manualPlayerCanonicalSignature(player)]));
+  applyManualPlayersDatabase(seed, manualPlayersDatabase, { preserveExisting:true, ...options });
+  const referenceSync = synchronizeManualPlayerReferences(options.state === false ? null : (options.state || game), seed, options);
+  let refreshed = 0;
+  (seed.players || []).forEach(player => {
+    const id = Number(player.id || 0);
+    if(beforeById.has(id) && beforeById.get(id) !== manualPlayerCanonicalSignature(player)) refreshed += 1;
+  });
+  const inserted = Math.max(0, (seed.players?.length || 0) - beforeLength);
+  const changed = Boolean(inserted || refreshed || referenceSync.changed);
+  return { ...referenceSync, inserted, refreshed, changed };
+}
+
+
+const SINGLE_CAREER_SLOT_MIGRATION_KEY = 'fmSingleCareerSlotMigrationV8.32';
+const SINGLE_CAREER_SLOT_ARCHIVE_PREFIX = 'archive:v8.32:single-career:';
+const activeSaveSlotBeforeSingleSlotMigration = (() => {
+  try{ return String(localStorage.getItem(SAVE_ACTIVE_SLOT_STORAGE_KEY) || SAVE_SLOT_CAREER); }
+  catch(_){ return SAVE_SLOT_CAREER; }
+})();
+
+let currentSaveSlotId = (() => {
+  try{ return normalizeSaveSlotId(activeSaveSlotBeforeSingleSlotMigration || SAVE_SLOT_CAREER); }
+  catch(_){ return SAVE_SLOT_CAREER; }
+})();
+
+function normalizeSaveSlotId(slotId=''){
+  const raw = String(slotId || '').trim();
+  const lower = raw.toLowerCase();
+  if(lower === SAVE_SLOT_CAMPO_DESTRUIDO || lower === 'campo_destruido' || lower === 'reto_campo_destruido') return SAVE_SLOT_CAMPO_DESTRUIDO;
+  if(lower === SAVE_SLOT_LEGACY_CAREER || lower === 'main' || lower === 'mi_carrera' || lower === 'mi-carrera') return SAVE_SLOT_CAREER;
+  const match = lower.match(/^career[:_-]?(\d+)$/) || lower.match(/^carrera[:_-]?(\d+)$/);
+  if(match){
+    const slotNumber = Math.max(1, Math.min(SAVE_CAREER_SLOT_COUNT, Math.round(Number(match[1]) || 1)));
+    return `${SAVE_SLOT_CAREER_PREFIX_ID}${slotNumber}`;
+  }
+  return SAVE_SLOT_CAREER;
+}
+function careerSaveSlotNumber(slotId=''){
+  const clean = normalizeSaveSlotId(slotId);
+  if(!clean.startsWith(SAVE_SLOT_CAREER_PREFIX_ID)) return 0;
+  return Math.max(1, Math.min(SAVE_CAREER_SLOT_COUNT, Math.round(Number(clean.split(':')[1]) || 1)));
+}
+function careerSaveSlotIds(){
+  return Array.from({ length:SAVE_CAREER_SLOT_COUNT }, (_, index) => `${SAVE_SLOT_CAREER_PREFIX_ID}${index + 1}`);
+}
+function legacyCareerSlotKey(){
+  return `${SAVE_SLOT_PREFIX}${SAVE_SLOT_LEGACY_CAREER}`;
+}
+function saveSlotKey(slotId=''){
+  return `${SAVE_SLOT_PREFIX}${normalizeSaveSlotId(slotId)}`;
+}
+function backupSaveSlotKey(slotId=''){
+  const slot = normalizeSaveSlotId(slotId);
+  return slot === SAVE_SLOT_CAREER ? SAVE_KEY : `${SAVE_BACKUP_PREFIX}${saveSlotKey(slot)}`;
+}
+function setCurrentSaveSlot(slotId='career'){
+  currentSaveSlotId = normalizeSaveSlotId(slotId);
+  try{ localStorage.setItem(SAVE_ACTIVE_SLOT_STORAGE_KEY, currentSaveSlotId); }catch(_){ /* sin almacenamiento */ }
+  if(game) game.saveSlotId = currentSaveSlotId;
+  return currentSaveSlotId;
+}
+function baseSaveSlotLabel(slotId=''){
+  const clean = normalizeSaveSlotId(slotId);
+  if(clean === SAVE_SLOT_CAMPO_DESTRUIDO) return 'Reto Campo destruido';
+  const number = careerSaveSlotNumber(clean);
+  if(SAVE_CAREER_SLOT_COUNT === 1 && number) return 'Carrera';
+  return number ? `Carrera ${number}` : 'Carrera';
+}
+function saveSlotRecordAutoLabel(slotId='', record=null){
+  const clean = normalizeSaveSlotId(slotId);
+  if(clean === SAVE_SLOT_CAMPO_DESTRUIDO) return 'Reto Campo destruido';
+  const base = baseSaveSlotLabel(clean);
+  if(!record) return `${base} · Vacía`;
+  const clubId = Number(record.selectedClubId || 0);
+  const club = clubId ? clubName(clubId) : 'Sin club';
+  const year = Math.round(Number(record.seasonYear || 0)) || (typeof seasonYearForNumber === 'function' ? seasonYearForNumber(record.seasonNumber || 1) : (record.seasonNumber || 1));
+  return `${base} · ${club} · Temporada ${year}`;
+}
+function saveSlotLabel(slotId='', record=null){
+  return saveSlotRecordAutoLabel(slotId, record);
+}
+function gameSlotId(){
+  return normalizeSaveSlotId(game?.saveSlotId || currentSaveSlotId || SAVE_SLOT_CAREER);
+}
+async function readSaveRecordByKey(key){
+  const db = await openDb();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const req = tx.objectStore(DB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function deleteSaveRecordByKey(key){
+  const db = await openDb();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).delete(key);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+function rawCareerSlotNumber(slotId=''){
+  const raw = String(slotId || '').trim().toLowerCase();
+  if([SAVE_SLOT_LEGACY_CAREER, 'main', 'mi_carrera', 'mi-carrera'].includes(raw)) return 1;
+  const match = raw.match(/^career[:_-]?(\d+)$/) || raw.match(/^carrera[:_-]?(\d+)$/);
+  return match ? Math.max(1, Math.min(10, Math.round(Number(match[1]) || 1))) : 0;
+}
+function cloneSaveRecord(record){
+  if(!record || typeof record !== 'object') return record;
+  if(typeof structuredClone === 'function'){
+    try{ return structuredClone(record); }catch(_error){}
+  }
+  return JSON.parse(JSON.stringify(record));
+}
+async function readLegacyCareerSlotRecord(slotNumber=1){
+  const number = Math.max(1, Math.min(10, Math.round(Number(slotNumber) || 1)));
+  const primaryKey = `${SAVE_SLOT_PREFIX}${SAVE_SLOT_CAREER_PREFIX_ID}${number}`;
+  const candidates = [
+    { key:primaryKey, source:'primary', priority:3 },
+    { key:number === 1 ? SAVE_KEY : `${SAVE_BACKUP_PREFIX}${primaryKey}`, source:'backup', priority:2 }
+  ];
+  if(number === 1) candidates.push({ key:legacyCareerSlotKey(), source:'legacy', priority:1 });
+  const loaded = await Promise.all(candidates.map(async item => ({ ...item, record:await readSaveRecordByKey(item.key) })));
+  const usable = loaded.filter(item => usableLocalSaveRecord(item.record));
+  if(!usable.length) return null;
+  usable.sort((a,b) => localSaveRecordTimestamp(b.record) - localSaveRecordTimestamp(a.record) || b.priority - a.priority);
+  return { slotNumber:number, key:usable[0].key, record:usable[0].record };
+}
+async function migrateCareerSlotsToSingleSlot(){
+  if(SAVE_CAREER_SLOT_COUNT !== 1) return { migrated:false, reason:'multiple_slots_enabled' };
+  try{
+    if(localStorage.getItem(SINGLE_CAREER_SLOT_MIGRATION_KEY) === 'done'){
+      setCurrentSaveSlot(SAVE_SLOT_CAREER);
+      return { migrated:false, reason:'already_done' };
+    }
+  }catch(_error){}
+
+  const records = (await Promise.all(Array.from({ length:10 }, (_, index) => readLegacyCareerSlotRecord(index + 1)))).filter(Boolean);
+  const activeNumber = rawCareerSlotNumber(activeSaveSlotBeforeSingleSlotMigration);
+  const activeRecord = records.find(item => item.slotNumber === activeNumber);
+  const slotOneRecord = records.find(item => item.slotNumber === 1);
+  const newestRecord = records.slice().sort((a,b) => localSaveRecordTimestamp(b.record) - localSaveRecordTimestamp(a.record))[0] || null;
+  const selected = activeRecord || slotOneRecord || newestRecord;
+  let migrated = false;
+  let fromSlot = 0;
+
+  if(selected && selected.slotNumber !== 1){
+    const payload = cloneSaveRecord(selected.record);
+    payload.saveSlotId = SAVE_SLOT_CAREER;
+    payload.localSaveMeta = {
+      ...(payload.localSaveMeta || {}),
+      migratedToSingleSlotAt:new Date().toISOString(),
+      migratedFromCareerSlot:selected.slotNumber
+    };
+    const db = await openDb();
+    await new Promise((resolve,reject)=>{
+      const tx = db.transaction(DB_STORE, 'readwrite');
+      const store = tx.objectStore(DB_STORE);
+      if(slotOneRecord?.record){
+        store.put(cloneSaveRecord(slotOneRecord.record), `${SINGLE_CAREER_SLOT_ARCHIVE_PREFIX}career:1`);
+      }
+      store.put(payload, `${SAVE_SLOT_PREFIX}${SAVE_SLOT_CAREER}`);
+      store.put(payload, SAVE_KEY);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error('No se pudo consolidar la partida.'));
+      tx.onabort = () => reject(tx.error || new Error('Se canceló la consolidación de la partida.'));
+    });
+    migrated = true;
+    fromSlot = selected.slotNumber;
+  }
+
+  setCurrentSaveSlot(SAVE_SLOT_CAREER);
+  try{ localStorage.setItem(SINGLE_CAREER_SLOT_MIGRATION_KEY, 'done'); }catch(_error){}
+  return { migrated, fromSlot, retainedLegacySlots:records.filter(item => item.slotNumber !== 1).map(item => item.slotNumber) };
+}
+async function localSlotExists(slotId='career'){
+  return Boolean(await readLocalSaveRecord(slotId).catch(()=>null));
+}
+async function deleteLocalSaveSlot(slotId='career'){
+  const slot = normalizeSaveSlotId(slotId);
+  await Promise.all([
+    deleteSaveRecordByKey(saveSlotKey(slot)).catch(()=>{}),
+    deleteSaveRecordByKey(backupSaveSlotKey(slot)).catch(()=>{})
+  ]);
+  if(slot === SAVE_SLOT_CAREER) await deleteSaveRecordByKey(legacyCareerSlotKey()).catch(()=>{});
+}
+async function readSaveSlotSummary(slotId='career'){
+  const slot = normalizeSaveSlotId(slotId);
+  const record = await readLocalSaveRecord(slot).catch(()=>null);
+  return {
+    slotId:slot,
+    exists:Boolean(record),
+    label:saveSlotLabel(slot, record),
+    clubId:Number(record?.selectedClubId || 0),
+    clubName:record?.selectedClubId ? clubName(record.selectedClubId) : '',
+    seasonNumber:Number(record?.seasonNumber || 0),
+    seasonYear:Number(record?.seasonYear || 0),
+    currentDate:String(record?.currentDate || '')
+  };
+}
+async function hydrateCareerSlotCards(){
+  const ids = typeof careerSaveSlotIds === 'function' ? careerSaveSlotIds() : [SAVE_SLOT_CAREER];
+  const summaries = await Promise.all(ids.map(id => readSaveSlotSummary(id).catch(()=>({ slotId:id, exists:false, label:saveSlotLabel(id, null) }))));
+  summaries.forEach(summary => {
+    const card = document.querySelector(`[data-save-slot-card="${summary.slotId}"]`);
+    if(!card) return;
+    const title = card.querySelector('[data-save-slot-title]');
+    const detail = card.querySelector('[data-save-slot-detail]');
+    const continueBtn = card.querySelector('[data-slot-continue]');
+    if(title) title.textContent = summary.label;
+    if(detail){
+      detail.textContent = summary.exists
+        ? `Guardada${summary.currentDate ? ` · ${summary.currentDate}` : ''}`
+        : 'Espacio libre para iniciar una carrera normal.';
+    }
+    if(continueBtn) continueBtn.textContent = summary.exists ? 'Entrar' : 'Crear';
+    card.classList.toggle('save-slot-empty', !summary.exists);
+    card.classList.remove('empty-slot');
+  });
+}
+async function loadBaseSeedForSlotStart(){
+  seed = await loadInitialSeed({ skipPlayersDatabase:false });
+  fillClubSelect();
+  return seed;
+}
+async function goToSaveSlotsMenu(options={}){
+  const opts = options && typeof options === 'object' ? options : {};
+  if(opts.saveCurrent && game) await saveLocal(true).catch(()=>{});
+  if(opts.reloadSeed !== false) await loadBaseSeedForSlotStart().catch(()=>{});
+  game = null;
+  activeTab = 'home';
+  try{ if(typeof forceCloseModal === 'function') forceCloseModal(); else if(typeof closeModal === 'function') closeModal(); }catch(_){ }
+  renderAll();
+  if(opts.notice) showNotice(opts.notice);
+}
+async function loadCareerSlotOrNew(slotId=SAVE_SLOT_CAREER){
+  const slot = normalizeSaveSlotId(slotId);
+  const loaded = await loadLocal(true, slot);
+  if(loaded){ showNotice(`${baseSaveSlotLabel(slot)} cargada.`); return true; }
+  setCurrentSaveSlot(slot);
+  await loadBaseSeedForSlotStart().catch(()=>{});
+  game = null;
+  renderAll();
+  openNewGameModal(true, { saveSlotId:slot });
+  return false;
+}
+async function startNewCareerFromSlot(slotId=SAVE_SLOT_CAREER){
+  const slot = normalizeSaveSlotId(slotId);
+  const exists = await localSlotExists(slot).catch(()=>false);
+  if(exists){
+    const ok = window.confirm(`Esto inicia una nueva carrera y reemplaza la partida guardada en este navegador. ¿Continuar?`);
+    if(!ok) return false;
+    await deleteLocalSaveSlot(slot).catch(()=>{});
+  }
+  setCurrentSaveSlot(slot);
+  await loadBaseSeedForSlotStart().catch(()=>{});
+  game = null;
+  renderAll();
+  openNewGameModal(true, { saveSlotId:slot });
+  return true;
+}
+async function continueCampoDestruidoSlot(){
+  const loaded = await loadLocal(true, SAVE_SLOT_CAMPO_DESTRUIDO);
+  if(loaded){ showNotice('Reto Campo destruido cargado.'); return true; }
+  showNotice('No hay un reto guardado. Iniciá uno nuevo.');
+  return false;
+}
+async function startNewCampoDestruidoSlot(){
+  const exists = await localSlotExists(SAVE_SLOT_CAMPO_DESTRUIDO).catch(()=>false);
+  if(exists){
+    const ok = window.confirm('Ya existe un reto Campo destruido guardado. Si iniciás otro, se pisa ese reto. ¿Continuar?');
+    if(!ok) return false;
+    await deleteLocalSaveSlot(SAVE_SLOT_CAMPO_DESTRUIDO).catch(()=>{});
+  }
+  setCurrentSaveSlot(SAVE_SLOT_CAMPO_DESTRUIDO);
+  await loadBaseSeedForSlotStart().catch(()=>{});
+  game = null;
+  renderAll();
+  if(typeof openCampoDestruidoChallengeModal === 'function') openCampoDestruidoChallengeModal({ saveSlotId:SAVE_SLOT_CAMPO_DESTRUIDO });
+  return true;
+}
+async function closeCompletedChallengeSlot(challenge=null){
+  const slot = normalizeSaveSlotId(game?.saveSlotId || currentSaveSlotId || SAVE_SLOT_CAMPO_DESTRUIDO);
+  if(slot === SAVE_SLOT_CAMPO_DESTRUIDO) await deleteLocalSaveSlot(SAVE_SLOT_CAMPO_DESTRUIDO).catch(()=>{});
+  setCurrentSaveSlot(SAVE_SLOT_CAREER);
+  const resultText = String(challenge?.closeNotice || (challenge?.success ? 'La directiva te dio las gracias por ganar el reto.' : 'La directiva finalizó tu contrato al terminar el reto.'));
+  await goToSaveSlotsMenu({ reloadSeed:true, notice:`${resultText} El desafío terminó y el slot fue cerrado.` });
 }
 
 async function loadSponsorsDatabase(){
@@ -38,7 +706,7 @@ async function loadEmployeesDatabase(){
     ],
     empleados:[
       { id:'psychologist', nombre:'Psicólogo motivacional', rol:'Motivación', costoBase:PSYCHOLOGIST_COST, duracion:'temporada', descripcion:'Permite realizar charlas motivacionales para mejorar la moral del plantel.', accion:'charla_motivacional' },
-      { id:'kinesiologist', nombre:'Kinesiólogo', rol:'Recuperación', costoBase:KINESIOLOGIST_COST, duracion:'temporada', descripcion:'Permite tratar lesionados una vez por semana para reducir días de recuperación.', accion:'tratamiento_lesion' },
+      { id:'kinesiologist', nombre:'Kinesiólogo', rol:'Recuperación', costoBase:KINESIOLOGIST_COST, duracion:'temporada', descripcion:'Permite tratar lesionados y asignar un jugador a trabajo diferenciado con menor carga.', accion:'tratamiento_lesion' },
       { id:'youth_preparer', nombre:'Preparador de juveniles', rol:'Academia', costoBase:YOUTH_PREPARER_COST, duracion:'temporada', descripcion:'Permite consultar informes de juveniles y descubrir más habilidades ocultas.', accion:'informe_juveniles' }
     ],
     source:'fallback'
@@ -49,6 +717,37 @@ async function loadEmployeesDatabase(){
   return { ...clean, categorias, empleados, source:raw ? EMPLOYEES_DATABASE_URL : 'fallback' };
 }
 
+
+function installationsDatabaseFallback(){
+  return {
+    version:APP_VERSION,
+    sistema:'instalaciones_club',
+    calefaccion_cesped:{
+      id:'pitch_heating', nombre:'Calefacción de césped', costo_construccion:200000000,
+      dias_construccion:60, costo_diario:10000, mejora_campo_diaria:1
+    },
+    predio_entrenamiento_juvenil:{
+      id:'youth_training_ground', nombre:'Predio de entrenamiento juvenil', residencias_desbloqueadas_por_nivel:2,
+      niveles:[
+        { nivel:1, nombre:'Básico', costo:20000000, dias_construccion:58, juveniles_excepcionales_adicionales:0, residencias_maximas:2 },
+        { nivel:2, nombre:'Medio', costo:100000000, dias_construccion:105, juveniles_excepcionales_adicionales:1, residencias_maximas:4 },
+        { nivel:3, nombre:'Bueno', costo:300000000, dias_construccion:180, juveniles_excepcionales_adicionales:2, residencias_maximas:6 },
+        { nivel:4, nombre:'Excelente', costo:500000000, dias_construccion:230, juveniles_excepcionales_adicionales:3, residencias_maximas:8 },
+        { nivel:5, nombre:'Elite', costo:1200000000, dias_construccion:80, juveniles_excepcionales_adicionales:5, residencias_maximas:10 }
+      ]
+    },
+    source:'fallback'
+  };
+}
+async function loadInstallationsDatabase(){
+  const raw = await fetchJsonIfExists(INSTALLATIONS_DATABASE_URL);
+  const fallback = installationsDatabaseFallback();
+  if(!raw || typeof raw !== 'object') return fallback;
+  const heating = raw.calefaccion_cesped && typeof raw.calefaccion_cesped === 'object' ? raw.calefaccion_cesped : fallback.calefaccion_cesped;
+  const youthRaw = raw.predio_entrenamiento_juvenil && typeof raw.predio_entrenamiento_juvenil === 'object' ? raw.predio_entrenamiento_juvenil : fallback.predio_entrenamiento_juvenil;
+  const levels = Array.isArray(youthRaw.niveles) && youthRaw.niveles.length ? youthRaw.niveles : fallback.predio_entrenamiento_juvenil.niveles;
+  return { ...raw, calefaccion_cesped:heating, predio_entrenamiento_juvenil:{ ...youthRaw, niveles:levels }, source:INSTALLATIONS_DATABASE_URL };
+}
 
 async function loadEventsDatabase(){
   const raw = await fetchJsonIfExists(EVENTS_DATABASE_URL);
@@ -63,7 +762,7 @@ async function loadSpecialSkillsDatabase(){
   const fallback = {
     version:APP_VERSION,
     sistema:'habilidades_especiales',
-    limites:{ cartas_activas_max:5, cartas_reserva_max:50, dias_bloqueo_cambio_cartas:100, permitir_abrir_sobres_con_reserva_llena:false, permitir_cartas_repetidas_activas:true, bonus_se_apilan:true },
+    limites:{ cartas_activas_max:5, cartas_reserva_max:50, dias_bloqueo_cambio_cartas:15, permitir_abrir_sobres_con_reserva_llena:false, permitir_cartas_repetidas_activas:true, bonus_se_apilan:true, activaciones_por_carta:5, activaciones_por_rareza:{ inutil:1, comun:1, rara:2, epica:3, legendaria:5 } },
     rareza_orden_visual:['inutil','comun','rara','epica','legendaria'],
     sobres:{},
     destruir_cartas:{ permitido:true, recuperacion_puntos:{ inutil:5, comun:20, rara:50, epica:250, legendaria:1000 } },
@@ -84,6 +783,22 @@ async function loadSpecialSkillsDatabase(){
   return clean;
 }
 
+
+async function loadManagerAchievementsDatabase(){
+  const fallback = { metadata:{ version:APP_VERSION, sistema:'hitos_manager', source:'fallback' }, hitos:[] };
+  const raw = await fetchJsonIfExists(MANAGER_ACHIEVEMENTS_DATABASE_URL);
+  if(!raw || typeof raw !== 'object') return fallback;
+  const hitos = Array.isArray(raw.hitos) ? raw.hitos.filter(item => item && item.id && item.metrica) : [];
+  return { ...raw, hitos, source:MANAGER_ACHIEVEMENTS_DATABASE_URL };
+}
+
+async function loadManagerChallengesDatabase(){
+  const fallback = { metadata:{ version:APP_VERSION, sistema:'retos_manager', source:'fallback' }, retos:[] };
+  const raw = await fetchJsonIfExists(MANAGER_CHALLENGES_DATABASE_URL);
+  if(!raw || typeof raw !== 'object') return fallback;
+  const retos = Array.isArray(raw.retos) ? raw.retos.filter(item => item && item.id && item.activo !== false) : [];
+  return { ...raw, retos, source:MANAGER_CHALLENGES_DATABASE_URL };
+}
 
 function uniqueUrlList(list){
   const raw = Array.isArray(list) ? list : [list];
@@ -153,7 +868,15 @@ function normalizeLegacyAssetMarkerEncoding(path){
 }
 function normalizeClubCrestPath(club, rawPath){
   const fallback = `img/escudos/${imageSlug(club?.name || '')}.png`;
+  const defaultFounderCrest = 'img/escudos/fundador-1.webp';
+  const foundedClub = Boolean(club?.isFoundedClub || club?.founderClub);
+  const rawClean = normalizeLegacyAssetMarkerEncoding(rawPath || '');
   const cleanPath = normalizeLegacyAssetMarkerEncoding(rawPath || fallback);
+  if(foundedClub){
+    const current = String(rawClean || '').trim();
+    const generatedByName = String(cleanPath || '').trim() === fallback;
+    if(!current || generatedByName) return defaultFounderCrest;
+  }
   const clubKey = lookupNameKey(club?.name || '');
   const countryKey = countryNameKey(club?.country || club?.pais || '');
   if(clubKey === 'everton' && String(cleanPath || '').endsWith('/everton.png')){
@@ -239,11 +962,17 @@ function playersDatabaseHash(players=[]){
   const raw = players.map(p => `${p.id}:${p.clubId}:${p.position}:${p.overall}:${p.salary}:${p.clause}`).join('|');
   return `players-${hashNumber(raw, 1000000000)}`;
 }
+function removeCustomPlayerPhotoFields(player){
+  if(!player || typeof player !== 'object') return player;
+  ['photoPath','fotoPath','imagePath','photo','foto'].forEach(field => { delete player[field]; });
+  return player;
+}
 function normalizeDatabasePlayer(player){
   const clean = { ...player, id:Number(player.id), clubId:Number(player.clubId || 0), age:Math.max(15, Math.round(Number(player.age || 18))) };
+  removeCustomPlayerPhotoFields(clean);
   clean.position = normalizePlayerPosition(clean.position, clean.id);
   clean.skills = clean.skills && typeof clean.skills === 'object' ? { ...clean.skills } : skillsForPosition(clean.position, Number(clean.overall || 50), clean.id);
-  clean.overall = rawVisibleOverall({ ...clean, overall:Number(clean.overall || 50) });
+  clean.overall = (clean.manualOverallLocked || clean.overallLocked) ? clamp(Math.round(Number(clean.overall || clean.media || 50)), 1, 99) : rawVisibleOverall({ ...clean, overall:Number(clean.overall || 50) });
   ensurePlayerEconomics(clean, clean.youthFreeAgent ? FREE_YOUTH_SALARY_FACTOR : (clean.freeAgent ? MARKET_FREE_AGENT_SALARY_FACTOR : 1));
   return clean;
 }
@@ -267,6 +996,7 @@ function applyPlayersDatabase(seedData, database){
   const normalized = database.players
     .map(normalizeDatabasePlayer)
     .filter(player => Number.isFinite(player.id) && (Number(player.clubId) === 0 || validClubIds.has(Number(player.clubId))));
+  if(typeof applyProfessionalQualityScaleToCollection === 'function') applyProfessionalQualityScaleToCollection(normalized, { source:'base_players_database' });
   if(!normalized.length) return seedData;
   const dbClubIds = new Set(normalized.map(player => Number(player.clubId || 0)).filter(Boolean));
   const dbMaxId = Math.max(0, ...normalized.map(player => Number(player.id || 0)).filter(Number.isFinite));
@@ -275,6 +1005,7 @@ function applyPlayersDatabase(seedData, database){
     .map(normalizeDatabasePlayer)
     .filter(player => Number(player.clubId || 0) > 0 && validClubIds.has(Number(player.clubId)) && !dbClubIds.has(Number(player.clubId)))
     .map(player => ensurePlayerEconomics({ ...player, id:nextId++ }));
+  if(typeof applyProfessionalQualityScaleToCollection === 'function') applyProfessionalQualityScaleToCollection(generatedForUncoveredClubs, { source:'fallback_club_players' });
   seedData.players = normalized.concat(generatedForUncoveredClubs);
   seedData.meta = { ...(seedData.meta || {}), playersSource:database.source, playersDatabaseVersion:database.raw?.metadata?.version || 'local', playersDatabaseValidation:database.raw?.validation || databaseValidationCounts(normalized), generatedPlayersKept:generatedForUncoveredClubs.length };
   seedData.meta.signature = `${seedSignature(seedData)}-${playersDatabaseHash(seedData.players)}`;
@@ -309,57 +1040,72 @@ function preserveBaseClubDivisionIntegrityMap(){
 function applySavedDatabaseSnapshots(saved){
   preserveBaseClubDivisionIntegrityMap();
   const clean = { ...(saved || {}) };
+  // La división guardada debe restaurarse antes que los clubes para conservar referencias coherentes.
+  if(Array.isArray(saved?.divisionsSnapshot) && saved.divisionsSnapshot.length){
+    seed.divisions = structuredClone(saved.divisionsSnapshot);
+  }
   if(Array.isArray(saved?.clubsSnapshot) && saved.clubsSnapshot.length){
     seed.clubs = saved.clubsSnapshot.map(club => ({ ...club, fieldConditionScore:Number.isFinite(club.fieldConditionScore) ? club.fieldConditionScore : initialFieldScore(club), fieldCondition:club.fieldCondition || fieldConditionName(club.fieldConditionScore || initialFieldScore(club)), crestPath:normalizeClubCrestPath(club, club.crestPath) }));
   }
   if(Array.isArray(saved?.playersSnapshot) && saved.playersSnapshot.length){
     seed.players = saved.playersSnapshot.map(normalizeDatabasePlayer);
+    syncManualPlayersIntoSeed({ preserveExisting:true, state:false, retiredManualPlayerIds:saved?.manualRetiredPlayerIds || saved?.retiredManualPlayerIds || [] });
   }
+  const manualReferenceSync = synchronizeManualPlayerReferences(clean, seed, { retiredManualPlayerIds:saved?.manualRetiredPlayerIds || saved?.retiredManualPlayerIds || [] });
+  if(manualReferenceSync.changed) clean._needsAutosave = true;
   delete clean.playersSnapshot;
   delete clean.clubsSnapshot;
   delete clean.divisionsSnapshot;
+  delete clean.localSaveMeta;
+  delete clean._storageReadSource;
+  delete clean._storageNeedsRefresh;
   return clean;
 }
 function currentSavePayload(){
   if(game?.clubBudgets && Number.isFinite(Number(game.selectedClubId))){
     game.clubBudgets[game.selectedClubId] = Math.round(Number(game.budget || 0));
   }
+  if(typeof repairPlayerSkillBoostsForState === 'function'){
+    repairPlayerSkillBoostsForState(game, seed?.players || []);
+  }
+  if(typeof repairPlayerAgeSkillPenaltiesForState === 'function'){
+    repairPlayerAgeSkillPenaltiesForState(game, seed?.players || []);
+  }
   const payload = structuredClone(game);
   delete payload._needsAutosave;
   delete payload._stadiumFieldsAutoRepaired;
+  payload.saveSlotId = normalizeSaveSlotId(game?.saveSlotId || currentSaveSlotId || SAVE_SLOT_CAREER);
   payload.seedSignature = seed?.meta?.signature || payload.seedSignature || '';
   payload.playersSnapshot = structuredClone(seed?.players || []);
   payload.clubsSnapshot = structuredClone(seed?.clubs || []);
   payload.divisionsSnapshot = structuredClone(seed?.divisions || []);
+  payload.localSaveMeta = {
+    schemaVersion:LOCAL_SAVE_SCHEMA_VERSION,
+    savedAt:new Date().toISOString(),
+    slotId:payload.saveSlotId
+  };
   return payload;
 }
 async function loadInitialSeed(options={}){
   const skipPlayersDatabase = Boolean(options?.skipPlayersDatabase);
-  const [playersDatabase, loadedStadiumsDatabase, loadedFansDatabase] = await Promise.all([
+  const [playersDatabase, loadedManualPlayersDatabase, loadedStadiumsDatabase, loadedFansDatabase, loadedLeagues] = await Promise.all([
     skipPlayersDatabase ? Promise.resolve(null) : loadPlayersDatabase(),
+    loadManualPlayersDatabase(),
     loadStadiumsDatabase(),
-    loadFansDatabase()
+    loadFansDatabase(),
+    Promise.all(LEAGUE_DATA_CANDIDATES.map(async url => ({ url, leagueJson:await fetchJsonIfExists(url) })))
   ]);
+  manualPlayersDatabase = loadedManualPlayersDatabase;
   stadiumsDatabase = loadedStadiumsDatabase;
   fansDatabase = loadedFansDatabase;
-  const loadedLeagues = await Promise.all(LEAGUE_DATA_CANDIDATES.map(async url => ({ url, leagueJson:await fetchJsonIfExists(url) })));
   const leagueSeeds = loadedLeagues
     .filter(item => item.leagueJson)
     .map(item => applyStadiumAndFansDatabases(buildSeedFromLigaArgentina(item.leagueJson, item.url), stadiumsDatabase, fansDatabase));
   if(leagueSeeds.length){
     const merged = mergeLeagueSeeds(leagueSeeds);
-    return applyPlayersDatabase(merged, playersDatabase);
+    return applyManualPlayersDatabase(applyPlayersDatabase(merged, playersDatabase), manualPlayersDatabase);
   }
-  const fallback = await fetchJsonIfExists(DATA_URL);
-  if(fallback && Array.isArray(fallback.clubs) && Array.isArray(fallback.players) && Array.isArray(fallback.fixtures)){
-    fallback.meta = { ...(fallback.meta || {}), source:fallback.meta?.source || 'seed.json', signature:seedSignature(fallback) };
-    fallback.clubs = fallback.clubs.map(c => ({ ...c, divisionId:c.divisionId || 'default', divisionName:c.divisionName || 'Liga única', prizeMultiplier:c.prizeMultiplier ?? 1, fieldConditionScore:c.fieldConditionScore || initialFieldScore(c), fieldCondition:fieldConditionName(c.fieldConditionScore || initialFieldScore(c)), crestPath:normalizeClubCrestPath(c, c.crestPath) }));
-    fallback.divisions = fallback.divisions || [{ id:'default', name:'Liga única', order:1, prizeMultiplier:1 }];
-    fallback.players = (fallback.players || []).map(player => ensurePlayerEconomics({ ...player, position:normalizePlayerPosition(player.position, player.id) }));
-    const withStadiums = applyStadiumAndFansDatabases(fallback, stadiumsDatabase, fansDatabase);
-    return applyPlayersDatabase(withStadiums, playersDatabase);
-  }
-  throw new Error('No se pudo cargar ningún JSON de liga ni un data/seed.json válido');
+  throw new Error('No se pudo cargar ningún JSON de liga válido. Revisá data.leagueUrls y los archivos publicados.');
 }
 function detectLeagueCountry(raw, sourceUrl=''){
   if(raw?.pais || raw?.country || raw?.countryName) return String(raw.pais || raw.country || raw.countryName).trim();
@@ -505,7 +1251,7 @@ function extractLeagueDivisions(raw){
     if(raw[name]) found.push({ name, teams:raw[name] });
   });
   if(found.length) return found;
-  const dynamic = Object.entries(raw).filter(([_, value]) => Array.isArray(value));
+  const dynamic = Object.entries(raw).filter(([, value]) => Array.isArray(value));
   return dynamic.map(([name, teams]) => ({ name, teams }));
 }
 function normalizeDivisionObject(item, index=0){
@@ -548,14 +1294,6 @@ function teamPrestige(team, divisionName, index, total){
   const value = tierBase + (tierTop - tierBase) * rankRatio + hashNumber(`${teamName(team)}-${divisionName}`, 7) - 3;
   return clamp(Math.round(value), 20, 99);
 }
-function fieldConditionByPrestige(prestige){
-  const p = Number(prestige) || 50;
-  if(p >= 82) return 'Excelente';
-  if(p >= 62) return 'Normal';
-  if(p >= 45) return 'Regular';
-  if(p >= 30) return 'Muy malo';
-  return 'Injugable';
-}
 function initialFieldScore(club){
   return clamp(60 + hashNumber(`field-start-${club?.name || club?.id || ''}`, 21), 60, 80);
 }
@@ -571,6 +1309,88 @@ function fieldConditionClass(score){
   const label = fieldConditionName(score);
   return label === 'Excelente' ? 'excellent' : label === 'Normal' ? 'normal' : label === 'Regular' ? 'regular' : label === 'Muy malo' ? 'bad' : 'unplayable';
 }
+function pitchHeatingDefinition(){
+  const fallback = installationsDatabaseFallback().calefaccion_cesped;
+  const raw = installationsDatabase?.calefaccion_cesped || fallback;
+  return {
+    id:String(raw.id || fallback.id),
+    name:String(raw.nombre || raw.name || fallback.nombre),
+    buildCost:Math.max(0, Math.round(Number(raw.costo_construccion ?? raw.buildCost ?? fallback.costo_construccion))),
+    buildDays:Math.max(1, Math.round(Number(raw.dias_construccion ?? raw.buildDays ?? fallback.dias_construccion))),
+    dailyCost:Math.max(0, Math.round(Number(raw.costo_diario ?? raw.dailyCost ?? fallback.costo_diario))),
+    dailyFieldGain:Math.max(0, Math.round(Number(raw.mejora_campo_diaria ?? raw.dailyFieldGain ?? fallback.mejora_campo_diaria)))
+  };
+}
+function youthTrainingResidencesPerLevel(){
+  const fallback = installationsDatabaseFallback().predio_entrenamiento_juvenil;
+  const raw = installationsDatabase?.predio_entrenamiento_juvenil || {};
+  return Math.max(0, Math.round(Number(raw.residencias_desbloqueadas_por_nivel ?? raw.residencesPerLevel ?? fallback.residencias_desbloqueadas_por_nivel ?? 2)));
+}
+function youthTrainingGroundLevels(){
+  const fallback = installationsDatabaseFallback().predio_entrenamiento_juvenil.niveles;
+  const raw = installationsDatabase?.predio_entrenamiento_juvenil?.niveles;
+  const perLevel = youthTrainingResidencesPerLevel();
+  return (Array.isArray(raw) && raw.length ? raw : fallback).map(item => {
+    const level = Math.max(1, Math.round(Number(item.nivel ?? item.level ?? 1)));
+    return {
+      level,
+      name:String(item.nombre || item.name || `Nivel ${level}`),
+      cost:Math.max(0, Math.round(Number(item.costo ?? item.cost ?? 0))),
+      buildDays:Math.max(1, Math.round(Number(item.dias_construccion ?? item.buildDays ?? 1))),
+      exceptionalBonus:Math.max(0, Math.round(Number(item.juveniles_excepcionales_adicionales ?? item.exceptionalBonus ?? 0))),
+      maxResidences:Math.max(0, Math.round(Number(item.residencias_maximas ?? item.maxResidences ?? level * perLevel)))
+    };
+  }).sort((a,b) => a.level - b.level);
+}
+function youthTrainingGroundLevelDefinition(level){
+  return youthTrainingGroundLevels().find(item => Number(item.level) === Number(level)) || null;
+}
+function createClubFacilitiesState(){
+  return { heating:{ built:false, active:false, construction:null } };
+}
+function normalizeFacilityConstruction(project, extra={}){
+  if(!project || typeof project !== 'object') return null;
+  const totalDays = Math.max(1, Math.round(Number(project.totalDays || project.days || project.daysLeft || 1)));
+  const daysLeft = Math.max(0, Math.round(Number(project.daysLeft || 0)));
+  if(daysLeft <= 0) return null;
+  return { ...project, ...extra, totalDays, daysLeft };
+}
+function normalizeClubFacilitiesState(state){
+  const base = createClubFacilitiesState();
+  const clean = state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+  const heatingRaw = clean.heating && typeof clean.heating === 'object' ? clean.heating : {};
+  const heatingBuilt = Boolean(heatingRaw.built);
+  const heatingConstruction = heatingBuilt ? null : normalizeFacilityConstruction(heatingRaw.construction);
+  const { youthTraining:_legacyYouthTraining, ...clubOnly } = clean;
+  return {
+    ...base,
+    ...clubOnly,
+    heating:{ ...base.heating, ...heatingRaw, built:heatingBuilt, active:heatingBuilt && Boolean(heatingRaw.active), construction:heatingConstruction }
+  };
+}
+function clubFacilitiesState(clubId=game?.selectedClubId){
+  ensureStadiumState();
+  const id = Number(clubId || 0);
+  if(!id) return createClubFacilitiesState();
+  game.stadium.facilities[id] = normalizeClubFacilitiesState(game.stadium.facilities[id]);
+  return game.stadium.facilities[id];
+}
+function managerAcademyYouthTrainingState(){
+  if(typeof managerAcademyFacilitiesState === 'function') return managerAcademyFacilitiesState().youthTraining;
+  const raw = game?.academy?.facilities?.youthTraining || {};
+  return { level:Math.max(0, Math.round(Number(raw.level || 0))), construction:raw.construction || null };
+}
+function youthTrainingGroundLevel(){
+  return Math.max(0, Math.round(Number(managerAcademyYouthTrainingState()?.level || 0)));
+}
+function youthTrainingExceptionalBonus(){
+  const definition = youthTrainingGroundLevelDefinition(youthTrainingGroundLevel());
+  return Math.max(0, Math.round(Number(definition?.exceptionalBonus || 0)));
+}
+function youthTrainingResidenceLimit(){
+  const definition = youthTrainingGroundLevelDefinition(youthTrainingGroundLevel());
+  return Math.max(0, Math.round(Number(definition?.maxResidences || 0)));
+}
 function createInitialStadiumState(){
   const fields = {};
   const ticketPrices = {};
@@ -578,7 +1398,7 @@ function createInitialStadiumState(){
     fields[club.id] = Number.isFinite(club.fieldConditionScore) ? club.fieldConditionScore : initialFieldScore(club);
     ticketPrices[club.id] = TICKET_PRICE_INITIAL;
   });
-  return { fields, projects:{}, ticketPrices, capacityOverrides:{}, expansionProjects:{}, completedExpansions:{}, botSeasonNumber:0 };
+  return { fields, projects:{}, ticketPrices, capacityOverrides:{}, capacityDeteriorationHistory:[], expansionProjects:{}, completedExpansions:{}, capacityRepairProjects:{}, facilities:{}, afaFieldSanctions:{}, botSeasonNumber:0 };
 }
 function ensureStadiumState(){
   if(!game) return;
@@ -587,8 +1407,12 @@ function ensureStadiumState(){
   if(!game.stadium.projects) game.stadium.projects = {};
   if(!game.stadium.ticketPrices) game.stadium.ticketPrices = {};
   if(!game.stadium.capacityOverrides) game.stadium.capacityOverrides = {};
+  if(!game.stadium.capacityDeteriorationHistory) game.stadium.capacityDeteriorationHistory = [];
   if(!game.stadium.expansionProjects) game.stadium.expansionProjects = {};
   if(!game.stadium.completedExpansions) game.stadium.completedExpansions = {};
+  if(!game.stadium.capacityRepairProjects || typeof game.stadium.capacityRepairProjects !== 'object' || Array.isArray(game.stadium.capacityRepairProjects)) game.stadium.capacityRepairProjects = {};
+  if(!game.stadium.facilities || typeof game.stadium.facilities !== 'object' || Array.isArray(game.stadium.facilities)) game.stadium.facilities = {};
+  if(!game.stadium.afaFieldSanctions || typeof game.stadium.afaFieldSanctions !== 'object' || Array.isArray(game.stadium.afaFieldSanctions)) game.stadium.afaFieldSanctions = {};
   seed.clubs.forEach(club => {
     if(!Number.isFinite(game.stadium.fields[club.id])) game.stadium.fields[club.id] = Number.isFinite(club.fieldConditionScore) ? club.fieldConditionScore : initialFieldScore(club);
     if(!Number.isFinite(Number(game.stadium.ticketPrices[club.id]))) game.stadium.ticketPrices[club.id] = TICKET_PRICE_INITIAL;
@@ -599,9 +1423,6 @@ function ensureStadiumState(){
 function fieldScoreForClub(clubId){
   ensureStadiumState();
   return clamp(Math.round(game?.stadium?.fields?.[clubId] ?? 60), 1, 100);
-}
-function fieldNameForClub(clubId){
-  return fieldConditionName(fieldScoreForClub(clubId));
 }
 function stadiumProjectForClub(clubId){
   ensureStadiumState();
@@ -617,9 +1438,29 @@ function baseStadiumCapacityForClub(clubId){
 function clubStadiumCapacity(clubId){
   ensureStadiumState();
   const founded = isFoundedClubId(clubId);
+  const bankruptcy = Boolean(game?.bankruptcyMode && Number(game?.selectedClubId || 0) === Number(clubId || 0));
   const override = Number(game?.stadium?.capacityOverrides?.[clubId]);
-  if(Number.isFinite(override) && (override > 0 || founded)) return clamp(Math.round(override), founded ? 0 : 500, STADIUM_EXPANSION_MAX_CAPACITY);
+  if(Number.isFinite(override) && (override > 0 || founded || bankruptcy)) return clamp(Math.round(override), (founded || bankruptcy) ? 0 : 500, STADIUM_EXPANSION_MAX_CAPACITY);
   return baseStadiumCapacityForClub(clubId);
+}
+function applyManagedStadiumCapacityDeterioration(clubId, season=game?.seasonNumber || 1){
+  if(!game?.stadium || STADIUM_CAPACITY_SEASON_DECAY_PCT <= 0) return null;
+  const id = Number(clubId || 0);
+  if(!id) return null;
+  ensureStadiumState();
+  const before = clubStadiumCapacity(id);
+  const minCapacity = (isFoundedClubId(id) || Boolean(game?.bankruptcyMode && Number(game?.selectedClubId || 0) === id)) ? 0 : 500;
+  if(before <= minCapacity) return null;
+  let after = Math.floor(before * (1 - (STADIUM_CAPACITY_SEASON_DECAY_PCT / 100)));
+  if(after >= before && before > minCapacity) after = before - 1;
+  after = clamp(after, minCapacity, STADIUM_EXPANSION_MAX_CAPACITY);
+  if(after === before) return null;
+  game.stadium.capacityOverrides[id] = after;
+  game.stadium.capacityDeteriorationHistory = Array.isArray(game.stadium.capacityDeteriorationHistory) ? game.stadium.capacityDeteriorationHistory : [];
+  const record = { clubId:id, season:Number(season || game.seasonNumber || 1), before, after, lost:before - after, pct:STADIUM_CAPACITY_SEASON_DECAY_PCT, date:game.currentDate || '' };
+  game.stadium.capacityDeteriorationHistory.push(record);
+  game.stadium.capacityDeteriorationHistory = game.stadium.capacityDeteriorationHistory.slice(-40);
+  return record;
 }
 function stadiumExpansionBaseById(expansionId){
   return (STADIUM_EXPANSIONS || []).find(item => Number(item.id) === Number(expansionId));
@@ -670,8 +1511,98 @@ function completedStadiumExpansionsForClub(clubId){
   if(!game.stadium.completedExpansions[id] || typeof game.stadium.completedExpansions[id] !== 'object') game.stadium.completedExpansions[id] = {};
   return game.stadium.completedExpansions[id];
 }
+function completedStadiumExpansionCapacityGain(clubId){
+  const completed = completedStadiumExpansionsForClub(clubId);
+  return (STADIUM_EXPANSIONS || []).reduce((total, expansion) => completed[expansion.id] ? total + Math.max(0, Math.round(Number(expansion.capacityGain || 0))) : total, 0);
+}
+function clubStadiumStructuralCapacity(clubId){
+  ensureStadiumState();
+  const id = Number(clubId || 0);
+  const base = baseStadiumCapacityForClub(id);
+  const completedCapacity = base + completedStadiumExpansionCapacityGain(id);
+  const historyMaximum = (game?.stadium?.capacityDeteriorationHistory || []).reduce((maximum, record) => {
+    if(Number(record?.clubId || 0) !== id) return maximum;
+    return Math.max(maximum, Math.round(Number(record?.before || 0)), Math.round(Number(record?.after || 0)));
+  }, 0);
+  return clamp(Math.max(base, completedCapacity, historyMaximum, clubStadiumCapacity(id)), 0, STADIUM_EXPANSION_MAX_CAPACITY);
+}
 function activeStadiumExpansionProjects(clubId){
   return stadiumExpansionProjectsForClub(clubId).filter(project => Number(project.daysLeft || 0) > 0);
+}
+function projectedStadiumStructuralCapacity(clubId){
+  const activeGain = activeStadiumExpansionProjects(clubId).reduce((total, project) => total + Math.max(0, Math.round(Number(project.capacityGain || 0))), 0);
+  return clamp(clubStadiumStructuralCapacity(clubId) + activeGain, 0, STADIUM_EXPANSION_MAX_CAPACITY);
+}
+function nextOrderedStadiumExpansionForClub(clubId){
+  const progressCapacity = projectedStadiumStructuralCapacity(clubId);
+  const completed = completedStadiumExpansionsForClub(clubId);
+  const activeIds = new Set(activeStadiumExpansionProjects(clubId).map(project => Number(project.id)));
+  return (STADIUM_EXPANSIONS || [])
+    .slice()
+    .sort((a,b) => Number(a.targetCapacity || 0) - Number(b.targetCapacity || 0) || Number(a.id || 0) - Number(b.id || 0))
+    .find(expansion => !completed[expansion.id] && !activeIds.has(Number(expansion.id)) && Number(expansion.targetCapacity || 0) > progressCapacity) || null;
+}
+function activeStadiumCapacityRepairProject(clubId){
+  ensureStadiumState();
+  const id = Number(clubId || 0);
+  const raw = game?.stadium?.capacityRepairProjects?.[id];
+  if(!raw || Number(raw.daysLeft || 0) <= 0){
+    if(game?.stadium?.capacityRepairProjects) delete game.stadium.capacityRepairProjects[id];
+    return null;
+  }
+  const totalDays = Math.max(1, Math.round(Number(raw.totalDays || raw.daysLeft || 1)));
+  const normalized = { ...raw, daysLeft:Math.max(1, Math.round(Number(raw.daysLeft || 1))), totalDays };
+  game.stadium.capacityRepairProjects[id] = normalized;
+  return normalized;
+}
+function stadiumCapacityMissingSeats(clubId){
+  return Math.max(0, clubStadiumStructuralCapacity(clubId) - clubStadiumCapacity(clubId));
+}
+function stadiumCapacityRepairReferenceExpansion(clubId){
+  const structural = clubStadiumStructuralCapacity(clubId);
+  return (STADIUM_EXPANSIONS || []).find(expansion => Number(expansion.targetCapacity || 0) > structural) || (STADIUM_EXPANSIONS || []).slice(-1)[0] || null;
+}
+function stadiumCapacityRepairQuote(clubId){
+  const currentCapacity = clubStadiumCapacity(clubId);
+  const targetCapacity = clubStadiumStructuralCapacity(clubId);
+  const missingSeats = Math.max(0, targetCapacity - currentCapacity);
+  const reference = stadiumCapacityRepairReferenceExpansion(clubId);
+  const referenceGain = Math.max(1, Math.round(Number(reference?.capacityGain || 1)));
+  const referenceCostPerSeat = Math.max(1, Number(reference?.cost || STADIUM_CAPACITY_REPAIR_MIN_COST) / referenceGain);
+  const rawCost = missingSeats * referenceCostPerSeat * STADIUM_CAPACITY_REPAIR_COST_FACTOR;
+  const cost = missingSeats > 0 ? Math.max(STADIUM_CAPACITY_REPAIR_MIN_COST, Math.ceil(rawCost / 100000) * 100000) : 0;
+  const days = missingSeats > 0 ? clamp(Math.ceil(missingSeats / STADIUM_CAPACITY_REPAIR_SEATS_PER_DAY), STADIUM_CAPACITY_REPAIR_MIN_DAYS, STADIUM_CAPACITY_REPAIR_MAX_DAYS) : 0;
+  return { currentCapacity, targetCapacity, missingSeats, cost, days, referenceExpansionId:Number(reference?.id || 0) };
+}
+function stadiumCapacityRepairStartStatus(clubId){
+  const quote = stadiumCapacityRepairQuote(clubId);
+  if(activeStadiumCapacityRepairProject(clubId)) return { ok:false, reason:'La reparación del estadio ya está en curso.', quote };
+  if(quote.missingSeats <= 0) return { ok:false, reason:'El estadio no tiene capacidad deteriorada para reparar.', quote };
+  if(activeStadiumExpansionProjects(clubId).length) return { ok:false, reason:'Finalizá las ampliaciones activas antes de reparar la estructura.', quote };
+  if(Number(game?.budget || 0) < quote.cost) return { ok:false, reason:'Presupuesto insuficiente.', quote };
+  return { ok:true, reason:'', quote };
+}
+function startStadiumCapacityRepair(){
+  if(!game?.selectedClubId) return;
+  ensureStadiumState();
+  const clubId = Number(game.selectedClubId);
+  const status = stadiumCapacityRepairStartStatus(clubId);
+  if(!status.ok){ showNotice(status.reason); return; }
+  const quote = status.quote;
+  recordBudgetChange(-quote.cost, 'Reparación de capacidad del estadio', { type:'stadium_capacity_repair', missingSeats:quote.missingSeats, targetCapacity:quote.targetCapacity });
+  game.stadium.capacityRepairProjects[clubId] = {
+    clubId,
+    startCapacity:quote.currentCapacity,
+    targetCapacity:quote.targetCapacity,
+    missingSeats:quote.missingSeats,
+    cost:quote.cost,
+    daysLeft:quote.days,
+    totalDays:quote.days,
+    startedAt:game.currentDate || ''
+  };
+  saveLocal(true);
+  showNotice(`Reparación iniciada: ${new Intl.NumberFormat('es-AR').format(quote.missingSeats)} lugares en ${quote.days} día(s).`);
+  renderStadium();
 }
 function maxSimultaneousStadiumWorks(capacity){
   const cap = Math.round(Number(capacity || 0));
@@ -681,7 +1612,7 @@ function maxSimultaneousStadiumWorks(capacity){
   return 1;
 }
 function stadiumSlotTokens(slot){
-  return String(slot || '').split(/[\/,+]/).map(s => s.trim()).filter(Boolean);
+  return String(slot || '').split(/[/,+]/).map(s => s.trim()).filter(Boolean);
 }
 function stadiumSlotsConflict(slotA, slotB){
   const a = stadiumSlotTokens(slotA);
@@ -690,25 +1621,26 @@ function stadiumSlotsConflict(slotA, slotB){
   return a.some(token => b.includes(token));
 }
 function stadiumConstructionAttendancePenalty(clubId){
-  const active = activeStadiumExpansionProjects(clubId).length;
-  return clamp(active * STADIUM_EXPANSION_ATTENDANCE_PENALTY_PER_PROJECT, 0, STADIUM_EXPANSION_ATTENDANCE_PENALTY_MAX);
+  const expansionPenalty = activeStadiumExpansionProjects(clubId).length * STADIUM_EXPANSION_ATTENDANCE_PENALTY_PER_PROJECT;
+  const repairPenalty = activeStadiumCapacityRepairProject(clubId) ? STADIUM_CAPACITY_REPAIR_ATTENDANCE_PENALTY : 0;
+  return clamp(expansionPenalty + repairPenalty, 0, STADIUM_EXPANSION_ATTENDANCE_PENALTY_MAX);
 }
 function availableStadiumExpansionsForClub(clubId){
-  const capacity = clubStadiumCapacity(clubId);
-  const completed = completedStadiumExpansionsForClub(clubId);
-  const activeIds = new Set(activeStadiumExpansionProjects(clubId).map(project => Number(project.id)));
-  return (STADIUM_EXPANSIONS || []).filter(item => !completed[item.id] && !activeIds.has(Number(item.id)) && capacity >= Number(item.minCapacity || 0) && capacity < Number(item.targetCapacity || STADIUM_EXPANSION_MAX_CAPACITY));
+  const next = nextOrderedStadiumExpansionForClub(clubId);
+  return next ? [next] : [];
 }
 function stadiumExpansionStartStatus(clubId, expansion){
   const capacity = clubStadiumCapacity(clubId);
+  const structuralCapacity = clubStadiumStructuralCapacity(clubId);
   const active = activeStadiumExpansionProjects(clubId);
+  const nextOrdered = nextOrderedStadiumExpansionForClub(clubId);
   if(!expansion) return { ok:false, reason:'Obra inválida.' };
-  if(capacity >= STADIUM_EXPANSION_MAX_CAPACITY) return { ok:false, reason:'El estadio ya alcanzó el máximo de 120.000.' };
-  if(capacity < Number(expansion.minCapacity || 0)) return { ok:false, reason:`Requiere ${new Intl.NumberFormat('es-AR').format(expansion.minCapacity || 0)} de capacidad terminada.` };
-  if(capacity >= Number(expansion.targetCapacity || STADIUM_EXPANSION_MAX_CAPACITY)) return { ok:false, reason:'Esta ampliación ya quedó superada por la capacidad actual.' };
+  if(activeStadiumCapacityRepairProject(clubId)) return { ok:false, reason:'La reparación estructural debe finalizar antes de iniciar una ampliación.' };
+  if(structuralCapacity >= STADIUM_EXPANSION_MAX_CAPACITY) return { ok:false, reason:capacity < structuralCapacity ? 'La estructura llegó al máximo. Repará los lugares deteriorados para recuperar el aforo.' : 'El estadio ya alcanzó el máximo de 120.000.' };
   if(completedStadiumExpansionsForClub(clubId)[expansion.id]) return { ok:false, reason:'Esta obra ya fue realizada.' };
   if(active.some(project => Number(project.id) === Number(expansion.id))) return { ok:false, reason:'Esta obra ya está en construcción.' };
-  if(active.length >= maxSimultaneousStadiumWorks(capacity)) return { ok:false, reason:`Máximo ${maxSimultaneousStadiumWorks(capacity)} obra(s) simultánea(s) para esta capacidad.` };
+  if(!nextOrdered || Number(nextOrdered.id) !== Number(expansion.id)) return { ok:false, reason:nextOrdered ? `Primero corresponde la obra #${nextOrdered.id}: ${nextOrdered.name}.` : 'No quedan ampliaciones pendientes.' };
+  if(active.length >= maxSimultaneousStadiumWorks(structuralCapacity)) return { ok:false, reason:`Máximo ${maxSimultaneousStadiumWorks(structuralCapacity)} obra(s) simultánea(s) para esta etapa.` };
   if(active.some(project => stadiumSlotsConflict(project.slot, expansion.slot))) return { ok:false, reason:'Ya hay una obra activa en ese sector del estadio.' };
   if((game.budget || 0) < Number(expansion.cost || 0)) return { ok:false, reason:'Presupuesto insuficiente.' };
   return { ok:true, reason:'' };
@@ -728,7 +1660,8 @@ function startStadiumExpansion(expansionId){
   renderStadium();
 }
 function processStadiumExpansionDays(days=1){
-  if(!game?.stadium?.expansionProjects) return [];
+  if(!game?.stadium) return [];
+  ensureStadiumState();
   const elapsed = Math.max(0, Math.round(Number(days || 0)));
   if(elapsed <= 0) return [];
   const completedNow = [];
@@ -751,6 +1684,19 @@ function processStadiumExpansionDays(days=1){
   completedNow.forEach(done => {
     if(Number(done.clubId) === Number(game.selectedClubId) && typeof pushGameMessage === 'function'){
       pushGameMessage({ type:'estadio', title:`Obra finalizada: ${done.project.name}`, body:`La capacidad del estadio aumentó de ${new Intl.NumberFormat('es-AR').format(done.before)} a ${new Intl.NumberFormat('es-AR').format(done.after)} espectadores.`, priority:'normal' });
+    }
+  });
+  Object.entries(game.stadium.capacityRepairProjects || {}).forEach(([clubIdRaw, project]) => {
+    const clubId = Number(clubIdRaw);
+    if(!project || Number(project.daysLeft || 0) <= 0){ delete game.stadium.capacityRepairProjects[clubId]; return; }
+    project.daysLeft = Math.max(0, Math.round(Number(project.daysLeft || 0)) - elapsed);
+    if(project.daysLeft > 0) return;
+    const before = clubStadiumCapacity(clubId);
+    const after = clubStadiumStructuralCapacity(clubId);
+    game.stadium.capacityOverrides[clubId] = after;
+    delete game.stadium.capacityRepairProjects[clubId];
+    if(Number(clubId) === Number(game.selectedClubId) && typeof pushGameMessage === 'function'){
+      pushGameMessage({ type:'estadio', title:'Reparación del estadio finalizada', body:`Se recuperaron ${new Intl.NumberFormat('es-AR').format(Math.max(0, after - before))} lugares. La capacidad volvió a ${new Intl.NumberFormat('es-AR').format(after)} espectadores.`, priority:'high' });
     }
   });
   return completedNow;
@@ -776,6 +1722,8 @@ function ensureFanState(targetGame=game){
   targetGame.fans = targetGame.fans && typeof targetGame.fans === 'object' && !Array.isArray(targetGame.fans) ? targetGame.fans : createInitialFanState();
   targetGame.fans.clubs = targetGame.fans.clubs && typeof targetGame.fans.clubs === 'object' && !Array.isArray(targetGame.fans.clubs) ? targetGame.fans.clubs : {};
   targetGame.fans.history = Array.isArray(targetGame.fans.history) ? targetGame.fans.history : [];
+  targetGame.fans.memberCampaigns = Array.isArray(targetGame.fans.memberCampaigns) ? targetGame.fans.memberCampaigns : [];
+  targetGame.fans.memberCampaignHistory = Array.isArray(targetGame.fans.memberCampaignHistory) ? targetGame.fans.memberCampaignHistory : [];
   seed.clubs.forEach(club => {
     const base = clubFansBase(club.id);
     const row = targetGame.fans.clubs[club.id] || {};
@@ -796,6 +1744,90 @@ function setClubFansCurrent(clubId, value, reason=''){
   game.fans.clubs[id] = { ...row, current, lastDelta:current - previous, lastReason:String(reason || '') };
   return current - previous;
 }
+function addHiddenMemberCampaignFans(clubId, amount, campaign=null){
+  ensureFanState();
+  const id = Number(clubId);
+  const delta = Math.max(0, Math.round(Number(amount || 0)));
+  if(delta <= 0) return 0;
+  const previous = clubFansCurrent(id);
+  const row = game.fans.clubs[id] || { base:clubFansBase(id) };
+  game.fans.clubs[id] = { ...row, current:previous + delta };
+  game.fans.memberCampaignHistory.push({
+    season:game.seasonNumber || 1,
+    date:game.currentDate || '',
+    clubId:id,
+    campaignId:campaign?.templateId || campaign?.id || '',
+    campaignName:campaign?.name || '',
+    delta,
+    current:previous + delta
+  });
+  game.fans.memberCampaignHistory = game.fans.memberCampaignHistory.slice(-365);
+  return delta;
+}
+function activeMemberCampaignsForClub(clubId=game?.selectedClubId){
+  ensureFanState();
+  const id = Number(clubId || 0);
+  return (game.fans.memberCampaigns || []).filter(campaign => Number(campaign.clubId || 0) === id && Number(campaign.daysLeft || 0) > 0);
+}
+function startMemberCampaign(campaignId){
+  if(!game?.selectedClubId) return;
+  ensureFanState();
+  const template = (STADIUM_MEMBER_CAMPAIGNS || []).find(item => String(item.id) === String(campaignId));
+  if(!template){ showNotice('Campaña inválida.'); return; }
+  const alreadyActive = activeMemberCampaignsForClub(game.selectedClubId).some(campaign => String(campaign.templateId || '') === String(template.id));
+  if(alreadyActive){ showNotice('Esa campaña ya está activa. Esperá a que termine para volver a iniciarla.'); return; }
+  if((game.budget || 0) < Number(template.cost || 0)){ showNotice('Presupuesto insuficiente para iniciar esta campaña.'); return; }
+  const campaign = {
+    id:`member-campaign-${game.seasonNumber || 1}-${currentTurnIndex()}-${template.id}-${Math.floor(Math.random() * 100000)}`,
+    templateId:template.id,
+    name:template.name,
+    clubId:Number(game.selectedClubId),
+    investment:Math.round(Number(template.cost || 0)),
+    durationDays:Math.round(Number(template.durationDays || 1)),
+    daysLeft:Math.round(Number(template.durationDays || 1)),
+    dailyMembersMin:Math.round(Number(template.dailyMembersMin || 0)),
+    dailyMembersMax:Math.round(Number(template.dailyMembersMax || template.dailyMembersMin || 0)),
+    startedDate:game.currentDate || '',
+    startedTurn:currentTurnIndex(),
+    totalHiddenMembers:0
+  };
+  recordBudgetChange(-campaign.investment, `Campaña de socios: ${campaign.name}`, { type:'member_campaign', campaignId:campaign.id, templateId:campaign.templateId });
+  game.fans.memberCampaigns.push(campaign);
+  saveLocal(true);
+  showNotice(`Campaña iniciada. Inversión: ${formatMoney(campaign.investment)}. Duración: ${formatDays(campaign.durationDays)}.`);
+  if(typeof renderStadium === 'function') renderStadium();
+}
+function processMemberCampaigns(days=1){
+  ensureFanState();
+  const elapsed = Math.max(0, Math.round(Number(days || 0)));
+  if(elapsed <= 0 || !game.fans.memberCampaigns.length) return { added:0, finished:0 };
+  let totalAdded = 0;
+  const remaining = [];
+  const finished = [];
+  game.fans.memberCampaigns.forEach(raw => {
+    const campaign = { ...raw };
+    let daysLeft = Math.max(0, Math.round(Number(campaign.daysLeft || 0)));
+    const daysToProcess = Math.min(daysLeft, elapsed);
+    for(let day=0; day<daysToProcess; day += 1){
+      const min = Math.max(0, Math.round(Number(campaign.dailyMembersMin || 0)));
+      const max = Math.max(min, Math.round(Number(campaign.dailyMembersMax || min)));
+      const gained = rnd(min, max);
+      totalAdded += addHiddenMemberCampaignFans(campaign.clubId, gained, campaign);
+      campaign.totalHiddenMembers = Math.round(Number(campaign.totalHiddenMembers || 0) + gained);
+    }
+    daysLeft = Math.max(0, daysLeft - daysToProcess);
+    campaign.daysLeft = daysLeft;
+    if(daysLeft > 0) remaining.push(campaign);
+    else finished.push(campaign);
+  });
+  game.fans.memberCampaigns = remaining;
+  finished.forEach(campaign => {
+    if(Number(campaign.clubId) === Number(game.selectedClubId) && typeof pushGameMessage === 'function'){
+      pushGameMessage({ type:'estadio', title:'Campaña de socios finalizada', body:`Finalizó la campaña con inversión de ${formatMoney(campaign.investment)} y duración de ${formatDays(campaign.durationDays)}.`, priority:'normal' });
+    }
+  });
+  return { added:totalAdded, finished:finished.length };
+}
 function ticketPriceForClub(clubId){
   ensureStadiumState();
   return clamp(Math.round(Number(game?.stadium?.ticketPrices?.[clubId] ?? TICKET_PRICE_INITIAL)), TICKET_PRICE_MIN, TICKET_PRICE_MAX);
@@ -805,10 +1837,6 @@ function setTicketPriceForClub(clubId, value){
   const price = clamp(Math.round(Number(value || TICKET_PRICE_INITIAL)), TICKET_PRICE_MIN, TICKET_PRICE_MAX);
   game.stadium.ticketPrices[clubId] = price;
   return price;
-}
-function priceRatio(price){
-  if(TICKET_PRICE_MAX <= TICKET_PRICE_MIN) return 0;
-  return clamp((Number(price || TICKET_PRICE_INITIAL) - TICKET_PRICE_MIN) / (TICKET_PRICE_MAX - TICKET_PRICE_MIN), 0, 1);
 }
 function roundTicketPrice(value){
   const step = Math.max(1, Number(BOT_TICKET_ROUNDING || 1));
@@ -841,10 +1869,16 @@ function ticketPriceInfoForMatch(match, rivalPrestige=0){
   return { price, basePrice:TICKET_PRICE_INITIAL, multiplier:Number(multiplier.toFixed(2)), isAutomaticBot:true, prestigeTier:tier };
 }
 function ticketLossShieldRate(price){
-  return (1 - priceRatio(price)) * TICKET_PRICE_MAX_EFFECT_RATE;
+  const neutral = clamp(Number(TICKET_PRICE_INITIAL || TICKET_PRICE_MIN), TICKET_PRICE_MIN, TICKET_PRICE_MAX);
+  if(Number(price || neutral) >= neutral || neutral <= TICKET_PRICE_MIN) return 0;
+  const progress = clamp((neutral - Number(price || neutral)) / Math.max(1, neutral - TICKET_PRICE_MIN), 0, 1);
+  return progress * FAN_CHEAP_TICKET_LOSS_SHIELD_MAX;
 }
 function ticketGainBlockRate(price){
-  return priceRatio(price) * TICKET_PRICE_MAX_EFFECT_RATE;
+  const neutral = clamp(Number(TICKET_PRICE_INITIAL || TICKET_PRICE_MIN), TICKET_PRICE_MIN, TICKET_PRICE_MAX);
+  if(Number(price || neutral) <= neutral || TICKET_PRICE_MAX <= neutral) return 0;
+  const progress = clamp((Number(price || neutral) - neutral) / Math.max(1, TICKET_PRICE_MAX - neutral), 0, 1);
+  return progress * FAN_EXPENSIVE_TICKET_GAIN_BLOCK_MAX;
 }
 function awayFansMinimumRateForMatch(match){
   const range = Math.max(0, AWAY_FANS_MAX_RATE - AWAY_FANS_MIN_RATE);
@@ -860,16 +1894,72 @@ function rivalPrestigeAttendanceBonusInfo(rivalClubId){
   const rate = clamp(progress * Number(RIVAL_PRESTIGE_ATTENDANCE_MAX_RATE || 0), 0, 2);
   return { prestige, rate, pct:Math.round(rate * 100) };
 }
+function neutralTournamentAttendanceContext(match){
+  ensureFanState();
+  const capacity = Math.max(0, Math.round(Number(match?.stadiumCapacity || 0)));
+  const homeDemand = Math.max(0, clubFansCurrent(match?.homeId));
+  const awayDemand = Math.max(0, clubFansCurrent(match?.awayId));
+  const totalDemand = homeDemand + awayDemand;
+  const totalFans = Math.min(capacity, totalDemand);
+  let homeFans = 0;
+  let awayFans = 0;
+  if(totalDemand > 0 && totalFans > 0){
+    homeFans = Math.round(totalFans * (homeDemand / totalDemand));
+    awayFans = Math.max(0, totalFans - homeFans);
+  }
+  const isClubWorldCup = Boolean(match?.clubWorldCup);
+  const ticketPrice = isClubWorldCup
+    ? Math.max(0, Math.round(Number(String(match?.clubWorldCupStage || '') === 'final' ? CLUB_WORLD_CUP_CONFIG?.finalTicketPrice : CLUB_WORLD_CUP_CONFIG?.ticketPrice) || 0))
+    : 0;
+  const ticketRevenue = Math.max(0, Math.round(totalFans * ticketPrice));
+  return {
+    stadiumName:String(match?.stadiumName || 'Sede neutral'),
+    capacity,
+    nominalCapacity:capacity,
+    constructionPenalty:0,
+    homeFans,
+    awayFans,
+    totalFans,
+    awayReservedMinimum:0,
+    awaySectionRate:totalFans > 0 ? Number(((awayFans / totalFans) * 100).toFixed(1)) : 0,
+    awayMax:capacity,
+    homeCrowdBonus:0,
+    ticketPrice,
+    ticketBasePrice:ticketPrice,
+    ticketPriceMultiplier:1,
+    ticketPriceAutoBot:false,
+    ticketPricePrestigeTier:'neutral',
+    ticketRevenue,
+    ticketRevenueBeforeMarketing:ticketRevenue,
+    marketingRevenueBonus:0,
+    marketingBonusPct:0,
+    homeDemandBase:homeDemand,
+    awayDemandBase:awayDemand,
+    homeDemand,
+    homeDemandBeforeMarketing:homeDemand,
+    awayDemand,
+    rivalPrestige:Number(typeof clubPrestigeValue === 'function' ? clubPrestigeValue(match?.awayId) : 0),
+    rivalPrestigeAttendanceBonusRate:0,
+    rivalPrestigeAttendanceBonusPct:0,
+    neutral:true,
+    clubWorldCup:Boolean(match?.clubWorldCup)
+  };
+}
 function attendanceContextForMatch(match){
   ensureFanState();
   ensureStadiumState();
+  if(match?.clubWorldCup || (match?.neutral && Number(match?.stadiumCapacity || 0) > 0)) return neutralTournamentAttendanceContext(match);
   const nominalCapacity = clubStadiumCapacity(match.homeId);
   const constructionPenalty = stadiumConstructionAttendancePenalty(match.homeId);
   const capacity = Math.max(0, Math.floor(nominalCapacity * (1 - constructionPenalty)));
   const homeDemandBase = clubFansCurrent(match.homeId);
   const awayDemandBase = clubFansCurrent(match.awayId);
   const rivalPrestigeBonus = rivalPrestigeAttendanceBonusInfo(match.awayId);
-  const homeDemand = Math.round(homeDemandBase * (1 + rivalPrestigeBonus.rate));
+  const marketingBonusPct = Number(match.homeId || 0) === Number(game?.selectedClubId || 0) && typeof specialActiveBonus === 'function'
+    ? Math.max(0, Number(specialActiveBonus('director_marketing') || 0))
+    : 0;
+  const homeDemandBeforeMarketing = Math.round(homeDemandBase * (1 + rivalPrestigeBonus.rate));
+  const homeDemand = Math.round(homeDemandBeforeMarketing * (1 + (marketingBonusPct / 100)));
   const awayDemand = Math.round(awayDemandBase * (1 + (rivalPrestigeBonus.rate * RIVAL_PRESTIGE_AWAY_DEMAND_SHARE)));
   const awayMinRate = awayFansMinimumRateForMatch(match);
   const awayReservedMinimum = Math.round(capacity * awayMinRate);
@@ -886,7 +1976,9 @@ function attendanceContextForMatch(match){
   const homeCrowdBonus = clamp(Math.max(ratioBonus, diffBonus), 0, HOME_CROWD_BONUS_MAX);
   const ticketPriceInfo = ticketPriceInfoForMatch(match, rivalPrestigeBonus.prestige);
   const ticketPrice = ticketPriceInfo.price;
-  const ticketRevenue = Math.round(totalFans * ticketPrice);
+  const ticketRevenueBeforeMarketing = Math.round(totalFans * ticketPrice);
+  const ticketRevenue = Math.round(ticketRevenueBeforeMarketing * (1 + (marketingBonusPct / 100)));
+  const marketingRevenueBonus = Math.max(0, ticketRevenue - ticketRevenueBeforeMarketing);
   return {
     stadiumName:clubStadiumName(match.homeId),
     capacity,
@@ -905,68 +1997,127 @@ function attendanceContextForMatch(match){
     ticketPriceAutoBot:Boolean(ticketPriceInfo.isAutomaticBot),
     ticketPricePrestigeTier:ticketPriceInfo.prestigeTier || '',
     ticketRevenue,
+    ticketRevenueBeforeMarketing,
+    marketingRevenueBonus,
+    marketingBonusPct:Number(marketingBonusPct || 0),
     homeDemandBase,
     awayDemandBase,
     homeDemand,
+    homeDemandBeforeMarketing,
     awayDemand,
     rivalPrestige:Number(rivalPrestigeBonus.prestige || 0),
     rivalPrestigeAttendanceBonusRate:Number(rivalPrestigeBonus.rate || 0),
     rivalPrestigeAttendanceBonusPct:Number(rivalPrestigeBonus.pct || 0)
   };
 }
-function fanTableRateForPosition(position){
-  const raw = (FAN_TABLE_NEUTRAL_POSITION - Number(position || FAN_TABLE_NEUTRAL_POSITION)) * FAN_TABLE_POSITION_STEP;
-  return clamp(raw, -0.01, FAN_TABLE_MAX_GAIN_RATE);
+function fanGrowthMass(current, base){
+  const safeCurrent = Math.max(0, Number(current || 0));
+  const safeBase = Math.max(0, Number(base || 0));
+  return Math.max(1,
+    FAN_GROWTH_MASS_BASE
+    + (FAN_GROWTH_CURRENT_SQRT_FACTOR * Math.sqrt(safeCurrent))
+    + (FAN_GROWTH_BASE_SQRT_FACTOR * Math.sqrt(safeBase))
+  );
+}
+function fanResultFactor(resultKey){
+  if(resultKey === 'win') return FAN_RESULT_WIN_FACTOR;
+  if(resultKey === 'loss') return FAN_RESULT_LOSS_FACTOR;
+  return FAN_RESULT_DRAW_FACTOR;
+}
+function fanTableFactorForPosition(position){
+  const safePosition = Math.max(1, Math.round(Number(position || 1)));
+  const row = FAN_POSITION_FACTORS.find(item => safePosition >= item.from && safePosition <= item.to);
+  if(row) return Number(row.factor || 0);
+  if(safePosition > 18) return -0.45;
+  return 0;
 }
 function clubPositionInStandings(clubId){
   const club = seed?.clubs?.find(c => Number(c.id) === Number(clubId));
   const divisionId = club?.divisionId || 'default';
   const list = typeof sortedStandings === 'function' ? sortedStandings(divisionId) : [];
   const index = list.findIndex(row => Number(row.clubId) === Number(clubId));
-  return index >= 0 ? index + 1 : FAN_TABLE_NEUTRAL_POSITION;
+  return index >= 0 ? index + 1 : 10;
 }
-function applyFanChangeForClub(clubId, resultKey){
+function fanRivalPrestigeMultiplier(clubId, rivalClubId, resultKey){
+  if(!rivalClubId || !['win','loss'].includes(resultKey)) return 1;
+  const ownPrestige = typeof clubPrestigeValue === 'function'
+    ? Number(clubPrestigeValue(clubId) || 0)
+    : Number(seed?.clubs?.find(c => Number(c.id) === Number(clubId))?.reputation || 0);
+  const rivalPrestige = typeof clubPrestigeValue === 'function'
+    ? Number(clubPrestigeValue(rivalClubId) || 0)
+    : Number(seed?.clubs?.find(c => Number(c.id) === Number(rivalClubId))?.reputation || 0);
+  const difference = clamp(rivalPrestige - ownPrestige, -FAN_RIVAL_PRESTIGE_MAX_DIFF, FAN_RIVAL_PRESTIGE_MAX_DIFF);
+  const progress = clamp(Math.abs(difference) / FAN_RIVAL_PRESTIGE_MAX_DIFF, 0, 1);
+  if(resultKey === 'win'){
+    if(difference > 0) return 1 + (progress * FAN_RIVAL_WIN_BONUS_MAX);
+    if(difference < 0) return 1 - (progress * FAN_RIVAL_WIN_LOWER_PENALTY_MAX);
+  }
+  if(resultKey === 'loss'){
+    if(difference > 0) return 1 - (progress * FAN_RIVAL_LOSS_SHIELD_MAX);
+    if(difference < 0) return 1 + (progress * FAN_RIVAL_LOSS_LOWER_PENALTY_MAX);
+  }
+  return 1;
+}
+function applyFanChangeForClub(clubId, resultKey, rivalClubId=null){
   ensureFanState();
   const current = clubFansCurrent(clubId);
-  const base = clubFansBase(clubId);
+  const base = Math.max(0, Math.round(Number(game?.fans?.clubs?.[clubId]?.base ?? clubFansBase(clubId))));
   const price = ticketPriceForClub(clubId);
-  let resultDelta = 0;
-  if(resultKey === 'win') resultDelta = base * FAN_WIN_BASE_RATE;
-  if(resultKey === 'loss') resultDelta = -current * FAN_LOSS_CURRENT_RATE;
   const position = clubPositionInStandings(clubId);
-  let positionDelta = current * fanTableRateForPosition(position);
-  if(positionDelta < 0){
-    positionDelta = Math.min(0, positionDelta + current * ticketLossShieldRate(price));
+  const mass = fanGrowthMass(current, base);
+  const resultFactor = fanResultFactor(resultKey);
+  const positionFactor = fanTableFactorForPosition(position);
+  let totalDelta = mass * (resultFactor + positionFactor);
+
+  if((resultKey === 'win' && totalDelta > 0) || (resultKey === 'loss' && totalDelta < 0)){
+    totalDelta *= fanRivalPrestigeMultiplier(clubId, rivalClubId, resultKey);
   }
-  let totalDelta = resultDelta + positionDelta;
-  if(totalDelta > 0){
-    totalDelta = Math.max(0, totalDelta - current * ticketGainBlockRate(price));
+
+  if(totalDelta < 0){
+    totalDelta *= (1 - ticketLossShieldRate(price));
+    const maxLoss = Math.max(FAN_MAX_LOSS_MINIMUM, current * FAN_MAX_LOSS_CURRENT_RATE);
+    totalDelta = Math.max(totalDelta, -maxLoss);
+  } else if(totalDelta > 0){
+    totalDelta *= (1 - ticketGainBlockRate(price));
     if(Number(clubId) === Number(game?.selectedClubId || 0) && typeof specialActiveBonus === 'function'){
-      const sociosBonus = clamp(Number(specialActiveBonus('socios_extra') || 0), 0, 300);
+      const sociosBonus = Number(specialActiveBonus('socios_extra') || 0) + Number(specialActiveBonus('idolo_club') || 0);
       if(sociosBonus > 0) totalDelta *= (1 + sociosBonus / 100);
     }
   }
+
   const rounded = Math.round(totalDelta);
   const applied = setClubFansCurrent(clubId, Math.max(0, current + rounded), `Resultado ${resultKey}. Posición ${position}. Entrada ${formatMoney(price)}.`);
-  game.fans.history.push({ season:game.seasonNumber || 1, matchday:game.matchdayIndex || 0, date:game.currentDate || '', clubId:Number(clubId), result:resultKey, position, ticketPrice:price, delta:applied, current:clubFansCurrent(clubId) });
+  game.fans.history.push({
+    season:game.seasonNumber || 1,
+    matchday:game.matchdayIndex || 0,
+    date:game.currentDate || '',
+    clubId:Number(clubId),
+    rivalClubId:Number(rivalClubId || 0),
+    result:resultKey,
+    position,
+    ticketPrice:price,
+    growthMass:Number(mass.toFixed(3)),
+    resultFactor,
+    positionFactor,
+    delta:applied,
+    current:clubFansCurrent(clubId)
+  });
   game.fans.history = game.fans.history.slice(-240);
   return applied;
 }
+
 function applyFanChangesAfterMatches(results=[]){
   ensureFanState();
   (results || []).forEach(match => {
     const homeResult = match.homeGoals > match.awayGoals ? 'win' : match.homeGoals < match.awayGoals ? 'loss' : 'draw';
     const awayResult = match.awayGoals > match.homeGoals ? 'win' : match.awayGoals < match.homeGoals ? 'loss' : 'draw';
-    applyFanChangeForClub(match.homeId, homeResult);
-    applyFanChangeForClub(match.awayId, awayResult);
+    applyFanChangeForClub(match.homeId, homeResult, match.awayId);
+    applyFanChangeForClub(match.awayId, awayResult, match.homeId);
   });
 }
 
 function isManagedClubField(clubId, managedClubId=null){
   return Number(clubId) === Number(managedClubId || game?.selectedClubId || 0);
-}
-function isBotFieldClub(clubId, state=game, managedClubId=null){
-  return Number(clubId) !== Number(managedClubId || state?.selectedClubId || 0);
 }
 function botFieldRecoveryScoreForClub(club, state=game){
   const season = Number(state?.seasonNumber || game?.seasonNumber || 1);
@@ -1002,9 +2153,11 @@ function addBotFieldRepairMessage(targetGame, summary, reason){
     date:targetGame.currentDate || '',
     read:false,
     priority:'normal',
-    type:'sistema',
-    title:'Campos bots corregidos',
-    body:`Se detectaron ${summary.detected} campo(s) bot con estado inválido o injugable. El sistema regeneró ${summary.repaired} campo(s) con valores de temporada entre ${BOT_FIELD_MIN_SCORE}/100 y ${BOT_FIELD_MAX_SCORE}/100.`,
+    type:'federación',
+    title:summary.repaired === 1 ? 'Un estadio recibió tareas de emergencia' : 'La liga reacondicionó varios campos',
+    body:summary.repaired === 1
+      ? `La federación informó que un campo de juego no reunía condiciones para competir y ordenó tareas de emergencia. El césped quedó habilitado con un estado estimado entre ${BOT_FIELD_MIN_SCORE}/100 y ${BOT_FIELD_MAX_SCORE}/100.`
+      : `La federación inspeccionó ${summary.detected} campos de juego y ordenó trabajos de emergencia en ${summary.repaired}. Los estadios quedaron habilitados con estados estimados entre ${BOT_FIELD_MIN_SCORE}/100 y ${BOT_FIELD_MAX_SCORE}/100.`,
     action:null,
     createdAt:Date.now()
   });
@@ -1093,18 +2246,25 @@ function matchFieldSummaryMarkup(match){
   if(!match) return '';
   const score = fieldScoreForClub(match.homeId);
   const label = fieldConditionName(score);
-  const homeName = clubName(match.homeId);
-  const isManagedHome = Number(match.homeId) === Number(game?.selectedClubId || 0);
-  const fixedText = isManagedHome ? 'Campo propio dinámico' : 'Campo bot fijo esta temporada';
   return `<div class="next-match-field ${fieldConditionClass(score)}">
     <div class="next-match-field-head"><span>Campo de juego</span><strong class="field-state ${fieldConditionClass(score)}">${escapeHtml(label)}</strong></div>
     ${fieldBar(score, label)}
-    <small>${escapeHtml(homeName)} · ${score}/100 · ${escapeHtml(fixedText)}</small>
   </div>`;
 }
-function clubBudgetByPrestige(prestige, prizeMultiplier=1){
-  const base = 7000000 + Math.pow(Number(prestige) || 50, 2) * 18000;
-  return Math.round(base * (0.75 + prizeMultiplier * 0.65));
+function clubBudgetByPrestige(prestige){
+  const rep = clamp(Number(prestige) || 50, 1, 99);
+  // presupuesto inicial calibrado principalmente por prestigio.
+  // Anclas de diseño: 20 => $4.500.000, 80 => $100.000.000, 95 => $800.000.000.
+  const lowAnchorPrestige = 20;
+  const midAnchorPrestige = 80;
+  const highAnchorPrestige = 95;
+  const lowAnchorBudget = 4500000;
+  const midAnchorBudget = 100000000;
+  const highAnchorBudget = 800000000;
+  const lowCurve = lowAnchorBudget * Math.pow(midAnchorBudget / lowAnchorBudget, (rep - lowAnchorPrestige) / (midAnchorPrestige - lowAnchorPrestige));
+  const highCurve = midAnchorBudget * Math.pow(highAnchorBudget / midAnchorBudget, (rep - midAnchorPrestige) / (highAnchorPrestige - midAnchorPrestige));
+  const raw = rep <= midAnchorPrestige ? lowCurve : highCurve;
+  return Math.max(1000000, Math.round(raw / 100000) * 100000);
 }
 function clubShortFromName(name){
   const words = String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9 ]/g,' ').trim().split(/\s+/).filter(Boolean);
@@ -1147,22 +2307,16 @@ function generateClubPlayers(club, prestige, startId, generationContext=null){
     });
   });
 }
-function playerBaseMedia(prestige, id, group){
-  const groupBoost = group === 'POR' ? 1 : group === 'ATT' ? 0 : group === 'MID' ? 0.5 : -0.5;
-  return clamp(Math.round(42 + prestige * 0.48 + groupBoost + hashNumber(`media-${id}`, 13) - 6), 35, 94);
-}
-const FIRST_NAMES = ['Agustín','Mateo','Lautaro','Santiago','Julián','Tomás','Nicolás','Franco','Lucas','Bruno','Facundo','Ezequiel','Ramiro','Iván','Gonzalo','Emiliano','Brian','Thiago','Alan','Pablo','Martín','Leandro'];
-const LAST_NAMES = ['Gómez','Rodríguez','Fernández','López','Martínez','Pérez','García','Sánchez','Romero','Torres','Díaz','Alvarez','Ruiz','Ramírez','Aguirre','Molina','Castro','Silva','Rojas','Vera','Acosta','Morales','Herrera','Medina'];
-function generatedPlayerName(id, clubNameValue){
-  const first = FIRST_NAMES[hashNumber(`${clubNameValue}-${id}-first`, FIRST_NAMES.length)];
-  const last = LAST_NAMES[hashNumber(`${clubNameValue}-${id}-last`, LAST_NAMES.length)];
-  return `${first} ${last}`;
-}
-function generatedNationality(id, divisionName){
-  return pickNationalityForGeneration(id, divisionName || 'Jugador', null);
-}
-function skillValue(base, id, label, offset=0){
-  return clamp(Math.round(base + offset + hashNumber(`${id}-${label}`, 15) - 7), 1, 99);
+const FALLBACK_PLAYER_FIRST_NAMES = ['Agustín','Mateo','Lautaro','Santiago','Julián','Tomás','Nicolás','Franco','Lucas','Bruno'];
+const FALLBACK_PLAYER_LAST_NAMES = ['Gómez','Rodríguez','Fernández','López','Martínez','Pérez','García','Sánchez','Romero','Torres'];
+function generatedPlayerName(id, clubNameValue, nationality='Argentina'){
+  if(typeof playerNameForNationality === 'function') return playerNameForNationality(id, nationality, clubNameValue);
+  const first = FALLBACK_PLAYER_FIRST_NAMES[hashNumber(`${clubNameValue}-${id}-first`, FALLBACK_PLAYER_FIRST_NAMES.length)];
+  let second = FALLBACK_PLAYER_FIRST_NAMES[hashNumber(`${clubNameValue}-${id}-second`, FALLBACK_PLAYER_FIRST_NAMES.length)];
+  if(second === first) second = FALLBACK_PLAYER_FIRST_NAMES[(FALLBACK_PLAYER_FIRST_NAMES.indexOf(second) + 1) % FALLBACK_PLAYER_FIRST_NAMES.length];
+  const last = FALLBACK_PLAYER_LAST_NAMES[hashNumber(`${clubNameValue}-${id}-last`, FALLBACK_PLAYER_LAST_NAMES.length)];
+  const full = `${first} ${second} ${last}`;
+  return full.length <= 22 ? full : `${first} ${last}`.slice(0,22).trim();
 }
 function skillTierValue(base, id, label, tier='common'){
   const multipliers = { key:1.30, common:1.00, rare:0.65, weak:0.35 };
@@ -1175,12 +2329,6 @@ function setSkillTier(target, base, id, names, tier){
 }
 function positionSkillProfile(position){
   const pos = normalizePlayerPosition(position);
-  const base = {
-    key:[],
-    common:['resistencia','trabajoEquipo','serenidad','disciplina','liderazgo','potencial'],
-    rare:[],
-    weak:['porteria']
-  };
   if(pos === 'POR'){
     return {
       key:['porteria','posicionamiento','serenidad','aceleracion'],
@@ -1260,12 +2408,76 @@ function averageGeneratedVisible(position, skills){
 function sortedSeasonDivisions(divisions){
   return (divisions || [{ id:'default', name:'Liga única', order:1 }]).slice().sort((a,b)=>(a.order || 0)-(b.order || 0));
 }
+function normalizeLeagueFixtureSeedIndex(value){
+  const total = Array.isArray(LEAGUE_FIXTURE_SEEDS) ? LEAGUE_FIXTURE_SEEDS.length : 0;
+  if(!LEAGUE_FIXTURE_SEEDS_ENABLED || total < 2 || value === null || value === undefined || value === '') return null;
+  const parsed = Math.round(Number(value));
+  if(!Number.isFinite(parsed)) return null;
+  return ((parsed % total) + total) % total;
+}
+function leagueFixtureSeedIndexForSeasonNumber(seasonNumber=1){
+  const total = Array.isArray(LEAGUE_FIXTURE_SEEDS) ? LEAGUE_FIXTURE_SEEDS.length : 0;
+  if(!LEAGUE_FIXTURE_SEEDS_ENABLED || total < 2) return null;
+  const season = Math.max(1, Math.round(Number(seasonNumber || 1)));
+  return (season - 1) % total;
+}
+function leagueFixtureSeedIndexFromRound(round){
+  if(!round || typeof round !== 'object') return null;
+  return normalizeLeagueFixtureSeedIndex(round.leagueFixtureSeedIndex);
+}
+function leagueFixtureSeedIndexForGeneration(options={}, seasonYear=SEASON_START_YEAR){
+  if(Object.prototype.hasOwnProperty.call(options || {}, 'fixtureSeedIndex')){
+    return normalizeLeagueFixtureSeedIndex(options.fixtureSeedIndex);
+  }
+  if(game && Math.round(Number(game.seasonYear || 0)) === Math.round(Number(seasonYear || 0))){
+    const saved = normalizeLeagueFixtureSeedIndex(game.leagueFixtureSeedIndex);
+    if(saved !== null) return saved;
+  }
+  return null;
+}
+function leagueFixtureSeedHash(value){
+  const text = String(value || 'fixture');
+  let hash = 2166136261 >>> 0;
+  for(let i=0;i<text.length;i++){
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return hash >>> 0;
+}
+function leagueFixtureSeededRandom(seedValue){
+  let state = (Math.round(Number(seedValue || 1)) >>> 0) || 1;
+  return function(){
+    state = (state + 0x6D2B79F5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function leagueFixtureSeededClubOrder(clubsInDivision, division, fixtureSeedIndex=null){
+  const index = normalizeLeagueFixtureSeedIndex(fixtureSeedIndex);
+  if(index === null) return (clubsInDivision || []).slice();
+  const ordered = (clubsInDivision || []).slice().sort((a,b)=>Number(a?.id || 0)-Number(b?.id || 0) || String(a?.name || '').localeCompare(String(b?.name || ''), 'es', { sensitivity:'base' }));
+  if(ordered.length < 2) return ordered;
+  const baseSeed = Number(LEAGUE_FIXTURE_SEEDS[index] || 1) >>> 0;
+  const divisionHash = leagueFixtureSeedHash(`${division?.id || 'default'}|${division?.name || ''}`);
+  const random = leagueFixtureSeededRandom((baseSeed ^ divisionHash ^ Math.imul(index + 1, 2654435761)) >>> 0);
+  for(let i=ordered.length-1;i>0;i--){
+    const j = Math.floor(random() * (i + 1));
+    [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+  }
+  // El desplazamiento fijo evita que una semilla pueda conservar accidentalmente el orden base.
+  const shift = ((index + 1 + (divisionHash % ordered.length)) % ordered.length) || 1;
+  return ordered.slice(shift).concat(ordered.slice(0, shift));
+}
 function generateFixturesForDivisions(clubs, divisions, options={}){
   const seasonYear = Math.round(Number(options.seasonYear || SEASON_START_YEAR));
+  const fixtureSeedIndex = leagueFixtureSeedIndexForGeneration(options, seasonYear);
   const sortedDivisions = sortedSeasonDivisions(divisions);
+  const normalClubs = (clubs || []).filter(c => !(c?.specialCompetitionOnly || c?.clubWorldCupInvite || c?.clubWorldCupExternal));
   const schedules = sortedDivisions.map(division => ({
     division,
-    rounds:roundRobinSchedule(clubs.filter(c => c.divisionId === division.id), division)
+    rounds:roundRobinSchedule(normalClubs.filter(c => c.divisionId === division.id), division, { fixtureSeedIndex })
   }));
   const maxRounds = Math.max(...schedules.map(s => s.rounds.length), 0);
   const firstLeagueDate = leagueStartDateForSeason(seasonYear);
@@ -1281,12 +2493,18 @@ function generateFixturesForDivisions(clubs, divisions, options={}){
     });
     matches.sort((a,b)=>daysBetweenIsoDates(b.date || date, a.date || date) || String(a.divisionName || '').localeCompare(String(b.divisionName || ''), 'es', { sensitivity:'base' }));
     const dates = [...new Set(matches.map(match => match.date).filter(validIsoDate))].sort((a,b)=>daysBetweenIsoDates(b,a));
-    fixtures.push({ matchday:roundIndex+1, date, startDate:dates[0] || date, endDate:dates[dates.length-1] || date, matches });
+    const fixtureRound = { matchday:roundIndex+1, date, startDate:dates[0] || date, endDate:dates[dates.length-1] || date, matches };
+    if(fixtureSeedIndex !== null){
+      fixtureRound.leagueFixtureSeedIndex = fixtureSeedIndex;
+      fixtureRound.leagueFixtureSeedVersion = LEAGUE_FIXTURE_SEED_VERSION;
+    }
+    fixtures.push(fixtureRound);
   }
   return fixtures;
 }
-function roundRobinSchedule(clubsInDivision, division){
-  const teams = clubsInDivision.slice();
+function roundRobinSchedule(clubsInDivision, division, options={}){
+  const fixtureSeedIndex = normalizeLeagueFixtureSeedIndex(options.fixtureSeedIndex);
+  const teams = leagueFixtureSeededClubOrder(clubsInDivision, division, fixtureSeedIndex);
   if(teams.length % 2 === 1) teams.push(null);
   const firstLeg = [];
   const n = teams.length;
@@ -1369,12 +2587,19 @@ function fixtureDataCrossCountryIssues(fixtures=[]){
 function fixtureRoundIsPlayoff(round){
   return Boolean(round?.playoffRound || (round?.matches || []).some(match => match?.playoff));
 }
-function normalizeSeasonFixtures(existingFixtures, seasonNumber=1, seasonYear=null){
+function fixtureRoundIsPersistentCompetition(round){
+  return Boolean(fixtureRoundIsPlayoff(round) || round?.clubWorldCupRound || round?.nationalCupRound || round?.libertadoresRound || round?.championsLeagueRound || (round?.matches || []).some(match => match?.clubWorldCup || match?.nationalCup || match?.libertadores || match?.championsLeague));
+}
+function fixtureRoundCalendarDate(round){
+  const dates = (round?.matches || []).map(match => validIsoDate(match?.date) ? match.date : '').filter(Boolean).sort();
+  return dates[0] || (validIsoDate(round?.date) ? round.date : '9999-12-31');
+}
+function normalizeSeasonFixtures(existingFixtures, seasonNumber=1, seasonYear=null, options={}){
   const year = Math.round(Number(seasonYear || 0)) || seasonYearForNumber(seasonNumber || 1);
-  const expected = generateFixturesForDivisions(seed.clubs || [], sortedSeasonDivisions(seed.divisions || []), { seasonYear:year });
+  const expected = generateFixturesForDivisions(seed.clubs || [], sortedSeasonDivisions(seed.divisions || []), { seasonYear:year, fixtureSeedIndex:options.fixtureSeedIndex });
   const current = Array.isArray(existingFixtures) ? existingFixtures : [];
-  const playoffRounds = current.filter(fixtureRoundIsPlayoff);
-  const regularCurrent = current.filter(round => !fixtureRoundIsPlayoff(round));
+  const persistentCompetitionRounds = current.filter(fixtureRoundIsPersistentCompetition);
+  const regularCurrent = current.filter(round => !fixtureRoundIsPersistentCompetition(round));
   const fixtureCountryIssues = fixtureDataCrossCountryIssues(regularCurrent);
   const hasOnlyUnplayedCrossCountryFixtures = fixtureCountryIssues.length > 0 && !fixtureCountryIssues.some(item => item.played);
   const currentYear = String(regularCurrent?.[0]?.date || current?.[0]?.date || '').slice(0,4);
@@ -1385,44 +2610,209 @@ function normalizeSeasonFixtures(existingFixtures, seasonNumber=1, seasonYear=nu
     || regularCurrent.some(round => (round.matches || []).some(match => !validIsoDate(match.date) || !Object.prototype.hasOwnProperty.call(match, 'roundDate')))
     || hasOnlyUnplayedCrossCountryFixtures;
   const normalizedRegular = needsCalendar ? mergePlayedFixturesIntoCalendar(expected, regularCurrent) : regularCurrent;
-  return normalizedRegular.concat(playoffRounds);
+  const combined = normalizedRegular.concat(persistentCompetitionRounds).sort((a,b)=>daysBetweenIsoDates(fixtureRoundCalendarDate(a), fixtureRoundCalendarDate(b)) || Number(a.matchday || 0)-Number(b.matchday || 0));
+  combined.forEach((round,index)=>{ round.matchday=index+1; (round.matches || []).forEach(match=>{ match.matchday=index+1; }); });
+  return combined;
 }
 
 
 function savedHasDatabaseSnapshots(saved){
   return Boolean(Array.isArray(saved?.clubsSnapshot) && saved.clubsSnapshot.length && Array.isArray(saved?.playersSnapshot) && saved.playersSnapshot.length);
 }
-async function readLocalSaveRecord(){
-  const db = await openDb();
-  return new Promise((resolve,reject)=>{
-    const tx = db.transaction(DB_STORE, 'readonly');
-    const req = tx.objectStore(DB_STORE).get(SAVE_KEY);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
-  });
+function localSaveRecordTimestamp(record){
+  const raw = record?.localSaveMeta?.savedAt || '';
+  const value = Date.parse(raw);
+  return Number.isFinite(value) ? value : 0;
 }
+function usableLocalSaveRecord(record){
+  return Boolean(record && typeof record === 'object' && (Number(record.selectedClubId || 0) > 0 || (record.gameOver && record.managerStats)));
+}
+async function readLocalSaveRecord(slotId=null){
+  const slot = normalizeSaveSlotId(slotId || currentSaveSlotId || SAVE_SLOT_CAREER);
+  const candidates = [
+    { key:saveSlotKey(slot), source:'primary', priority:3 },
+    { key:backupSaveSlotKey(slot), source:'backup', priority:2 }
+  ];
+  if(slot === SAVE_SLOT_CAREER) candidates.push({ key:legacyCareerSlotKey(), source:'legacy', priority:1 });
+  const loaded = await Promise.all(candidates.map(async candidate => ({
+    ...candidate,
+    record:await readSaveRecordByKey(candidate.key).catch(()=>null)
+  })));
+  const usable = loaded.filter(item => usableLocalSaveRecord(item.record));
+  if(!usable.length) return null;
+  usable.sort((a,b) => localSaveRecordTimestamp(b.record) - localSaveRecordTimestamp(a.record) || b.priority - a.priority);
+  const selected = usable[0];
+  const primary = loaded.find(item => item.source === 'primary');
+  const backup = loaded.find(item => item.source === 'backup');
+  selected.record._storageReadSource = selected.source;
+  selected.record._storageNeedsRefresh = selected.source !== 'primary'
+    || !usableLocalSaveRecord(primary?.record)
+    || !usableLocalSaveRecord(backup?.record);
+  return selected.record;
+}
+let localDbPromise = null;
 async function openDb(){
-  return new Promise((resolve,reject)=>{
+  if(localDbPromise) return localDbPromise;
+  localDbPromise = new Promise((resolve,reject)=>{
     const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(DB_STORE);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onupgradeneeded = () => {
+      if(!request.result.objectStoreNames.contains(DB_STORE)) request.result.createObjectStore(DB_STORE);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => {
+        db.close();
+        localDbPromise = null;
+      };
+      resolve(db);
+    };
+    request.onerror = () => {
+      localDbPromise = null;
+      reject(request.error);
+    };
+    request.onblocked = () => {
+      localDbPromise = null;
+      reject(new Error('La base local está bloqueada por otra pestaña.'));
+    };
   });
+  return localDbPromise;
 }
-async function saveLocal(silent=false){
-  if(!game) return showNotice('No hay partida para guardar.');
+let localSaveWriteChain = Promise.resolve();
+let localSilentSaveWriteCount = 0;
+let pendingAutosaveTimer = null;
+let pendingAutosaveWaiters = [];
+let lastLocalSaveErrorNoticeAt = 0;
+function localSaveErrorMessage(error){
+  const name = String(error?.name || '').toLowerCase();
+  const message = String(error?.message || '').toLowerCase();
+  if(name.includes('quota') || message.includes('quota') || message.includes('storage')){
+    return 'No se pudo guardar: el navegador no tiene espacio suficiente para esta partida.';
+  }
+  if(name.includes('version') || name.includes('invalidstate')){
+    return 'No se pudo guardar: la base local del navegador no está disponible. Recargá la página y volvé a intentarlo.';
+  }
+  return 'No se pudo guardar la partida en este navegador.';
+}
+function reportLocalSaveError(error){
+  const now = Date.now();
+  if(now - lastLocalSaveErrorNoticeAt > 1200){
+    lastLocalSaveErrorNoticeAt = now;
+    showNotice(localSaveErrorMessage(error));
+  }
+  console.error('No se pudo guardar la partida.', error);
+}
+async function writeLocalSaveNow(silent=false){
+  if(!game){
+    if(!silent) showNotice('No hay partida para guardar.');
+    return false;
+  }
+  if(typeof persistSharedManagerProfileFromGame === 'function') persistSharedManagerProfileFromGame({ reason:'save_local' });
+  const slot = setCurrentSaveSlot(game?.saveSlotId || currentSaveSlotId || SAVE_SLOT_CAREER);
+  const payload = currentSavePayload();
+  payload.saveSlotId = slot;
   const db = await openDb();
   await new Promise((resolve,reject)=>{
     const tx = db.transaction(DB_STORE, 'readwrite');
-    tx.objectStore(DB_STORE).put(currentSavePayload(), SAVE_KEY);
+    const store = tx.objectStore(DB_STORE);
+    const primaryKey = saveSlotKey(slot);
+    const backupKey = backupSaveSlotKey(slot);
+    const previousRequest = store.get(primaryKey);
+    previousRequest.onsuccess = () => {
+      const previous = previousRequest.result;
+      if(silent) localSilentSaveWriteCount += 1;
+      const refreshBackup = !silent || !usableLocalSaveRecord(previous) || localSilentSaveWriteCount % SAVE_BACKUP_EVERY_AUTOSAVES === 0;
+      if(refreshBackup) store.put(usableLocalSaveRecord(previous) ? previous : payload, backupKey);
+      store.put(payload, primaryKey);
+    };
+    previousRequest.onerror = () => tx.abort();
     tx.oncomplete = resolve;
-    tx.onerror = () => reject(tx.error);
+    tx.onerror = () => reject(tx.error || new Error('IndexedDB rechazó el guardado.'));
+    tx.onabort = () => reject(tx.error || new Error('IndexedDB canceló el guardado.'));
   });
-  if(!silent) showNotice('Partida guardada en este navegador.');
+  if(!silent) showNotice(`${saveSlotLabel(slot, payload)} guardada en este navegador.`);
+  return true;
 }
-async function loadLocal(silent=false){
-  const saved = await readLocalSaveRecord();
+function queueLocalSaveWrite(silent=false){
+  const task = localSaveWriteChain
+    .catch(() => undefined)
+    .then(() => writeLocalSaveNow(silent));
+  localSaveWriteChain = task;
+  return task.catch(error => {
+    reportLocalSaveError(error);
+    throw error;
+  });
+}
+function settleAutosaveWaiters(waiters, method, value){
+  (waiters || []).forEach(waiter => {
+    try{ waiter?.[method]?.(value); }catch(_error){}
+  });
+}
+function scheduleCoalescedAutosave(){
+  return new Promise((resolve,reject) => {
+    pendingAutosaveWaiters.push({ resolve, reject });
+    if(pendingAutosaveTimer) clearTimeout(pendingAutosaveTimer);
+    pendingAutosaveTimer = setTimeout(() => {
+      pendingAutosaveTimer = null;
+      const waiters = pendingAutosaveWaiters.splice(0);
+      queueLocalSaveWrite(true)
+        .then(result => settleAutosaveWaiters(waiters, 'resolve', result))
+        .catch(error => settleAutosaveWaiters(waiters, 'reject', error));
+    }, AUTOSAVE_COALESCE_MS);
+  });
+}
+function flushPendingAutosave(){
+  if(!pendingAutosaveTimer) return Promise.resolve(false);
+  clearTimeout(pendingAutosaveTimer);
+  pendingAutosaveTimer = null;
+  const waiters = pendingAutosaveWaiters.splice(0);
+  return queueLocalSaveWrite(true)
+    .then(result => {
+      settleAutosaveWaiters(waiters, 'resolve', result);
+      return result;
+    })
+    .catch(error => {
+      settleAutosaveWaiters(waiters, 'reject', error);
+      throw error;
+    });
+}
+async function saveLocal(silent=false){
+  if(!game){
+    if(!silent) showNotice('No hay partida para guardar.');
+    return false;
+  }
+  if(silent && AUTOSAVE_COALESCE_MS > 0) return scheduleCoalescedAutosave();
+  const pendingWaiters = pendingAutosaveWaiters.splice(0);
+  if(pendingAutosaveTimer){
+    clearTimeout(pendingAutosaveTimer);
+    pendingAutosaveTimer = null;
+  }
+  try{
+    const result = await queueLocalSaveWrite(Boolean(silent));
+    settleAutosaveWaiters(pendingWaiters, 'resolve', result);
+    return result;
+  }catch(error){
+    settleAutosaveWaiters(pendingWaiters, 'reject', error);
+    throw error;
+  }
+}
+if(typeof document !== 'undefined'){
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'hidden' && pendingAutosaveTimer){
+      flushPendingAutosave().catch(reportLocalSaveError);
+    }
+  });
+}
+if(typeof window !== 'undefined'){
+  window.addEventListener('pagehide', () => {
+    if(pendingAutosaveTimer) flushPendingAutosave().catch(reportLocalSaveError);
+  });
+}
+async function loadLocal(silent=false, slotId=null){
+  const slot = normalizeSaveSlotId(slotId || currentSaveSlotId || SAVE_SLOT_CAREER);
+  const saved = await readLocalSaveRecord(slot);
   if(saved){
+    const recoveredFromBackup = saved._storageReadSource === 'backup' || saved._storageReadSource === 'legacy';
+    const storageNeedsRefresh = Boolean(saved._storageNeedsRefresh);
     const currentSignature = seed?.meta?.signature;
     if(currentSignature && saved.seedSignature !== currentSignature && !savedHasDatabaseSnapshots(saved)){
       if(!silent) showNotice('La base de datos cambió y la partida guardada no tiene snapshots suficientes. Creá una nueva partida para usar la base actual.');
@@ -1431,76 +2821,97 @@ async function loadLocal(silent=false){
     if(currentSignature && saved.seedSignature !== currentSignature){
       saved._needsAutosave = true;
     }
+    setCurrentSaveSlot(slot);
     game = normalizeGame(applySavedDatabaseSnapshots(saved));
+    game.saveSlotId = slot;
+    const sharedProfileApplied = typeof applySharedManagerProfileToGame === 'function' ? applySharedManagerProfileToGame({ reason:'load_local' }) : null;
     const needsAutosave = Boolean(game._needsAutosave);
     const repairedStadiumFields = Boolean(game._stadiumFieldsAutoRepaired);
     delete game._needsAutosave;
     delete game._stadiumFieldsAutoRepaired;
+    const manualSync = syncManualPlayersIntoSeed({ preserveExisting:true, state:game, retiredManualPlayerIds:game?.manualRetiredPlayerIds || game?.retiredManualPlayerIds || [] });
     const botRepair = repairBotRosters({ reason:'load_game' });
     const stadiumRepair = repairInvalidBotFieldStates(game, 'load_game', { message:repairedStadiumFields ? false : true });
-    const shouldAutosave = botRepair.created || botRepair.converted || needsAutosave || stadiumRepair.repaired;
+    const shouldAutosave = Boolean(manualSync.changed || manualSync.inserted || manualSync.refreshed) || botRepair.created || botRepair.converted || needsAutosave || stadiumRepair.repaired || Boolean(sharedProfileApplied?.changed) || storageNeedsRefresh;
     delete game._needsAutosave;
     delete game._stadiumFieldsAutoRepaired;
     activeTab = 'home';
     renderAll();
     if(shouldAutosave) saveLocal(true);
+    setTimeout(() => {
+      if(typeof scheduleRankingAutomaticRetryFromState === 'function') scheduleRankingAutomaticRetryFromState({ source:'load_local' });
+      if(typeof processScheduledCareerRankingUploads === 'function') processScheduledCareerRankingUploads({ source:'load_local' });
+    }, 0);
     if(!silent){
-      const notice = repairedStadiumFields || stadiumRepair.repaired
-        ? 'Partida cargada. Se corrigieron campos bots inválidos.'
-        : (needsAutosave ? 'Partida cargada. Se corrigió el arrastre de lesiones.' : 'Partida cargada.');
+      const notice = recoveredFromBackup
+        ? `${saveSlotLabel(slot, saved)} recuperada desde la copia de seguridad y duplicada nuevamente.`
+        : (repairedStadiumFields || stadiumRepair.repaired
+          ? 'Partida cargada. Se corrigieron campos bots inválidos.'
+          : (needsAutosave ? `${saveSlotLabel(slot, saved)} cargada. Se corrigió el arrastre de lesiones.` : `${saveSlotLabel(slot, saved)} cargada.`));
       showNotice(notice);
     }
     return true;
   }
-  if(!silent) showNotice('No hay partida guardada en este navegador.');
+  if(!silent) showNotice('No hay una partida guardada.');
   return false;
-}
-async function resetLocal(){
-  const db = await openDb();
-  await new Promise((resolve,reject)=>{
-    const tx = db.transaction(DB_STORE, 'readwrite');
-    tx.objectStore(DB_STORE).delete(SAVE_KEY);
-    tx.oncomplete = resolve;
-    tx.onerror = () => reject(tx.error);
-  });
-  game = null;
-  seed = await loadInitialSeed({ skipPlayersDatabase:false });
-  fillClubSelect();
-  activeTab = 'home';
-  renderAll();
-  showNotice('Partida local eliminada.');
-  setTimeout(()=>openNewGameModal(true), 0);
 }
 
 async function init(){
   try{
-    const savedRecord = await readLocalSaveRecord().catch(() => null);
+    const singleSlotMigration = await migrateCareerSlotsToSingleSlot().catch(error => { console.warn('No se pudo consolidar los slots anteriores.', error); return { migrated:false }; });
+    const preferredSlot = normalizeSaveSlotId(currentSaveSlotId || SAVE_SLOT_CAREER);
+    let savedRecord = await readLocalSaveRecord(preferredSlot).catch(() => null);
+    if(!savedRecord && preferredSlot !== SAVE_SLOT_CAREER) savedRecord = await readLocalSaveRecord(SAVE_SLOT_CAREER).catch(() => null);
     const useSavedSnapshots = savedHasDatabaseSnapshots(savedRecord);
-    const [loadedSeed, loadedSponsors, loadedEmployees, loadedEvents, loadedSpecialSkills, loadedMatchCommentary] = await Promise.all([
+    // V9.13: las bases auxiliares no bloquean la primera pantalla. Se cargan en paralelo
+    // y se incorporan cuando el navegador termina el arranque principal.
+    managerAchievementsDatabase = managerAchievementsDatabase || { metadata:{ version:APP_VERSION, source:'startup' }, hitos:[] };
+    managerChallengesDatabase = managerChallengesDatabase || { metadata:{ version:APP_VERSION, source:'startup' }, retos:[] };
+    matchCommentaryDatabase = matchCommentaryDatabase || { version:APP_VERSION, categorias:{} };
+    const optionalDatabasesPromise = Promise.all([
+      loadManagerAchievementsDatabase(),
+      loadManagerChallengesDatabase(),
+      loadMatchCommentaryDatabase()
+    ]).then(([achievements, challenges, commentary]) => {
+      managerAchievementsDatabase = achievements;
+      managerChallengesDatabase = challenges;
+      matchCommentaryDatabase = commentary;
+      if(game && ['mystats','challenges'].includes(activeTab) && typeof renderAll === 'function') renderAll();
+      return true;
+    }).catch(error => { console.warn('Las bases auxiliares continuarán con datos de respaldo.', error); return false; });
+    const [loadedSeed, loadedSponsors, loadedEmployees, loadedInstallations, loadedEvents, loadedSpecialSkills] = await Promise.all([
       loadInitialSeed({ skipPlayersDatabase:useSavedSnapshots }),
       loadSponsorsDatabase(),
       loadEmployeesDatabase(),
+      loadInstallationsDatabase(),
       loadEventsDatabase(),
-      loadSpecialSkillsDatabase(),
-      loadMatchCommentaryDatabase()
+      loadSpecialSkillsDatabase()
     ]);
     seed = loadedSeed;
     sponsorsDatabase = loadedSponsors;
     employeesDatabase = loadedEmployees;
+    installationsDatabase = loadedInstallations;
     eventsDatabase = loadedEvents;
     specialSkillsDatabase = loadedSpecialSkills;
-    matchCommentaryDatabase = loadedMatchCommentary;
     fillClubSelect();
     bindEvents();
     startUiTicker();
-    const loaded = await loadLocal(true);
+    if(typeof migrateAllSavedSpecialCardsToGlobal === 'function') await migrateAllSavedSpecialCardsToGlobal().catch(()=>{});
+    if(typeof migrateAllSavedManagerProfilesToGlobal === 'function') await migrateAllSavedManagerProfilesToGlobal().catch(()=>{});
+    let loaded = await loadLocal(true, preferredSlot);
+    if(!loaded && preferredSlot !== SAVE_SLOT_CAREER) loaded = await loadLocal(true, SAVE_SLOT_CAREER);
+    if(loaded && singleSlotMigration?.migrated){
+      showNotice(`La carrera del antiguo espacio ${singleSlotMigration.fromSlot} se trasladó al único espacio disponible.`);
+    }
+    void optionalDatabasesPromise;
     if(!loaded){
       if(useSavedSnapshots){
         seed = await loadInitialSeed({ skipPlayersDatabase:false });
         fillClubSelect();
       }
+      game = null;
+      activeTab = 'home';
       renderAll();
-      setTimeout(()=>openNewGameModal(true), 0);
     }
   }catch(error){
     console.error(error);

@@ -1,0 +1,1663 @@
+/*
+  V9.29 · Minijuego «Ser jugador»
+  Estado aislado dentro de game.miniGames.playerCareer.
+  Lee clubes, divisiones, países, escudos y prestigio del universo principal,
+  pero nunca modifica calendario, planteles, economía, resultados ni mensajes del mánager.
+*/
+
+let playerCareerViewMode = 'dashboard';
+let playerCareerLastAnimatedToken = '';
+
+const PLAYER_CAREER_SCHEMA_VERSION = 3;
+const PLAYER_CAREER_GROWTH_MULTIPLIER = 2;
+const PLAYER_CAREER_POSITIONS = ['POR','DFC','LI','LD','MCD','MC','MCO','MI','MD','DC','EI','ED'];
+const PLAYER_CAREER_PROFILES = {
+  technical:{ label:'Técnico', growth:1.08, physical:0.94 },
+  physical:{ label:'Físico', growth:0.98, physical:1.10 },
+  balanced:{ label:'Equilibrado', growth:1.02, physical:1.02 }
+};
+const PLAYER_CAREER_STAGE_LABELS = [
+  'Pretemporada',
+  'Primer tramo',
+  'Segundo tramo',
+  'Tramo decisivo',
+  'Cierre de temporada',
+  'Mercado de pases'
+];
+const PLAYER_CAREER_MATCHES_BY_STAGE = { 1:8, 2:9, 3:9, 4:8 };
+const PLAYER_CAREER_POSITION_OUTPUT = {
+  POR:{ goals:0.001, assists:0.008, cards:0.035, ratingBias:0.05 },
+  DFC:{ goals:0.025, assists:0.020, cards:0.115, ratingBias:0.02 },
+  LI:{ goals:0.035, assists:0.075, cards:0.090, ratingBias:0.02 },
+  LD:{ goals:0.035, assists:0.075, cards:0.090, ratingBias:0.02 },
+  MCD:{ goals:0.045, assists:0.065, cards:0.120, ratingBias:0.03 },
+  MC:{ goals:0.090, assists:0.125, cards:0.080, ratingBias:0.06 },
+  MCO:{ goals:0.170, assists:0.190, cards:0.055, ratingBias:0.08 },
+  MI:{ goals:0.145, assists:0.175, cards:0.055, ratingBias:0.06 },
+  MD:{ goals:0.145, assists:0.175, cards:0.055, ratingBias:0.06 },
+  EI:{ goals:0.235, assists:0.155, cards:0.050, ratingBias:0.07 },
+  ED:{ goals:0.235, assists:0.155, cards:0.050, ratingBias:0.07 },
+  DC:{ goals:0.370, assists:0.105, cards:0.060, ratingBias:0.05 }
+};
+const PLAYER_CAREER_INJURIES = [
+  { name:'Molestia muscular', blocks:1, severity:'Leve' },
+  { name:'Distensión', blocks:1, severity:'Leve' },
+  { name:'Esguince de tobillo', blocks:2, severity:'Media' },
+  { name:'Lesión muscular', blocks:2, severity:'Media' },
+  { name:'Lesión de rodilla', blocks:3, severity:'Alta' }
+];
+
+function pcClamp(value, min, max){
+  const number = Number(value);
+  return Math.min(max, Math.max(min, Number.isFinite(number) ? number : min));
+}
+function pcRound(value, digits=0){
+  const factor = 10 ** Math.max(0, Number(digits || 0));
+  return Math.round(Number(value || 0) * factor) / factor;
+}
+function pcEscape(value){
+  return typeof escapeHtml === 'function'
+    ? escapeHtml(String(value ?? ''))
+    : String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+}
+function pcFormatNumber(value){
+  return typeof formatPlainNumber === 'function' ? formatPlainNumber(Math.round(Number(value || 0))) : Math.round(Number(value || 0)).toLocaleString('es-AR');
+}
+function pcMoney(value){
+  const amount = Math.max(0, Math.round(Number(value || 0)));
+  return `$${amount.toLocaleString('es-AR')}`;
+}
+function pcVectorIcon(name, className=''){
+  const common = `class="player-career-vector ${pcEscape(className)}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
+  const paths = {
+    player:'<circle cx="12" cy="7" r="3"></circle><path d="M5.5 21c.5-5 3-8 6.5-8s6 3 6.5 8"></path>',
+    football:'<circle cx="12" cy="12" r="9"></circle><path d="m9.2 9.2 2.8-2 2.8 2-1.1 3.3h-3.4zM7 15l3.3-2.5M17 15l-3.3-2.5M9.5 20l-2.5-5M14.5 20l2.5-5M8 6l1.2 3.2M16 6l-1.2 3.2"></path>',
+    trend:'<path d="M4 17 10 11l4 4 6-8"></path><path d="M15 7h5v5"></path>',
+    heart:'<path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.9-8.5a5.5 5.5 0 0 0-.1-7.8Z"></path>',
+    shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path>',
+    users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>',
+    mic:'<rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"></path>',
+    medical:'<path d="M8 3h8v5h5v8h-5v5H8v-5H3V8h5z"></path>',
+    dumbbell:'<path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"></path>',
+    car:'<path d="m5 11 2-5h10l2 5M3 14h18v4H3z"></path><circle cx="7" cy="18" r="2"></circle><circle cx="17" cy="18" r="2"></circle>',
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path>',
+    contract:'<path d="M6 2h9l4 4v16H6z"></path><path d="M14 2v5h5M9 13h6M9 17h6"></path>',
+    chance:'<circle cx="12" cy="12" r="9"></circle><path d="M12 3v9l6 4"></path>',
+    up:'<path d="m6 15 6-6 6 6"></path>',
+    down:'<path d="m6 9 6 6 6-6"></path>',
+    balance:'<path d="M4 12h16M12 4v16M7 7l-3 5h6zM17 7l-3 5h6z"></path>',
+    star:'<path d="m12 2 3 6 7 .9-5 4.8 1.2 6.8L12 17l-6.2 3.5L7 13.7 2 8.9 9 8z"></path>'
+  };
+  return `<svg ${common}>${paths[name] || paths.star}</svg>`;
+}
+function pcVisibleStatSnapshot(state){
+  const stats = state?.season?.stats || {};
+  return {
+    overall:Number(state?.player?.overall || 0),
+    condition:Number(state?.player?.condition || 0),
+    morale:Number(state?.player?.morale || 0),
+    form:Number(state?.player?.form || 0),
+    trust:Number(state?.player?.trust || 0),
+    reputation:Number(state?.player?.reputation || 0),
+    value:Number(state?.player?.value || 0),
+    matches:Number(stats.matches || 0),
+    goals:Number(stats.goals || 0),
+    assists:Number(stats.assists || 0)
+  };
+}
+const PLAYER_CAREER_STAT_LABELS = {
+  overall:'Media', condition:'Estado físico', morale:'Moral', form:'Forma', trust:'Confianza', reputation:'Reputación', value:'Valor', matches:'Partidos', goals:'Goles', assists:'Asistencias'
+};
+function pcStoreStatChanges(state, before, reason=''){
+  if(!state || !before) return [];
+  const after = pcVisibleStatSnapshot(state);
+  const changes = Object.keys(after).map(key => ({ key, label:PLAYER_CAREER_STAT_LABELS[key] || key, before:Number(before[key] || 0), after:Number(after[key] || 0), delta:Number(after[key] || 0)-Number(before[key] || 0) }))
+    .filter(item => Math.abs(item.delta) >= (item.key === 'value' ? 1 : 0.05));
+  state.ui = state.ui && typeof state.ui === 'object' ? state.ui : {};
+  state.ui.lastStatChanges = changes;
+  state.ui.changeReason = String(reason || 'Actualización');
+  state.ui.animationToken = `${Date.now()}-${Math.max(0,Number(state.sequence || 0))}`;
+  return changes;
+}
+function pcStatDeltaText(change){
+  if(!change) return '';
+  const prefix = change.delta > 0 ? '+' : '';
+  if(change.key === 'value'){ const amount=Math.abs(Math.round(change.delta)); return `${change.delta>0?'+':'−'}$${amount.toLocaleString('es-AR')}`; }
+  const rounded = Math.abs(change.delta) < 1 ? pcRound(change.delta,1) : Math.round(change.delta);
+  return `${rounded > 0 ? '+' : ''}${rounded}`;
+}
+function pcStatChangesMarkup(state){
+  const changes = Array.isArray(state?.ui?.lastStatChanges) ? state.ui.lastStatChanges : [];
+  if(!changes.length) return '';
+  return `<div class="player-career-change-strip" aria-live="polite">${changes.slice(0,8).map(change => `<span class="${change.delta>0?'positive':'negative'}">${pcVectorIcon(change.delta>0?'up':'down')}<strong>${pcEscape(change.label)}</strong> ${pcEscape(pcStatDeltaText(change))}</span>`).join('')}</div>`;
+}
+function pcAnimateStatChanges(state){
+  if(typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
+  const token = String(state?.ui?.animationToken || '');
+  if(!token || token === playerCareerLastAnimatedToken) return;
+  playerCareerLastAnimatedToken = token;
+  const positive = (state.ui.lastStatChanges || []).filter(change => Number(change.delta || 0) > 0);
+  if(!positive.length) return;
+  const schedule = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : callback => setTimeout(callback,0);
+  schedule(() => {
+    positive.forEach(change => {
+      document.querySelectorAll(`[data-pc-stat~="${change.key}"]`).forEach(node => {
+        node.classList.remove('player-career-stat-gain');
+        void node.offsetWidth;
+        node.classList.add('player-career-stat-gain');
+      });
+    });
+  });
+}
+function pcSeedFromText(text){
+  let hash = 2166136261;
+  for(const char of String(text || '')){
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0 || 0x9e3779b9;
+}
+function pcRandom(state){
+  let seedValue = Number(state?.rngSeed || 0) >>> 0;
+  if(!seedValue) seedValue = pcSeedFromText(`${state?.player?.name || 'jugador'}-${state?.season?.year || 2026}`);
+  seedValue = (Math.imul(seedValue, 1664525) + 1013904223) >>> 0;
+  state.rngSeed = seedValue;
+  return seedValue / 4294967296;
+}
+function pcRandomBetween(state, min, max){ return Number(min) + (Number(max) - Number(min)) * pcRandom(state); }
+function pcRandomInt(state, min, max){ return Math.floor(pcRandomBetween(state, min, Number(max) + 1)); }
+function pcChance(state, probability){ return pcRandom(state) < pcClamp(probability, 0, 1); }
+function pcPick(state, list){ return Array.isArray(list) && list.length ? list[Math.floor(pcRandom(state) * list.length)] : null; }
+function pcUniqueId(state, prefix='pc'){
+  state.sequence = Math.max(0, Math.round(Number(state.sequence || 0))) + 1;
+  return `${prefix}-${state.season?.number || 1}-${state.sequence}`;
+}
+
+function pcClubById(id){
+  return (seed?.clubs || []).find(club => Number(club.id) === Number(id)) || null;
+}
+function pcDivisionById(id){
+  return (seed?.divisions || []).find(division => String(division.id || '') === String(id || '')) || null;
+}
+function pcClubCountry(club){
+  if(!club) return '';
+  if(typeof clubCountry === 'function') return String(clubCountry(club) || '');
+  return String(club.country || club.pais || '');
+}
+function pcClubReputation(club){ return pcClamp(Number(club?.reputation ?? club?.prestige ?? 50), 1, 100); }
+function pcClubSnapshot(club){
+  if(!club) return { id:0, name:'Sin club', country:'', divisionId:'', divisionName:'', reputation:35, crestPath:'' };
+  const division = pcDivisionById(club.divisionId);
+  return {
+    id:Number(club.id || 0),
+    name:String(club.name || 'Club'),
+    country:pcClubCountry(club),
+    divisionId:String(club.divisionId || ''),
+    divisionName:String(division?.name || club.divisionName || 'Liga'),
+    reputation:pcClubReputation(club),
+    crestPath:String(club.crestPath || '')
+  };
+}
+function pcClubBadge(snapshot, className='player-career-club-badge'){
+  if(snapshot?.id && typeof clubBadge === 'function') return clubBadge(snapshot.id);
+  const name = String(snapshot?.name || 'Club');
+  return `<span class="${pcEscape(className)} player-career-badge-fallback" aria-hidden="true">${pcEscape(name.slice(0,2).toUpperCase())}</span>`;
+}
+function pcCountries(){
+  return Array.from(new Set((seed?.clubs || []).map(pcClubCountry).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'es'));
+}
+function pcIsSpecialBotClub(club){
+  if(!club) return true;
+  if(Boolean(club.specialBot || club.isSpecialBot || club.clubWorldCupOnly || club.noLeague)) return true;
+  const division = pcDivisionById(club.divisionId);
+  return !division || !String(club.divisionId || '').trim();
+}
+function pcInitialClubOptions(nationality='', position=''){
+  const desiredCountry = String(nationality || '').trim();
+  const desiredPosition = PLAYER_CAREER_POSITIONS.includes(position) ? position : '';
+  const positionCount = club => desiredPosition ? (seed?.players || []).filter(player => Number(player.clubId) === Number(club.id) && String(player.position || '') === desiredPosition).length : 0;
+  const eligible = (seed?.clubs || []).filter(club => {
+    if(pcIsSpecialBotClub(club)) return false;
+    const reputation = pcClubReputation(club);
+    return reputation >= 35 && reputation <= 74;
+  });
+  const sameCountry = eligible
+    .filter(club => pcClubCountry(club) === desiredCountry)
+    .sort((a,b) => positionCount(a) - positionCount(b) || pcClubReputation(a) - pcClubReputation(b) || String(a.name).localeCompare(String(b.name),'es'));
+  const fallback = eligible
+    .filter(club => pcClubCountry(club) !== desiredCountry)
+    .sort((a,b) => positionCount(a) - positionCount(b) || pcClubReputation(a) - pcClubReputation(b) || String(a.name).localeCompare(String(b.name),'es'));
+  return sameCountry.slice(0,18).concat(fallback.slice(0, Math.max(0, 18 - sameCountry.length)));
+}
+function pcInitialClubOptionMarkup(nationality, selectedId=0, position=''){
+  const options = pcInitialClubOptions(nationality, position);
+  if(!options.length) return '<option value="0">No hay clubes disponibles</option>';
+  return options.map(club => {
+    const division = pcDivisionById(club.divisionId);
+    const selected = Number(selectedId) === Number(club.id) ? ' selected' : '';
+    return `<option value="${Number(club.id)}"${selected}>${pcEscape(club.name)} · ${pcEscape(pcClubCountry(club))} · ${pcEscape(division?.name || 'Liga')} · Prestigio ${Math.round(pcClubReputation(club))}</option>`;
+  }).join('');
+}
+
+function pcEmptyStats(){
+  return { matches:0, starts:0, minutes:0, goals:0, assists:0, yellow:0, red:0, ratingSum:0, ratingCount:0, bestRating:0 };
+}
+function pcEmptyAwards(){
+  return { manOfMatch:0, leaguePlayer:0, cupPlayer:0 };
+}
+function pcNormalizeAwards(awards){
+  const base = pcEmptyAwards();
+  Object.keys(base).forEach(key => { base[key] = Math.max(0,Math.round(Number(awards?.[key] || 0))); });
+  return base;
+}
+function pcIncrementAward(state,type,amount=1){
+  if(!state || !Object.prototype.hasOwnProperty.call(pcEmptyAwards(),type)) return 0;
+  state.careerAwards = pcNormalizeAwards(state.careerAwards);
+  state.season.awards = pcNormalizeAwards(state.season?.awards);
+  const clean = Math.max(0,Math.round(Number(amount || 0)));
+  state.careerAwards[type] += clean;
+  state.season.awards[type] += clean;
+  return state.careerAwards[type];
+}
+function pcRecordSeasonAward(state,type,label,competition=''){
+  pcIncrementAward(state,type,1);
+  state.history.awards = Array.isArray(state.history.awards) ? state.history.awards : [];
+  const award = {
+    id:pcUniqueId(state,'award'),
+    season:state.season.number,
+    year:state.season.year,
+    club:{...state.club},
+    type:String(type || ''),
+    label:String(label || 'Distinción'),
+    competition:String(competition || '')
+  };
+  state.history.awards.unshift(award);
+  state.history.awards = state.history.awards.slice(0,240);
+  pcRecordEvent(state,'award',`${award.label}${award.competition ? ` · ${award.competition}` : ''}.`);
+  return award;
+}
+function pcNormalizeStats(stats){
+  const base = pcEmptyStats();
+  Object.keys(base).forEach(key => { base[key] = Math.max(0, Number(stats?.[key] || 0)); });
+  return base;
+}
+function pcAverageRating(stats){ return Number(stats?.ratingCount || 0) > 0 ? Number(stats.ratingSum || 0) / Number(stats.ratingCount || 1) : 0; }
+function pcAddStats(target, delta){
+  const normalized = pcNormalizeStats(target);
+  Object.keys(normalized).forEach(key => {
+    if(key === 'bestRating') normalized[key] = Math.max(Number(normalized[key] || 0), Number(delta?.[key] || 0));
+    else normalized[key] = Number(normalized[key] || 0) + Number(delta?.[key] || 0);
+  });
+  return normalized;
+}
+function pcNormalizeClubSnapshot(club){
+  if(!club || typeof club !== 'object') return pcClubSnapshot(null);
+  const current = pcClubById(club.id);
+  return current ? pcClubSnapshot(current) : {
+    id:Number(club.id || 0),
+    name:String(club.name || 'Club'),
+    country:String(club.country || ''),
+    divisionId:String(club.divisionId || ''),
+    divisionName:String(club.divisionName || 'Liga'),
+    reputation:pcClamp(club.reputation || 50,1,100),
+    crestPath:String(club.crestPath || '')
+  };
+}
+function pcDefaultCompetitions(state){
+  const club = state.club;
+  const leagueName = club.divisionName || 'Liga';
+  const cupName = typeof nationalCupNameForCountry === 'function'
+    ? (nationalCupNameForCountry(club.country) || 'Copa nacional')
+    : 'Copa nacional';
+  const internationalActive = Number(club.reputation || 0) >= 80 || Number(state.player?.reputation || 0) >= 68;
+  const worldCupActive = (Number(state.season?.number || 1) % 4 === 0) && Number(club.reputation || 0) >= 86;
+  return {
+    league:{ name:leagueName, type:'league', active:true, played:0, points:0, wins:0, draws:0, losses:0, position:null, status:'Por comenzar', champion:false },
+    nationalCup:{ name:cupName, type:'nationalCup', active:true, status:'Por comenzar', round:'Primera ronda', champion:false },
+    international:{ name:'Copa internacional', type:'international', active:internationalActive, status:internationalActive ? 'Por comenzar' : 'No clasificado', round:internationalActive ? 'Fase inicial' : '—', champion:false },
+    clubWorldCup:{ name:'Mundial de Clubes', type:'clubWorldCup', active:worldCupActive, status:worldCupActive ? 'Por comenzar' : 'No clasificado', round:worldCupActive ? 'Fase de grupos' : '—', champion:false }
+  };
+}
+function pcCreateSeason(state, number, year){
+  const season = {
+    number:Math.max(1, Math.round(Number(number || 1))),
+    year:Math.max(2020, Math.round(Number(year || 2026))),
+    stage:0,
+    stageLabel:PLAYER_CAREER_STAGE_LABELS[0],
+    stats:pcEmptyStats(),
+    awards:pcEmptyAwards(),
+    competitions:null,
+    completed:false,
+    summary:null,
+    blockLog:[]
+  };
+  state.season = season;
+  season.competitions = pcDefaultCompetitions(state);
+  return season;
+}
+function pcCalculateValue(state){
+  const player = state.player || {};
+  const age = Number(player.age || 18);
+  const ageFactor = age <= 23 ? 1.55 : age <= 28 ? 1.25 : age <= 31 ? 1.0 : age <= 34 ? 0.70 : 0.45;
+  const levelFactor = Math.pow(Math.max(1, Number(player.overall || 50)) / 50, 4.15);
+  const reputationFactor = 0.75 + Number(player.reputation || 0) / 140;
+  const formFactor = 0.80 + Number(player.form || 50) / 250;
+  return Math.max(100000, Math.round(350000 * levelFactor * ageFactor * reputationFactor * formFactor / 50000) * 50000);
+}
+function pcCreatePlayerCareer(form){
+  const club = pcClubById(form.clubId);
+  const age = pcClamp(Math.round(Number(form.age || 17)), 16, 19);
+  const profileKey = PLAYER_CAREER_PROFILES[form.profile] ? form.profile : 'balanced';
+  const seedValue = pcSeedFromText(`${form.name}-${form.nationality}-${club?.id || 0}-${Date.now()}`);
+  const provisional = { rngSeed:seedValue, sequence:0 };
+  const baseOverall = pcClamp(48 + (age - 16) * 1.3 + pcRandomBetween(provisional, 0, 5), 48, 58);
+  const potential = pcClamp(baseOverall + pcRandomBetween(provisional, 17, 33), 68, 92);
+  const state = {
+    schemaVersion:PLAYER_CAREER_SCHEMA_VERSION,
+    status:'active',
+    createdAt:new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+    rngSeed:provisional.rngSeed,
+    sequence:0,
+    viewVersion:'V9.29',
+    player:{
+      id:`pc-player-${seedValue}`,
+      name:String(form.name || '').trim(),
+      nationality:String(form.nationality || '').trim(),
+      age,
+      position:PLAYER_CAREER_POSITIONS.includes(form.position) ? form.position : 'MC',
+      foot:form.foot === 'Izquierda' ? 'Izquierda' : 'Derecha',
+      profile:profileKey,
+      overall:pcRound(baseOverall,1),
+      potential:pcRound(potential,1),
+      regularity:pcRandomInt(provisional,45,88),
+      professionalism:pcRandomInt(provisional,42,90),
+      pressure:pcRandomInt(provisional,38,88),
+      injuryProneness:pcRandomInt(provisional,25,78),
+      adaptation:pcRandomInt(provisional,45,88),
+      condition:pcRandomInt(provisional,84,96),
+      morale:pcRandomInt(provisional,70,88),
+      form:pcRandomInt(provisional,55,72),
+      reputation:pcRandomInt(provisional,8,18),
+      value:0,
+      growthProgress:0,
+      extraGrowth:0,
+      trust:pcRandomInt(provisional,28,42),
+      leadership:pcRandomInt(provisional,20,55)
+    },
+    club:pcClubSnapshot(club),
+    contract:{ yearsRemaining:3, salary:Math.round((150000 + baseOverall * 12000) / 1000) * 1000, role:'Promesa' },
+    season:null,
+    careerStats:pcEmptyStats(),
+    careerAwards:pcEmptyAwards(),
+    history:{ seasons:[], clubs:[], transfers:[], titles:[], awards:[], injuries:[], decisions:[], events:[] },
+    memory:{ tags:{}, counters:{} },
+    injury:null,
+    pendingDecision:null,
+    pendingOffers:[],
+    loan:null,
+    retirement:null,
+    lastBlockSummary:null,
+    lastDecisionResult:null,
+    ui:{ animationToken:'', lastStatChanges:[] }
+  };
+  state.rngSeed = provisional.rngSeed;
+  state.player.value = pcCalculateValue(state);
+  state.history.clubs.push({ club:{...state.club}, fromSeason:1, toSeason:null, type:'Inicio de carrera' });
+  state.history.events.push({ id:pcUniqueId(state,'event'), season:1, year:Number(game?.seasonYear || new Date().getFullYear()), type:'career', text:`Comenzó su carrera profesional en ${state.club.name}.` });
+  pcCreateSeason(state, 1, Number(game?.seasonYear || new Date().getFullYear()));
+  return state;
+}
+function pcNormalizeCareer(raw){
+  if(!raw || typeof raw !== 'object') return null;
+  const normalized = { ...raw };
+  normalized.schemaVersion = PLAYER_CAREER_SCHEMA_VERSION;
+  normalized.status = ['active','retired'].includes(normalized.status) ? normalized.status : 'active';
+  normalized.rngSeed = Number(normalized.rngSeed || pcSeedFromText(normalized.player?.name || 'jugador')) >>> 0;
+  normalized.sequence = Math.max(0, Math.round(Number(normalized.sequence || 0)));
+  normalized.player = { ...(normalized.player || {}) };
+  normalized.player.name = String(normalized.player.name || 'Jugador');
+  normalized.player.nationality = String(normalized.player.nationality || 'Argentina');
+  normalized.player.age = pcClamp(normalized.player.age || 18, 16, 45);
+  normalized.player.position = PLAYER_CAREER_POSITIONS.includes(normalized.player.position) ? normalized.player.position : 'MC';
+  normalized.player.foot = normalized.player.foot === 'Izquierda' ? 'Izquierda' : 'Derecha';
+  normalized.player.profile = PLAYER_CAREER_PROFILES[normalized.player.profile] ? normalized.player.profile : 'balanced';
+  normalized.player.overall = pcClamp(normalized.player.overall || 50, 1, 99);
+  normalized.player.potential = pcClamp(normalized.player.potential || Math.max(normalized.player.overall,75), normalized.player.overall, 99);
+  ['regularity','professionalism','pressure','injuryProneness','adaptation','condition','morale','form','reputation','trust','leadership'].forEach(key => {
+    normalized.player[key] = pcClamp(normalized.player[key] ?? 50, 0, 100);
+  });
+  normalized.player.growthProgress = Number(normalized.player.growthProgress || 0);
+  normalized.player.extraGrowth = Number(normalized.player.extraGrowth || 0);
+  normalized.club = pcNormalizeClubSnapshot(normalized.club);
+  normalized.contract = { yearsRemaining:Math.max(0,Math.round(Number(normalized.contract?.yearsRemaining ?? 2))), salary:Math.max(0,Math.round(Number(normalized.contract?.salary || 0))), role:String(normalized.contract?.role || 'Rotación') };
+  normalized.careerStats = pcNormalizeStats(normalized.careerStats);
+  normalized.careerAwards = pcNormalizeAwards(normalized.careerAwards);
+  normalized.history = normalized.history && typeof normalized.history === 'object' ? normalized.history : {};
+  ['seasons','clubs','transfers','titles','awards','injuries','decisions','events'].forEach(key => { normalized.history[key] = Array.isArray(normalized.history[key]) ? normalized.history[key] : []; });
+  normalized.memory = normalized.memory && typeof normalized.memory === 'object' ? normalized.memory : { tags:{}, counters:{} };
+  normalized.memory.tags = normalized.memory.tags && typeof normalized.memory.tags === 'object' ? normalized.memory.tags : {};
+  normalized.memory.counters = normalized.memory.counters && typeof normalized.memory.counters === 'object' ? normalized.memory.counters : {};
+  normalized.injury = normalized.injury && typeof normalized.injury === 'object' && Number(normalized.injury.blocksRemaining || 0) > 0 ? { ...normalized.injury, blocksRemaining:Math.max(1,Math.round(Number(normalized.injury.blocksRemaining || 1))) } : null;
+  normalized.pendingDecision = normalized.pendingDecision && typeof normalized.pendingDecision === 'object' ? normalized.pendingDecision : null;
+  normalized.pendingOffers = Array.isArray(normalized.pendingOffers) ? normalized.pendingOffers : [];
+  normalized.loan = normalized.loan && typeof normalized.loan === 'object' ? normalized.loan : null;
+  normalized.retirement = normalized.retirement && typeof normalized.retirement === 'object' ? normalized.retirement : null;
+  normalized.lastBlockSummary = normalized.lastBlockSummary && typeof normalized.lastBlockSummary === 'object' ? normalized.lastBlockSummary : null;
+  normalized.lastDecisionResult = normalized.lastDecisionResult && typeof normalized.lastDecisionResult === 'object' ? normalized.lastDecisionResult : null;
+  normalized.ui = normalized.ui && typeof normalized.ui === 'object' ? normalized.ui : { animationToken:'', lastStatChanges:[] };
+  normalized.ui.animationToken = String(normalized.ui.animationToken || '');
+  normalized.ui.lastStatChanges = Array.isArray(normalized.ui.lastStatChanges) ? normalized.ui.lastStatChanges : [];
+  normalized.viewVersion = 'V9.29';
+  const seasonNumber = Math.max(1,Math.round(Number(normalized.season?.number || 1)));
+  const seasonYear = Math.max(2020,Math.round(Number(normalized.season?.year || game?.seasonYear || 2026)));
+  normalized.season = normalized.season && typeof normalized.season === 'object' ? { ...normalized.season } : {};
+  normalized.season.number = seasonNumber;
+  normalized.season.year = seasonYear;
+  normalized.season.stage = pcClamp(Math.round(Number(normalized.season.stage || 0)),0,5);
+  normalized.season.stageLabel = PLAYER_CAREER_STAGE_LABELS[normalized.season.stage];
+  normalized.season.stats = pcNormalizeStats(normalized.season.stats);
+  normalized.season.awards = pcNormalizeAwards(normalized.season.awards);
+  normalized.history.seasons = normalized.history.seasons.map(item => ({ ...item, stats:pcNormalizeStats(item?.stats), awards:pcNormalizeAwards(item?.awards) }));
+  normalized.season.blockLog = Array.isArray(normalized.season.blockLog) ? normalized.season.blockLog : [];
+  normalized.season.competitions = normalized.season.competitions && typeof normalized.season.competitions === 'object' ? normalized.season.competitions : pcDefaultCompetitions(normalized);
+  if(normalized.pendingDecision && Number(normalized.pendingDecision.version || 1) < 2){
+    const previousCategory = String(normalized.pendingDecision.category || '');
+    normalized.pendingDecision = null;
+    pcCreateDecision(normalized,previousCategory);
+  }
+  normalized.player.value = pcCalculateValue(normalized);
+  return normalized;
+}
+function pcCareerState(){ return game?.miniGames?.playerCareer ? pcNormalizeCareer(game.miniGames.playerCareer) : null; }
+function pcSetCareerState(state){
+  if(!game) return null;
+  game.miniGames = game.miniGames && typeof game.miniGames === 'object' ? game.miniGames : {};
+  game.miniGames.playerCareer = state ? pcNormalizeCareer(state) : null;
+  return game.miniGames.playerCareer;
+}
+function pcPersist(state, render=true){
+  if(!game || !state) return;
+  state.updatedAt = new Date().toISOString();
+  pcSetCareerState(state);
+  if(typeof saveLocal === 'function') Promise.resolve(saveLocal(true)).catch(()=>undefined);
+  if(render && typeof renderPlayerCareer === 'function') renderPlayerCareer();
+}
+
+function pcProfileLabel(state){ return PLAYER_CAREER_PROFILES[state?.player?.profile]?.label || 'Equilibrado'; }
+function pcStageProgress(state){ return pcClamp((Number(state?.season?.stage || 0) / 5) * 100,0,100); }
+function pcCurrentRole(state){
+  const stats = state?.season?.stats || {};
+  const matches = Number(stats.matches || 0);
+  const starts = Number(stats.starts || 0);
+  if(matches <= 0) return state?.contract?.role || 'Promesa';
+  const startRate = starts / Math.max(1,matches);
+  if(startRate >= 0.78) return 'Titular';
+  if(startRate >= 0.42) return 'Rotación';
+  return 'Suplente';
+}
+function pcRiskLabel(value){
+  const number = Number(value || 0);
+  if(number < 25) return 'Bajo';
+  if(number < 55) return 'Medio';
+  return 'Alto';
+}
+function pcRatingLabel(value){ return Number(value || 0) > 0 ? pcRound(value,2).toFixed(2) : '—'; }
+function pcRecordEvent(state, type, text, extra={}){
+  state.history.events.unshift({ id:pcUniqueId(state,'event'), season:state.season.number, year:state.season.year, type:String(type || 'general'), text:String(text || ''), ...extra });
+  state.history.events = state.history.events.slice(0,200);
+}
+function pcRecordDecision(state, decision, option, outcome=null){
+  state.history.decisions.unshift({
+    id:pcUniqueId(state,'decision'),
+    season:state.season.number,
+    year:state.season.year,
+    category:decision.category,
+    title:decision.title,
+    choice:option.label,
+    consequence:outcome?.description || option.consequence || option.description || '',
+    probability:Number(outcome?.chance || 100)
+  });
+  state.history.decisions = state.history.decisions.slice(0,120);
+}
+function pcIncrementMemory(state, key, amount=1){
+  state.memory.counters[key] = Number(state.memory.counters[key] || 0) + Number(amount || 0);
+}
+function pcSetMemory(state, key, value=true){ state.memory.tags[key] = value; }
+
+function pcDecisionPool(state, forcedCategory=''){
+  const injured = Boolean(state.injury);
+  const choices = [];
+  if(injured){
+    choices.push({
+      id:'health-recovery-v2', version:2, category:'Salud', icon:'medical', title:'El cuerpo médico define el regreso',
+      text:`La recuperación de ${state.injury.name} entra en una etapa importante. Cada alternativa muestra sus resultados posibles.`,
+      options:[
+        { id:'health-plan', label:'Respetar todo el plan médico', icon:'shield', outcomes:[
+          { chance:85, tone:'positive', description:'+18 estado físico · −15 riesgo de recaída', effects:{ condition:18 }, injury:{ recurrenceRisk:-15 } },
+          { chance:15, tone:'neutral', description:'+8 estado físico · recuperación sin cambios', effects:{ condition:8 } }
+        ]},
+        { id:'health-early', label:'Forzar el regreso anticipado', icon:'trend', outcomes:[
+          { chance:45, tone:'positive', description:'−1 período de recuperación · +8 moral', effects:{ morale:8 }, injury:{ blocksRemaining:-1 } },
+          { chance:55, tone:'negative', description:'−15 estado físico · +1 período · +25 riesgo de recaída', effects:{ condition:-15 }, injury:{ blocksRemaining:1, recurrenceRisk:25 }, tags:{ earlyReturnRisk:true } }
+        ]}
+      ]
+    });
+  }
+  choices.push(
+    {
+      id:'training-plan-v2', version:2, category:'Entrenamiento', icon:'dumbbell', title:'Plan individual de entrenamiento',
+      text:'Elegí entre acelerar el desarrollo o proteger el físico. Los porcentajes indican la probabilidad de cada resultado.',
+      options:[
+        { id:'training-extra-v2', label:'Entrenamiento extra', icon:'trend', outcomes:[
+          { chance:65, tone:'positive', description:'+84% de progreso de media · +6 forma · −12 físico', effects:{ growthProgress:0.84, form:6, condition:-12 }, counters:{ intenseTraining:1 } },
+          { chance:35, tone:'negative', description:'+28% de progreso de media · −18 físico · riesgo alto de lesión', effects:{ growthProgress:0.28, condition:-18 }, tags:{ injuryRiskNextBlock:true }, counters:{ intenseTraining:1 } }
+        ]},
+        { id:'training-recovery-v2', label:'Priorizar recuperación', icon:'heart', outcomes:[
+          { chance:80, tone:'positive', description:'+18 estado físico · protección contra lesiones', effects:{ condition:18, morale:2 }, tags:{ protectedNextBlock:true } },
+          { chance:20, tone:'neutral', description:'+10 estado físico · −2 forma reciente', effects:{ condition:10, form:-2 }, tags:{ protectedNextBlock:true } }
+        ]}
+      ]
+    },
+    {
+      id:'coach-role-v2', version:2, category:'Entrenador', icon:'contract', title:'Conversación sobre tu lugar en el equipo',
+      text:'El entrenador quiere saber cómo asumís tu rol actual dentro del plantel.',
+      options:[
+        { id:'coach-minutes-v2', label:'Pedir más minutos', icon:'player', outcomes:[
+          { chance:55, tone:'positive', description:'+10 confianza · +6 moral', effects:{ trust:10, morale:6 }, counters:{ askedMinutes:1 } },
+          { chance:45, tone:'negative', description:'−8 confianza · −5 moral', effects:{ trust:-8, morale:-5 }, counters:{ askedMinutes:1 } }
+        ]},
+        { id:'coach-accept-v2', label:'Aceptar el rol y trabajar', icon:'balance', outcomes:[
+          { chance:85, tone:'positive', description:'+8 confianza · +2 profesionalismo', effects:{ trust:8, professionalism:2, morale:2 } },
+          { chance:15, tone:'neutral', description:'−4 moral · sin cambios en tu rol', effects:{ morale:-4 } }
+        ]}
+      ]
+    },
+    {
+      id:'press-expectations-v2', version:2, category:'Prensa', icon:'mic', title:'La prensa pregunta por tus objetivos',
+      text:'Tus declaraciones pueden fortalecer tu imagen o aumentar la presión sobre tu rendimiento.',
+      options:[
+        { id:'press-team-v2', label:'Hablar del equipo', icon:'users', outcomes:[
+          { chance:75, tone:'positive', description:'+4 moral · +4 confianza · +1 reputación', effects:{ morale:4, trust:4, reputation:1 } },
+          { chance:25, tone:'neutral', description:'+1 moral · respuesta sin repercusión', effects:{ morale:1 } }
+        ]},
+        { id:'press-ambition-v2', label:'Prometer una temporada histórica', icon:'star', outcomes:[
+          { chance:45, tone:'positive', description:'+6 reputación · +5 moral', effects:{ reputation:6, morale:5 }, tags:{ publicAmbition:true } },
+          { chance:55, tone:'negative', description:'−6 confianza · −4 moral por presión excesiva', effects:{ trust:-6, morale:-4 }, tags:{ publicAmbition:true } }
+        ]}
+      ]
+    },
+    {
+      id:'dressing-room-night-v2', version:2, category:'Vestuario', icon:'users', title:'Noche libre del plantel',
+      text:'El grupo organiza una salida. Podés buscar cohesión o convertirte en protagonista de una noche arriesgada.',
+      options:[
+        { id:'room-party-v2', label:'Llevar de fiesta a todo el equipo', icon:'users', outcomes:[
+          { chance:40, tone:'positive', description:'+20 moral · +20 confianza', effects:{ morale:20, trust:20, leadership:3 } },
+          { chance:60, tone:'negative', description:'−12 estado físico · −8 confianza del entrenador', effects:{ condition:-12, trust:-8 } }
+        ]},
+        { id:'room-ferrari-v2', label:'Volver en la Ferrari del capitán', icon:'car', outcomes:[
+          { chance:40, tone:'positive', description:'+8 reputación · +6 moral', effects:{ reputation:8, morale:6 } },
+          { chance:60, tone:'negative', description:'Chocar con la Ferrari: −10 físico · −2 de media', effects:{ condition:-10, overall:-2 } }
+        ]}
+      ]
+    }
+  );
+  if(forcedCategory){
+    const matching = choices.filter(item => item.category === forcedCategory);
+    if(matching.length) return pcPick(state,matching);
+  }
+  return pcPick(state,choices);
+}
+function pcCreateDecision(state, forcedCategory=''){
+  const template = pcDecisionPool(state, forcedCategory);
+  if(!template) return null;
+  state.pendingDecision = { ...template, options:(template.options || []).slice(0,2), instanceId:pcUniqueId(state,'pending'), createdSeason:state.season.number, createdStage:state.season.stage };
+  return state.pendingDecision;
+}
+function pcApplyDecisionEffect(state, effect){
+  const player = state.player;
+  switch(effect){
+    case 'training_extra': player.condition=pcClamp(player.condition-12,0,100); player.growthProgress+=0.84; player.form=pcClamp(player.form+4,0,100); pcIncrementMemory(state,'intenseTraining'); pcSetMemory(state,'injuryRiskNextBlock',true); break;
+    case 'training_balance': player.growthProgress+=0.44; player.condition=pcClamp(player.condition+2,0,100); player.form=pcClamp(player.form+2,0,100); break;
+    case 'training_recovery': player.condition=pcClamp(player.condition+17,0,100); player.morale=pcClamp(player.morale+2,0,100); pcSetMemory(state,'protectedNextBlock',true); break;
+    case 'coach_minutes': player.trust=pcClamp(player.trust+(pcChance(state,.45)?7:-6),0,100); break;
+    case 'coach_accept': player.trust=pcClamp(player.trust+8,0,100); break;
+    case 'coach_tactical': player.adaptation=pcClamp(player.adaptation+3,0,100); player.trust=pcClamp(player.trust+4,0,100); player.growthProgress+=0.24; break;
+    case 'press_humble': player.morale=pcClamp(player.morale+3,0,100); player.trust=pcClamp(player.trust+2,0,100); break;
+    case 'press_ambitious': player.reputation=pcClamp(player.reputation+3,0,100); break;
+    case 'room_listen': player.professionalism=pcClamp(player.professionalism+2,0,100); break;
+    case 'room_respond': player.leadership=pcClamp(player.leadership+3,0,100); break;
+    case 'room_support': player.leadership=pcClamp(player.leadership+4,0,100); player.trust=pcClamp(player.trust+5,0,100); break;
+    case 'health_patient': if(state.injury) state.injury.recurrenceRisk=pcClamp(Number(state.injury.recurrenceRisk||20)-12,0,100); break;
+    case 'health_treatment': if(state.injury&&pcChance(state,.68)) state.injury.blocksRemaining=Math.max(1,Number(state.injury.blocksRemaining||1)-1); break;
+    case 'health_early': if(state.injury) state.injury.blocksRemaining=Math.max(0,Number(state.injury.blocksRemaining||1)-1); pcSetMemory(state,'earlyReturnRisk',true); break;
+  }
+}
+function pcPickDecisionOutcome(state, option){
+  const outcomes = Array.isArray(option?.outcomes) ? option.outcomes : [];
+  if(!outcomes.length) return null;
+  const roll = pcRandom(state) * 100;
+  let cumulative = 0;
+  for(const outcome of outcomes){
+    cumulative += Math.max(0,Number(outcome.chance || 0));
+    if(roll < cumulative) return outcome;
+  }
+  return outcomes[outcomes.length-1];
+}
+function pcApplyDecisionOutcome(state, outcome){
+  if(!outcome) return;
+  const player = state.player;
+  const clampKeys = new Set(['condition','morale','form','trust','reputation','professionalism','leadership','adaptation','pressure']);
+  Object.entries(outcome.effects || {}).forEach(([key,amount]) => {
+    const delta = Number(amount || 0);
+    if(key === 'growthProgress') player.growthProgress = Number(player.growthProgress || 0) + delta;
+    else if(key === 'overall') player.overall = pcClamp(Number(player.overall || 0) + delta,35,99);
+    else if(clampKeys.has(key)) player[key] = pcClamp(Number(player[key] || 0) + delta,0,100);
+  });
+  Object.entries(outcome.tags || {}).forEach(([key,value]) => pcSetMemory(state,key,value));
+  Object.entries(outcome.counters || {}).forEach(([key,value]) => pcIncrementMemory(state,key,value));
+  if(state.injury && outcome.injury){
+    if(Number(outcome.injury.blocksRemaining || 0)) state.injury.blocksRemaining = Math.max(0,Number(state.injury.blocksRemaining || 0) + Number(outcome.injury.blocksRemaining || 0));
+    if(Number(outcome.injury.recurrenceRisk || 0)) state.injury.recurrenceRisk = pcClamp(Number(state.injury.recurrenceRisk || 20) + Number(outcome.injury.recurrenceRisk || 0),0,100);
+  }
+  player.value = pcCalculateValue(state);
+}
+function pcResolveDecision(optionId){
+  const state = pcCareerState();
+  if(!state?.pendingDecision) return;
+  const before = pcVisibleStatSnapshot(state);
+  const decision = state.pendingDecision;
+  const option = (decision.options || []).find(item => String(item.id) === String(optionId));
+  if(!option) return;
+  let outcome = pcPickDecisionOutcome(state,option);
+  if(outcome) pcApplyDecisionOutcome(state,outcome);
+  else {
+    pcApplyDecisionEffect(state,option.effect);
+    outcome = { chance:100, tone:'neutral', description:option.consequence || option.description || 'Decisión aplicada.' };
+  }
+  pcRecordDecision(state,decision,option,outcome);
+  pcRecordEvent(state,'decision',`${decision.title}: ${option.label}. ${outcome.description || ''}`.trim());
+  state.lastDecisionResult = { id:pcUniqueId(state,'decision-result'), category:decision.category, title:decision.title, option:option.label, outcome:outcome.description || '', chance:Number(outcome.chance || 100), tone:String(outcome.tone || 'neutral') };
+  state.pendingDecision = null;
+  pcStoreStatChanges(state,before,'Resultado de la decisión');
+  pcPersist(state,true);
+}
+
+function pcCompetitionUpdateDuringSeason(state, teamResult){
+  const league = state.season.competitions.league;
+  league.played += 1;
+  if(teamResult === 3){ league.wins += 1; league.points += 3; }
+  else if(teamResult === 1){ league.draws += 1; league.points += 1; }
+  else league.losses += 1;
+  const ppg = league.points / Math.max(1,league.played);
+  const strengthAdjustment = (Number(state.club.reputation || 50) - 50) / 6;
+  league.position = pcClamp(Math.round(18 - (ppg / 2.25) * 16 - strengthAdjustment),1,18);
+  league.status = `Puesto estimado: ${league.position}°`;
+  const cup = state.season.competitions.nationalCup;
+  if(state.season.stage >= 2 && cup.active && cup.status === 'Por comenzar'){
+    cup.round = pcChance(state,0.72) ? 'Octavos de final' : 'Eliminado en fase inicial';
+    cup.status = cup.round.startsWith('Eliminado') ? cup.round : 'En competencia';
+  }
+  if(state.season.stage >= 3 && cup.status === 'En competencia'){
+    cup.round = pcChance(state,0.58 + Number(state.club.reputation || 50)/300) ? 'Cuartos de final' : 'Eliminado en octavos';
+    if(cup.round.startsWith('Eliminado')) cup.status = cup.round;
+  }
+}
+function pcTeamMatchResult(state, playerImpact){
+  const teamStrength = Number(state.club.reputation || 50) + Number(playerImpact || 0) + pcRandomBetween(state,-7,7);
+  const opponentStrength = pcRandomBetween(state,42,94);
+  const probabilityWin = pcClamp(0.44 + (teamStrength-opponentStrength)/115,0.10,0.82);
+  const drawProbability = pcClamp(0.28 - Math.abs(teamStrength-opponentStrength)/300,0.15,0.31);
+  const roll = pcRandom(state);
+  if(roll < probabilityWin) return 3;
+  if(roll < probabilityWin + drawProbability) return 1;
+  return 0;
+}
+function pcInjuryProbability(state, minutes){
+  const player = state.player;
+  const base = 0.005 + Number(player.injuryProneness || 50) / 8000;
+  const conditionFactor = 1 + Math.max(0,65-Number(player.condition || 0))/65;
+  const minuteFactor = Math.max(0.3,Number(minutes || 0)/90);
+  const intense = state.memory.tags.injuryRiskNextBlock ? 1.55 : 1;
+  const protectedBlock = state.memory.tags.protectedNextBlock ? 0.58 : 1;
+  const earlyReturn = state.memory.tags.earlyReturnRisk ? 1.65 : 1;
+  return pcClamp(base * conditionFactor * minuteFactor * intense * protectedBlock * earlyReturn,0.001,0.16);
+}
+function pcCreateInjury(state){
+  const injury = { ...pcPick(state,PLAYER_CAREER_INJURIES) };
+  const record = {
+    id:pcUniqueId(state,'injury'),
+    name:injury.name,
+    severity:injury.severity,
+    blocksRemaining:injury.blocks,
+    originalBlocks:injury.blocks,
+    recurrenceRisk:20,
+    season:state.season.number,
+    year:state.season.year
+  };
+  state.injury = record;
+  state.history.injuries.unshift({ ...record });
+  state.player.condition = pcClamp(state.player.condition - 24,0,100);
+  state.player.morale = pcClamp(state.player.morale - 6,0,100);
+  pcRecordEvent(state,'injury',`${state.player.name} sufrió ${record.name.toLowerCase()}.`);
+  return record;
+}
+function pcRecoverInjuryBlock(state){
+  if(!state.injury) return null;
+  state.injury.blocksRemaining = Math.max(0,Number(state.injury.blocksRemaining || 0) - 1);
+  state.player.condition = pcClamp(state.player.condition + 18,0,100);
+  if(state.injury.blocksRemaining <= 0){
+    const injuryName = state.injury.name;
+    state.injury = null;
+    state.player.condition = pcClamp(Math.max(72,state.player.condition),0,100);
+    state.player.morale = pcClamp(state.player.morale + 4,0,100);
+    pcRecordEvent(state,'recovery',`${state.player.name} recibió el alta por ${injuryName.toLowerCase()}.`);
+    return { recovered:true, name:injuryName };
+  }
+  return { recovered:false, name:state.injury.name };
+}
+function pcPlayerMatchContribution(state, rating, minutes){
+  const output = PLAYER_CAREER_POSITION_OUTPUT[state.player.position] || PLAYER_CAREER_POSITION_OUTPUT.MC;
+  const formMultiplier = 0.75 + Number(state.player.form || 50)/200;
+  const levelMultiplier = 0.65 + Number(state.player.overall || 50)/110;
+  const minutesFactor = Math.max(0,Number(minutes || 0))/90;
+  const goals = pcChance(state,output.goals * formMultiplier * levelMultiplier * minutesFactor) ? 1 : 0;
+  const assists = pcChance(state,output.assists * formMultiplier * levelMultiplier * minutesFactor) ? 1 : 0;
+  const yellow = pcChance(state,output.cards * minutesFactor) ? 1 : 0;
+  const red = yellow && pcChance(state,0.025) ? 1 : 0;
+  return { goals, assists, yellow, red, rating };
+}
+function pcSimulateMatch(state){
+  const player = state.player;
+  const targetLevel = 43 + Number(state.club.reputation || 50) * 0.30;
+  const roleBoost = player.trust/170 + player.form/300 + player.morale/500;
+  const playProbability = pcClamp(0.34 + (player.overall-targetLevel)/34 + roleBoost,0.08,0.96);
+  const plays = pcChance(state, playProbability) && !state.injury;
+  let delta = pcEmptyStats();
+  let teamResult = pcTeamMatchResult(state,0);
+  if(!plays){
+    player.morale = pcClamp(player.morale - (pcChance(state,0.35) ? 1 : 0),0,100);
+    return { delta, teamResult, played:false, manOfMatch:false };
+  }
+  const startProbability = pcClamp(0.28 + (player.overall-targetLevel)/22 + player.trust/155,0.08,0.94);
+  const starter = pcChance(state,startProbability);
+  const minutes = starter ? pcRandomInt(state,64,90) : pcRandomInt(state,12,38);
+  const pressurePenalty = state.season.stage >= 3 ? (55-Number(player.pressure || 50))/180 : 0;
+  const regularityNoise = (100-Number(player.regularity || 50))/100 * pcRandomBetween(state,-0.8,0.8);
+  const output = PLAYER_CAREER_POSITION_OUTPUT[player.position] || PLAYER_CAREER_POSITION_OUTPUT.MC;
+  const rating = pcClamp(
+    5.65 + (player.overall-targetLevel)/28 + (player.form-50)/90 + (player.morale-50)/150 + output.ratingBias + regularityNoise - pressurePenalty + pcRandomBetween(state,-0.45,0.55),
+    4.2,9.4
+  );
+  const contribution = pcPlayerMatchContribution(state,rating,minutes);
+  const impact = (rating-6.2)*2.3 + contribution.goals*4 + contribution.assists*2.5;
+  teamResult = pcTeamMatchResult(state,impact);
+  const distinctionScore = rating + contribution.goals*0.48 + contribution.assists*0.34 + (teamResult===3 ? 0.18 : 0);
+  const manOfMatchProbability = distinctionScore >= 8.8 ? 0.92
+    : distinctionScore >= 8.45 ? 0.76
+      : distinctionScore >= 8.10 ? 0.54
+        : distinctionScore >= 7.75 ? 0.28 : 0;
+  const manOfMatch = manOfMatchProbability > 0 && pcChance(state,manOfMatchProbability);
+  delta = {
+    matches:1,
+    starts:starter ? 1 : 0,
+    minutes,
+    goals:contribution.goals,
+    assists:contribution.assists,
+    yellow:contribution.yellow,
+    red:contribution.red,
+    ratingSum:rating,
+    ratingCount:1,
+    bestRating:rating
+  };
+  const conditionCost = minutes * (0.11 + (100-player.professionalism)/1800) / (PLAYER_CAREER_PROFILES[player.profile]?.physical || 1);
+  player.condition = pcClamp(player.condition - conditionCost,0,100);
+  player.form = pcClamp(player.form + (rating-6.4)*2.2,0,100);
+  player.morale = pcClamp(player.morale + (teamResult===3?1.5:teamResult===0?-1:0) + (rating>=7.2?1.5:rating<5.8?-1.2:0),0,100);
+  player.trust = pcClamp(player.trust + (rating-6.3)*0.8 + (starter?0.15:0),0,100);
+  if(pcChance(state,pcInjuryProbability(state,minutes))) pcCreateInjury(state);
+  return { delta, teamResult, played:true, rating, minutes, manOfMatch };
+}
+function pcApplyDevelopment(state, matchesPlayed){
+  const player = state.player;
+  const age = Number(player.age || 18);
+  const potentialGap = Math.max(0,Number(player.potential || player.overall) - Number(player.overall || 0));
+  let ageFactor = age <= 19 ? 1.25 : age <= 22 ? 1.08 : age <= 25 ? 0.88 : age <= 28 ? 0.58 : age <= 31 ? 0.24 : -0.18;
+  const professionalFactor = 0.62 + Number(player.professionalism || 50)/125;
+  const minutesFactor = 0.60 + Math.min(1.1,Number(matchesPlayed || 0)/7);
+  const profileFactor = PLAYER_CAREER_PROFILES[player.profile]?.growth || 1;
+  const gapFactor = potentialGap <= 0 ? 0 : Math.min(1.25,potentialGap/18);
+  let progress = ageFactor * professionalFactor * minutesFactor * profileFactor * gapFactor * 0.30;
+  if(age >= 32) progress = -0.16 - (age-32)*0.05;
+  progress += Number(player.extraGrowth || 0);
+  if(progress > 0) progress *= PLAYER_CAREER_GROWTH_MULTIPLIER;
+  player.extraGrowth = 0;
+  player.growthProgress = Number(player.growthProgress || 0) + progress;
+  let changed = 0;
+  while(player.growthProgress >= 1 && player.overall < player.potential && player.overall < 99){
+    player.overall = pcRound(player.overall + 1,1);
+    player.growthProgress -= 1;
+    changed += 1;
+  }
+  while(player.growthProgress <= -1 && player.overall > 35){
+    player.overall = pcRound(player.overall - 1,1);
+    player.growthProgress += 1;
+    changed -= 1;
+  }
+  if(changed !== 0) pcRecordEvent(state,'development',`${state.player.name} ${changed > 0 ? 'mejoró' : 'redujo'} su media a ${Math.round(state.player.overall)}.`);
+  return changed;
+}
+function pcSimulateBlock(state, matches){
+  const startStats = pcNormalizeStats(state.season.stats);
+  let played = 0;
+  let starts = 0;
+  let goals = 0;
+  let assists = 0;
+  let ratingSum = 0;
+  let ratingCount = 0;
+  let manOfMatch = 0;
+  let injuryOccurred = false;
+  if(state.injury){
+    const recovery = pcRecoverInjuryBlock(state);
+    return { scheduled:matches, played:0, starts:0, goals:0, assists:0, averageRating:0, injuryOccurred:false, recovering:true, recovered:Boolean(recovery?.recovered) };
+  }
+  for(let index=0; index<matches; index+=1){
+    const result = pcSimulateMatch(state);
+    pcCompetitionUpdateDuringSeason(state,result.teamResult);
+    state.season.stats = pcAddStats(state.season.stats,result.delta);
+    state.careerStats = pcAddStats(state.careerStats,result.delta);
+    played += Number(result.delta.matches || 0);
+    starts += Number(result.delta.starts || 0);
+    goals += Number(result.delta.goals || 0);
+    assists += Number(result.delta.assists || 0);
+    ratingSum += Number(result.delta.ratingSum || 0);
+    ratingCount += Number(result.delta.ratingCount || 0);
+    if(result.manOfMatch){ manOfMatch += 1; pcIncrementAward(state,'manOfMatch',1); }
+    if(state.injury){ injuryOccurred = true; break; }
+  }
+  state.player.condition = pcClamp(state.player.condition + 18 + Number(state.player.professionalism || 50)/20,0,100);
+  state.player.form = pcClamp(state.player.form + pcRandomBetween(state,-2.5,2.5),0,100);
+  pcApplyDevelopment(state,played);
+  state.player.value = pcCalculateValue(state);
+  delete state.memory.tags.injuryRiskNextBlock;
+  delete state.memory.tags.protectedNextBlock;
+  delete state.memory.tags.earlyReturnRisk;
+  const summary = {
+    scheduled:matches,
+    played,
+    starts,
+    goals,
+    assists,
+    averageRating:ratingCount ? ratingSum/ratingCount : 0,
+    manOfMatch,
+    injuryOccurred,
+    recovering:false,
+    statsBefore:startStats
+  };
+  return summary;
+}
+function pcCupFinalOutcome(state, competition, strengthBonus=0){
+  if(!competition?.active) return;
+  const seasonStats = state.season.stats;
+  const playerContribution = Number(seasonStats.goals || 0)*0.8 + Number(seasonStats.assists || 0)*0.6 + Math.max(0,pcAverageRating(seasonStats)-6.3)*3;
+  const strength = Number(state.club.reputation || 50) + strengthBonus + playerContribution + pcRandomBetween(state,-14,14);
+  if(strength >= 92){ competition.round='Campeón'; competition.status='Campeón'; competition.champion=true; }
+  else if(strength >= 82){ competition.round='Final'; competition.status='Subcampeón'; }
+  else if(strength >= 73){ competition.round='Semifinal'; competition.status='Eliminado en semifinales'; }
+  else if(strength >= 63){ competition.round='Cuartos de final'; competition.status='Eliminado en cuartos'; }
+  else if(strength >= 54){ competition.round='Octavos de final'; competition.status='Eliminado en octavos'; }
+  else { competition.round='Fase inicial'; competition.status='Eliminado en fase inicial'; }
+}
+function pcGenerateMarketOffers(state){
+  const currentClub = state.club;
+  const stats = state.season.stats;
+  const rating = pcAverageRating(stats);
+  const performance = Number(stats.matches || 0)*0.25 + Number(stats.goals || 0)*1.6 + Number(stats.assists || 0)*1.3 + Math.max(0,rating-6)*7;
+  const desiredReputation = pcClamp(Number(currentClub.reputation || 50) + (performance>=25?12:performance>=15?7:performance>=8?3:-2),35,96);
+  const candidates = (seed?.clubs || []).filter(club => {
+    if(pcIsSpecialBotClub(club) || Number(club.id) === Number(currentClub.id)) return false;
+    const rep = pcClubReputation(club);
+    return rep >= desiredReputation-13 && rep <= desiredReputation+10;
+  });
+  const shuffled = candidates.slice().sort(() => pcRandom(state)-0.5);
+  const count = performance >= 20 ? 3 : performance >= 8 ? 2 : 1;
+  const offers = [];
+  for(const club of shuffled){
+    if(offers.length >= count) break;
+    const target = pcClubSnapshot(club);
+    if(offers.some(offer => Number(offer.club.id) === Number(target.id))) continue;
+    const lowMinutes = Number(stats.matches || 0) < 13 || Number(stats.starts || 0) < 7;
+    const type = Number(state.player.age || 18) <= 22 && lowMinutes && pcChance(state,0.58) ? 'loan' : 'transfer';
+    offers.push({
+      id:pcUniqueId(state,'offer'),
+      type,
+      club:target,
+      role:pcClubReputation(club) > state.player.overall+20 ? 'Promesa' : pcClubReputation(club) > state.player.overall+10 ? 'Rotación' : 'Titular',
+      years:type==='loan' ? 1 : pcRandomInt(state,3,5),
+      salary:Math.round((state.contract.salary * pcRandomBetween(state,1.05,1.65))/1000)*1000,
+      fee:type==='loan' ? 0 : Math.round((state.player.value * pcRandomBetween(state,0.85,1.30))/50000)*50000,
+      adaptationRisk:target.country !== currentClub.country ? pcRiskLabel(100-Number(state.player.adaptation || 50)) : 'Bajo'
+    });
+  }
+  state.pendingOffers = offers;
+  return offers;
+}
+function pcCompetitionAwardWeight(competition){
+  if(!competition?.active) return 0;
+  const text = `${competition.status || ''} ${competition.round || ''}`.toLowerCase();
+  if(competition.champion || text.includes('campeón')) return 5;
+  if(text.includes('subcampeón') || text.includes('final')) return 4;
+  if(text.includes('semifinal')) return 3;
+  if(text.includes('cuartos')) return 2;
+  if(text.includes('octavos')) return 1;
+  return 0;
+}
+function pcAwardSeasonHonors(state){
+  const stats = pcNormalizeStats(state.season.stats);
+  const average = pcAverageRating(stats);
+  const matches = Number(stats.matches || 0);
+  const goalContributions = Number(stats.goals || 0) + Number(stats.assists || 0) * 0.8;
+  const honors = [];
+  const league = state.season.competitions?.league;
+  if(league?.active && matches >= 17 && average >= 7.10){
+    const positionBonus = Number(league.position || 18) <= 3 ? 0.14 : Number(league.position || 18) <= 7 ? 0.07 : 0;
+    const chance = pcClamp(0.08 + (average-7.10)*0.48 + Math.min(0.16,goalContributions/90) + positionBonus,0.08,0.72);
+    if(pcChance(state,chance)) honors.push(pcRecordSeasonAward(state,'leaguePlayer','Mejor jugador de la liga',league.name || 'Liga'));
+  }
+  const cups = ['nationalCup','international','clubWorldCup']
+    .map(key => state.season.competitions?.[key])
+    .filter(competition => competition?.active)
+    .sort((a,b) => pcCompetitionAwardWeight(b)-pcCompetitionAwardWeight(a));
+  const bestCup = cups[0] || null;
+  const cupWeight = pcCompetitionAwardWeight(bestCup);
+  if(bestCup && cupWeight >= 2 && matches >= 10 && average >= 7.05){
+    const chance = pcClamp(0.07 + (average-7.05)*0.42 + cupWeight*0.055 + Math.min(0.14,goalContributions/95),0.08,0.68);
+    if(pcChance(state,chance)) honors.push(pcRecordSeasonAward(state,'cupPlayer','Mejor jugador de copa',bestCup.name || 'Copa'));
+  }
+  return honors;
+}
+function pcFinalizeSeason(state){
+  const league = state.season.competitions.league;
+  const ppg = Number(league.points || 0) / Math.max(1,Number(league.played || 1));
+  const clubFactor = (Number(state.club.reputation || 50)-50)/6;
+  league.position = pcClamp(Math.round(18 - (ppg/2.25)*16 - clubFactor + pcRandomBetween(state,-1.5,1.5)),1,18);
+  league.status = `${league.position}° puesto`;
+  league.champion = league.position === 1;
+  pcCupFinalOutcome(state,state.season.competitions.nationalCup,0);
+  pcCupFinalOutcome(state,state.season.competitions.international,-4);
+  pcCupFinalOutcome(state,state.season.competitions.clubWorldCup,-8);
+  const seasonHonors = pcAwardSeasonHonors(state);
+  const titles = [];
+  Object.values(state.season.competitions).forEach(competition => {
+    if(competition?.champion) titles.push({ id:pcUniqueId(state,'title'), season:state.season.number, year:state.season.year, club:{...state.club}, competition:competition.name, type:competition.type });
+  });
+  state.history.titles.push(...titles);
+  const summary = {
+    season:state.season.number,
+    year:state.season.year,
+    club:{...state.club},
+    age:state.player.age,
+    overallStart:state.season.overallStart ?? state.player.overall,
+    overallEnd:state.player.overall,
+    valueEnd:state.player.value,
+    stats:pcNormalizeStats(state.season.stats),
+    averageRating:pcAverageRating(state.season.stats),
+    competitions:structuredClone(state.season.competitions),
+    titles:titles.map(title => title.competition),
+    awards:pcNormalizeAwards(state.season.awards),
+    honors:seasonHonors.map(award => award.label),
+    role:pcCurrentRole(state)
+  };
+  state.season.completed = true;
+  state.season.summary = summary;
+  state.history.seasons.unshift(summary);
+  state.player.reputation = pcClamp(state.player.reputation + titles.length*5 + Math.max(0,pcAverageRating(state.season.stats)-6.4)*2,0,100);
+  state.player.age = Math.min(45,Number(state.player.age || 18)+1);
+  state.contract.yearsRemaining = Math.max(0,Number(state.contract.yearsRemaining || 0)-1);
+  pcRecordEvent(state,'season',`Terminó la temporada ${state.season.year}: ${league.status}${titles.length ? ` y ${titles.length} título${titles.length===1?'':'s'}` : ''}.`);
+  pcReturnFromLoanIfDue(state);
+  pcGenerateMarketOffers(state);
+  state.season.stage = 5;
+  state.season.stageLabel = PLAYER_CAREER_STAGE_LABELS[5];
+  if(state.player.age >= 39 || (state.player.age >= 36 && pcChance(state,0.22 + (state.player.age-36)*0.14))){
+    pcRetireCareer(state,'Retiro al cierre de temporada');
+  }
+  return summary;
+}
+function pcAdvanceCareer(){
+  const state = pcCareerState();
+  const before = state ? pcVisibleStatSnapshot(state) : null;
+  if(!state || state.status !== 'active' || state.pendingDecision || state.season.stage === 5) return;
+  state.lastDecisionResult = null;
+  const currentStage = Number(state.season.stage || 0);
+  if(currentStage === 0){
+    state.player.condition = pcClamp(Math.max(90,state.player.condition),0,100);
+    state.player.morale = pcClamp(state.player.morale + 4,0,100);
+    state.player.form = pcClamp(state.player.form + 3,0,100);
+    state.season.overallStart = Number(state.player.overall || 0);
+    state.lastBlockSummary = { stage:'Pretemporada', text:'Preparación física y adaptación al plantel.', scheduled:0, played:0 };
+    state.season.blockLog.unshift({ id:pcUniqueId(state,'block'), stage:'Pretemporada', text:'Comenzó la preparación de la temporada.' });
+    state.season.stage = 1;
+    state.season.stageLabel = PLAYER_CAREER_STAGE_LABELS[1];
+    pcCreateDecision(state,'Entrenamiento');
+    pcStoreStatChanges(state,before,'Inicio de temporada');
+    pcPersist(state,true);
+    return;
+  }
+  const matches = Number(PLAYER_CAREER_MATCHES_BY_STAGE[currentStage] || 0);
+  const blockSummary = pcSimulateBlock(state,matches);
+  blockSummary.stage = PLAYER_CAREER_STAGE_LABELS[currentStage];
+  blockSummary.text = blockSummary.recovering
+    ? (blockSummary.recovered ? 'El jugador completó su recuperación.' : 'El bloque se dedicó a la recuperación de la lesión.')
+    : `Disputó ${blockSummary.played} de ${matches} partidos del bloque.`;
+  state.lastBlockSummary = blockSummary;
+  state.season.blockLog.unshift({ id:pcUniqueId(state,'block'), stage:blockSummary.stage, text:blockSummary.text, stats:{...blockSummary} });
+  if(currentStage >= 4){
+    pcFinalizeSeason(state);
+  }else{
+    state.season.stage = currentStage + 1;
+    state.season.stageLabel = PLAYER_CAREER_STAGE_LABELS[state.season.stage];
+    const decisionProbability = state.injury ? 0.95 : currentStage===2 ? 0.78 : 0.58;
+    if(pcChance(state,decisionProbability)) pcCreateDecision(state,state.injury ? 'Salud' : '');
+  }
+  pcStoreStatChanges(state,before,'Avance de temporada');
+  pcPersist(state,true);
+}
+function pcCloseCurrentClubHistory(state, seasonNumber){
+  const current = [...state.history.clubs].reverse().find(item => item.toSeason == null && Number(item.club?.id) === Number(state.club.id));
+  if(current) current.toSeason = Math.max(Number(current.fromSeason || 1),Number(seasonNumber || state.season.number));
+}
+function pcApplyMarketChoice(choiceId){
+  const state = pcCareerState();
+  const before = state ? pcVisibleStatSnapshot(state) : null;
+  if(!state || state.status !== 'active' || state.season.stage !== 5) return;
+  state.lastDecisionResult = null;
+  if(choiceId === 'stay'){
+    const extension = state.contract.yearsRemaining <= 1 ? 3 : Math.max(2,state.contract.yearsRemaining);
+    state.contract.yearsRemaining = extension;
+    state.contract.salary = Math.round((Math.max(state.contract.salary,150000) * 1.12)/1000)*1000;
+    state.contract.role = pcCurrentRole(state);
+    pcRecordEvent(state,'contract',`Renovó su continuidad en ${state.club.name}.`);
+  }else{
+    const offer = (state.pendingOffers || []).find(item => String(item.id) === String(choiceId));
+    if(!offer) return;
+    const previousClub = { ...state.club };
+    pcCloseCurrentClubHistory(state,state.season.number);
+    state.club = pcNormalizeClubSnapshot(offer.club);
+    state.contract = { yearsRemaining:offer.years, salary:offer.salary, role:offer.role };
+    state.player.trust = offer.type === 'loan' ? 36 : 32;
+    state.player.morale = pcClamp(state.player.morale + 7,0,100);
+    if(state.club.country !== previousClub.country){
+      const adaptationPenalty = pcClamp((100-state.player.adaptation)/4,3,18);
+      state.player.form = pcClamp(state.player.form-adaptationPenalty,0,100);
+      state.player.morale = pcClamp(state.player.morale-adaptationPenalty/2,0,100);
+    }
+    if(offer.type === 'loan'){
+      state.loan = { parentClub:previousClub, loanClub:{...state.club}, fromSeason:state.season.number+1, untilSeason:state.season.number+1 };
+    }else state.loan = null;
+    state.history.clubs.push({ club:{...state.club}, fromSeason:state.season.number+1, toSeason:null, type:offer.type==='loan'?'Cesión':'Transferencia' });
+    state.history.transfers.unshift({ id:pcUniqueId(state,'transfer'), season:state.season.number, year:state.season.year, type:offer.type, fromClub:previousClub, toClub:{...state.club}, fee:offer.fee, salary:offer.salary });
+    pcRecordEvent(state,'transfer',`${offer.type==='loan'?'Fue cedido':'Fue transferido'} de ${previousClub.name} a ${state.club.name}.`);
+  }
+  const nextNumber = Number(state.season.number || 1)+1;
+  const nextYear = Number(state.season.year || 2026)+1;
+  state.pendingOffers = [];
+  pcCreateSeason(state,nextNumber,nextYear);
+  state.player.value = pcCalculateValue(state);
+  pcStoreStatChanges(state,before,'Cambio de temporada');
+  pcPersist(state,true);
+}
+function pcReturnFromLoanIfDue(state){
+  if(!state.loan || Number(state.loan.untilSeason || 0) > Number(state.season.number || 0)) return false;
+  const previous = { ...state.club };
+  pcCloseCurrentClubHistory(state,state.season.number);
+  state.club = pcNormalizeClubSnapshot(state.loan.parentClub);
+  state.history.clubs.push({ club:{...state.club}, fromSeason:state.season.number+1, toSeason:null, type:'Regreso de cesión' });
+  state.history.transfers.unshift({ id:pcUniqueId(state,'transfer'), season:state.season.number, year:state.season.year, type:'loan_return', fromClub:previous, toClub:{...state.club}, fee:0, salary:state.contract.salary });
+  pcRecordEvent(state,'transfer',`Regresó a ${state.club.name} después de su cesión.`);
+  state.loan = null;
+  return true;
+}
+function pcRetireCareer(state, reason='Decisión personal'){
+  if(!state || state.status === 'retired') return;
+  pcCloseCurrentClubHistory(state,state.season.number);
+  state.status = 'retired';
+  state.retirement = { age:state.player.age, season:state.season.number, year:state.season.year, club:{...state.club}, reason, retiredAt:new Date().toISOString() };
+  state.pendingDecision = null;
+  state.pendingOffers = [];
+  pcRecordEvent(state,'retirement',`${state.player.name} se retiró a los ${state.player.age} años.`);
+}
+function pcManualRetire(){
+  const state = pcCareerState();
+  if(!state || state.status !== 'active' || Number(state.player.age || 0) < 33) return;
+  if(!window.confirm(`¿Retirar a ${state.player.name}? La carrera quedará finalizada y disponible para consultar.`)) return;
+  pcRetireCareer(state,'Decisión del jugador');
+  pcPersist(state,true);
+}
+function pcResetCareer(){
+  const state = pcCareerState();
+  const label = state?.player?.name ? ` de ${state.player.name}` : '';
+  if(!window.confirm(`¿Reiniciar la carrera${label}? Solo se borrará el minijuego «Ser jugador».`)) return;
+  if(game?.miniGames) delete game.miniGames.playerCareer;
+  playerCareerViewMode = 'summary';
+  if(typeof saveLocal === 'function') Promise.resolve(saveLocal(true)).catch(()=>undefined);
+  renderPlayerCareer();
+}
+
+function pcStatCards(state){
+  const stats = state.season.stats;
+  return `
+    <div class="player-career-metrics">
+      <div class="metric-card player-career-metric" data-pc-stat="overall">${pcVectorIcon('trend')}<span>Media</span><strong>${Math.round(state.player.overall)}</strong><small>${pcEscape(pcProfileLabel(state))}</small></div>
+      <div class="metric-card player-career-metric" data-pc-stat="reputation">${pcVectorIcon('player')}<span>Edad</span><strong>${Math.round(state.player.age)}</strong><small>${pcEscape(state.player.nationality)}</small></div>
+      <div class="metric-card player-career-metric" data-pc-stat="matches">${pcVectorIcon('football')}<span>Partidos</span><strong>${pcFormatNumber(stats.matches)}</strong><small>${pcFormatNumber(stats.minutes)} minutos</small></div>
+      <div class="metric-card player-career-metric" data-pc-stat="goals assists">${pcVectorIcon('star')}<span>Rendimiento</span><strong>${pcRatingLabel(pcAverageRating(stats))}</strong><small>${pcFormatNumber(stats.goals)} G · ${pcFormatNumber(stats.assists)} A</small></div>
+      <div class="metric-card player-career-metric" data-pc-stat="value">${pcVectorIcon('contract')}<span>Valor</span><strong>${pcMoney(state.player.value)}</strong><small>${pcEscape(pcCurrentRole(state))}</small></div>
+    </div>${pcStatChangesMarkup(state)}`;
+}
+function pcStatusBar(label, value, tone='default', statKey=''){
+  const clean = pcClamp(value,0,100);
+  const icon = tone==='physical'?'heart':tone==='morale'?'users':tone==='form'?'trend':'shield';
+  return `<div class="player-career-status-line" data-pc-stat="${pcEscape(statKey)}"><span>${pcVectorIcon(icon)}${pcEscape(label)}</span><div class="player-career-status-track"><i class="${pcEscape(tone)}" style="width:${clean}%"></i></div><strong>${Math.round(clean)}%</strong></div>`;
+}
+function pcHeader(state){
+  return `
+    <section class="card player-career-header">
+      <div class="player-career-identity">
+        <div class="player-career-avatar" aria-hidden="true">${pcVectorIcon('player')}<span>${pcEscape(state.player.position)}</span></div>
+        <div>
+          <p class="label">Ser jugador</p>
+          <h2>${pcEscape(state.player.name)}</h2>
+          <p>${pcEscape(state.player.position)} · ${pcEscape(state.player.foot)} · ${pcEscape(state.player.nationality)}</p>
+        </div>
+      </div>
+      <div class="player-career-header-season">
+        <span>Temporada ${pcFormatNumber(state.season.number)}</span>
+        <strong>${pcFormatNumber(state.season.year)}</strong>
+        <small>${state.status==='retired'?'Carrera finalizada':'Carrera activa'}</small>
+      </div>
+    </section>`;
+}
+function pcInternalTabs(state){
+  const tabs = [['summary','Resumen'],['season','Temporada'],['decisions','Decisiones'],['history','Historial']];
+  return `<div class="subtabs player-career-tabs" role="tablist">${tabs.map(([id,label])=>`<button type="button" class="${playerCareerViewMode===id?'active':''}" data-pc-tab="${id}">${label}</button>`).join('')}</div>`;
+}
+function pcDecisionOutcomeMarkup(outcome){
+  const tone = ['positive','negative','neutral'].includes(outcome?.tone) ? outcome.tone : 'neutral';
+  return `<span class="player-career-possible-outcome ${tone}">${pcVectorIcon(tone==='positive'?'up':tone==='negative'?'down':'chance')}<b>${Math.round(Number(outcome?.chance || 0))}%</b><em>${pcEscape(outcome?.description || 'Resultado posible')}</em></span>`;
+}
+function pcActiveDecisionMarkup(state){
+  const decision = state.pendingDecision;
+  if(!decision) return '';
+  return `<section class="card player-career-decision active-decision">
+    <div class="row"><div class="player-career-decision-title">${pcVectorIcon(decision.icon || 'chance')}<div><p class="label">${pcEscape(decision.category)}</p><h3>${pcEscape(decision.title)}</h3></div></div><span class="pill">Decisión pendiente</span></div>
+    <p>${pcEscape(decision.text)}</p>
+    <div class="player-career-choice-grid">
+      ${(decision.options || []).slice(0,2).map(option => `<button type="button" class="player-career-choice" data-pc-decision="${pcEscape(option.id)}">
+        <span class="player-career-choice-head">${pcVectorIcon(option.icon || decision.icon || 'chance')}<strong>${pcEscape(option.label)}</strong></span>
+        <span class="player-career-outcome-label">Resultados posibles</span>
+        <span class="player-career-outcomes">${(option.outcomes || []).map(pcDecisionOutcomeMarkup).join('') || pcDecisionOutcomeMarkup({ chance:100, tone:'neutral', description:option.consequence || 'Decisión aplicada' })}</span>
+      </button>`).join('')}
+    </div>
+  </section>`;
+}
+function pcLastDecisionResultMarkup(state){
+  const result = state.lastDecisionResult;
+  if(!result) return '';
+  return `<section class="card player-career-decision-result ${pcEscape(result.tone || 'neutral')}">
+    <div class="player-career-decision-result-icon">${pcVectorIcon(result.tone==='positive'?'up':result.tone==='negative'?'down':'chance')}</div>
+    <div><p class="label">Resultado de la última decisión · ${pcFormatNumber(result.chance)}%</p><h3>${pcEscape(result.option)}</h3><p>${pcEscape(result.outcome)}</p></div>
+  </section>`;
+}
+
+function pcMarketMarkup(state){
+  if(state.season.stage !== 5 || state.status !== 'active') return '';
+  return `<section class="card player-career-market">
+    <div class="row"><div><p class="label">Mercado de pases</p><h3>Elegí el próximo paso de tu carrera</h3></div><span class="pill">Temporada cerrada</span></div>
+    <div class="player-career-offers">
+      <button type="button" class="player-career-offer stay" data-pc-market="stay">
+        <strong>Continuar en ${pcEscape(state.club.name)}</strong>
+        <span>Renovación y continuidad</span>
+        <small>El club mantiene tu lugar y actualiza el contrato.</small>
+      </button>
+      ${(state.pendingOffers || []).map(offer => `<button type="button" class="player-career-offer" data-pc-market="${pcEscape(offer.id)}">
+        <span class="player-career-offer-head">${pcClubBadge(offer.club)}<strong>${pcEscape(offer.club.name)}</strong></span>
+        <span>${offer.type==='loan'?'Cesión por una temporada':'Transferencia definitiva'} · Rol: ${pcEscape(offer.role)}</span>
+        <small>${pcEscape(offer.club.country)} · ${pcEscape(offer.club.divisionName)} · Adaptación: riesgo ${pcEscape(offer.adaptationRisk)}</small>
+        <small>${offer.type==='loan'?'Sin cargo de transferencia':`Oferta: ${pcMoney(offer.fee)}`} · Salario: ${pcMoney(offer.salary)}</small>
+      </button>`).join('')}
+    </div>
+  </section>`;
+}
+function pcAdvanceMarkup(state){
+  if(state.status !== 'active' || state.pendingDecision || state.season.stage === 5) return '';
+  return `<section class="card player-career-next">
+    <div class="player-career-next-copy">${pcVectorIcon('calendar')}<div><p class="label">Temporada ${pcFormatNumber(state.season.year)}</p><p class="muted">Simula el siguiente período de la carrera sin avanzar el calendario del mánager.</p></div></div>
+    <button type="button" class="primary" data-pc-action="advance">Avanzar temporada</button>
+  </section>`;
+}
+function pcLastBlockMarkup(state){
+  const block = state.lastBlockSummary;
+  if(!block) return '';
+  return `<section class="card player-career-block-summary">
+    <div class="row"><div><p class="label">Último avance</p><h3>Resumen del período</h3></div>${block.injuryOccurred?'<span class="pill danger">Lesión</span>':''}</div>
+    <p>${pcEscape(block.text || '')}</p>
+    ${block.scheduled ? `<div class="player-career-inline-stats"><span><strong>${pcFormatNumber(block.played)}</strong> PJ</span><span><strong>${pcFormatNumber(block.starts)}</strong> Tit.</span><span><strong>${pcFormatNumber(block.goals)}</strong> G</span><span><strong>${pcFormatNumber(block.assists)}</strong> A</span><span><strong>${pcRatingLabel(block.averageRating)}</strong> Puntaje</span>${Number(block.manOfMatch||0)?`<span><strong>${pcFormatNumber(block.manOfMatch)}</strong> Figura${Number(block.manOfMatch)===1?'':'s'}</span>`:''}</div>` : ''}
+  </section>`;
+}
+function pcSummaryView(state){
+  return `
+    ${pcStatCards(state)}
+    <div class="grid cols-2 player-career-summary-grid">
+      <section class="card">
+        <p class="label">Estado actual</p>
+        ${pcStatusBar('Estado físico',state.player.condition,'physical','condition')}
+        ${pcStatusBar('Moral y confianza',state.player.morale,'morale','morale')}
+        ${pcStatusBar('Forma reciente',state.player.form,'form','form')}
+        ${pcStatusBar('Confianza del entrenador',state.player.trust,'trust','trust')}
+      </section>
+      <section class="card">
+        <p class="label">Contrato</p>
+        <div class="player-career-contract-lines">
+          <p><span>Rol</span><strong>${pcEscape(pcCurrentRole(state))}</strong></p>
+          <p><span>Duración</span><strong>${pcFormatNumber(state.contract.yearsRemaining)} temporada${Number(state.contract.yearsRemaining)===1?'':'s'}</strong></p>
+          <p><span>Salario</span><strong>${pcMoney(state.contract.salary)}</strong></p>
+          <p><span>Perfil</span><strong>${pcEscape(pcProfileLabel(state))}</strong></p>
+        </div>
+      </section>
+    </div>
+    ${state.injury ? `<section class="card blocker player-career-injury"><p class="label">Lesión activa</p><h3>${pcEscape(state.injury.name)}</h3><p>Recuperación estimada: ${pcFormatNumber(state.injury.blocksRemaining)} período${Number(state.injury.blocksRemaining)===1?'':'s'}.</p></section>` : ''}
+    ${pcActiveDecisionMarkup(state)}
+    ${!state.pendingDecision ? pcLastDecisionResultMarkup(state) : ''}
+    ${pcMarketMarkup(state)}
+    ${pcAdvanceMarkup(state)}
+    ${pcLastBlockMarkup(state)}
+  `;
+}
+function pcCompetitionCard(competition){
+  if(!competition) return '';
+  return `<div class="player-career-competition-card ${competition.active?'':'inactive'}">
+    <span>${pcEscape(competition.name)}</span>
+    <strong>${pcEscape(competition.type==='league' && competition.position ? `${competition.position}° puesto` : competition.round || competition.status || '—')}</strong>
+    <small>${pcEscape(competition.status || (competition.active?'En competencia':'No clasificado'))}</small>
+  </div>`;
+}
+function pcSeasonView(state){
+  const stats = state.season.stats;
+  return `
+    <section class="card player-career-season-progress">
+      <div class="row"><div><p class="label">Temporada ${state.season.year}</p><h3>${state.season.stage===5?'Temporada finalizada':'Temporada en curso'}</h3></div><span class="pill">${Math.round(pcStageProgress(state))}%</span></div>
+      <div class="player-career-progress"><i style="width:${pcStageProgress(state)}%"></i></div>
+    </section>
+    <section class="player-career-competition-grid">
+      ${Object.values(state.season.competitions || {}).map(pcCompetitionCard).join('')}
+    </section>
+    <section class="card">
+      <div class="row"><div><p class="label">Rendimiento de temporada</p><h3>Estadísticas personales</h3></div><span class="pill">${pcEscape(pcCurrentRole(state))}</span></div>
+      <div class="table-wrap"><table class="player-career-table"><thead><tr><th>PJ</th><th>Tit.</th><th>Min.</th><th>Goles</th><th>Asist.</th><th>TA</th><th>TR</th><th>Puntaje</th></tr></thead><tbody><tr><td>${pcFormatNumber(stats.matches)}</td><td>${pcFormatNumber(stats.starts)}</td><td>${pcFormatNumber(stats.minutes)}</td><td>${pcFormatNumber(stats.goals)}</td><td>${pcFormatNumber(stats.assists)}</td><td>${pcFormatNumber(stats.yellow)}</td><td>${pcFormatNumber(stats.red)}</td><td>${pcRatingLabel(pcAverageRating(stats))}</td></tr></tbody></table></div>
+    </section>
+    ${pcActiveDecisionMarkup(state)}
+    ${!state.pendingDecision ? pcLastDecisionResultMarkup(state) : ''}
+    ${pcMarketMarkup(state)}
+    ${pcAdvanceMarkup(state)}
+  `;
+}
+function pcDecisionsView(state){
+  const decisions = state.history.decisions || [];
+  return `
+    ${pcActiveDecisionMarkup(state)}
+    ${!state.pendingDecision ? pcLastDecisionResultMarkup(state) : ''}
+    ${!state.pendingDecision ? '<section class="card"><p class="muted">No hay una decisión pendiente. Las nuevas situaciones aparecen al avanzar la carrera.</p></section>' : ''}
+    <section class="card">
+      <div class="row"><div><p class="label">Memoria de decisiones</p><h3>Elecciones importantes</h3></div><span class="pill">${pcFormatNumber(decisions.length)}</span></div>
+      <div class="player-career-timeline">
+        ${decisions.length ? decisions.map(item => `<article><span>${pcEscape(item.category)}</span><div><strong>${pcEscape(item.title)}</strong><p>${pcEscape(item.choice)} · ${pcEscape(item.consequence)}</p><small>Temporada ${pcFormatNumber(item.season)} · ${pcFormatNumber(item.year)}</small></div></article>`).join('') : '<p class="muted">Todavía no hay decisiones registradas.</p>'}
+      </div>
+    </section>
+  `;
+}
+function pcSeasonHistoryRows(state){
+  return (state.history.seasons || []).map(item => `<tr>
+    <td>${pcFormatNumber(item.year)}</td>
+    <td>${pcEscape(item.club?.name || '—')}</td>
+    <td>${pcFormatNumber(item.stats?.matches)}</td>
+    <td>${pcFormatNumber(item.stats?.goals)}</td>
+    <td>${pcFormatNumber(item.stats?.assists)}</td>
+    <td>${pcRatingLabel(item.averageRating)}</td>
+    <td>${pcEscape((item.titles || []).join(', ') || '—')}</td>
+  </tr>`).join('');
+}
+function pcHistoryView(state){
+  const career = state.careerStats;
+  const clubs = state.history.clubs || [];
+  const events = state.history.events || [];
+  return `
+    <div class="player-career-metrics career-total">
+      <div class="metric-card"><span>Partidos</span><strong>${pcFormatNumber(career.matches)}</strong><small>${pcFormatNumber(career.minutes)} minutos</small></div>
+      <div class="metric-card"><span>Goles</span><strong>${pcFormatNumber(career.goals)}</strong><small>Toda la carrera</small></div>
+      <div class="metric-card"><span>Asistencias</span><strong>${pcFormatNumber(career.assists)}</strong><small>Toda la carrera</small></div>
+      <div class="metric-card"><span>Puntaje</span><strong>${pcRatingLabel(pcAverageRating(career))}</strong><small>Promedio general</small></div>
+      <div class="metric-card"><span>Títulos</span><strong>${pcFormatNumber(state.history.titles?.length || 0)}</strong><small>${pcFormatNumber(clubs.length)} clubes</small></div>
+    </div>
+    <section class="card">
+      <div class="row"><div><p class="label">Historial por temporada</p><h3>Carrera deportiva</h3></div></div>
+      <div class="table-wrap"><table class="player-career-table"><thead><tr><th>Año</th><th>Club</th><th>PJ</th><th>G</th><th>A</th><th>Puntaje</th><th>Títulos</th></tr></thead><tbody>${pcSeasonHistoryRows(state) || '<tr><td colspan="7" class="muted">La primera temporada todavía no terminó.</td></tr>'}</tbody></table></div>
+    </section>
+    <div class="grid cols-2 player-career-history-grid">
+      <section class="card">
+        <p class="label">Clubes</p>
+        <div class="player-career-club-history">${clubs.map(item => `<article>${pcClubBadge(item.club)}<div><strong>${pcEscape(item.club?.name || 'Club')}</strong><span>${pcEscape(item.type || 'Etapa')}</span><small>Temporada ${pcFormatNumber(item.fromSeason)}${item.toSeason?` a ${pcFormatNumber(item.toSeason)}`:' en adelante'}</small></div></article>`).join('')}</div>
+      </section>
+      <section class="card">
+        <p class="label">Cronología</p>
+        <div class="player-career-timeline compact">${events.length ? events.slice(0,30).map(item => `<article><span>${pcEscape(item.type)}</span><div><p>${pcEscape(item.text)}</p><small>${pcFormatNumber(item.year)} · Temporada ${pcFormatNumber(item.season)}</small></div></article>`).join('') : '<p class="muted">Sin acontecimientos registrados.</p>'}</div>
+      </section>
+    </div>
+  `;
+}
+function pcRetiredView(state){
+  const career = state.careerStats;
+  const bestSeason = (state.history.seasons || []).slice().sort((a,b)=>Number(b.averageRating||0)-Number(a.averageRating||0))[0] || null;
+  const maxOverall = Math.max(Number(state.player.overall || 0),...(state.history.seasons || []).map(item=>Number(item.overallEnd || 0)));
+  const maxValue = Math.max(Number(state.player.value || 0),...(state.history.seasons || []).map(item=>Number(item.valueEnd || 0)));
+  return `
+    ${pcHeader(state)}
+    <section class="card player-career-retirement">
+      <p class="label">Carrera finalizada</p>
+      <h2>Resumen de la carrera</h2>
+      <p>${pcEscape(state.player.name)} se retiró a los ${pcFormatNumber(state.retirement?.age || state.player.age)} años después de ${pcFormatNumber(state.history.seasons?.length || 0)} temporadas.</p>
+      <div class="player-career-metrics">
+        <div class="metric-card"><span>Partidos</span><strong>${pcFormatNumber(career.matches)}</strong><small>${pcFormatNumber(career.minutes)} minutos</small></div>
+        <div class="metric-card"><span>Goles</span><strong>${pcFormatNumber(career.goals)}</strong><small>${pcFormatNumber(career.assists)} asistencias</small></div>
+        <div class="metric-card"><span>Títulos</span><strong>${pcFormatNumber(state.history.titles?.length || 0)}</strong><small>${pcFormatNumber(state.history.clubs?.length || 0)} etapas de club</small></div>
+        <div class="metric-card"><span>Mayor media</span><strong>${Math.round(maxOverall)}</strong><small>Máximo de carrera</small></div>
+        <div class="metric-card"><span>Mayor valor</span><strong>${pcMoney(maxValue)}</strong><small>Valor máximo</small></div>
+      </div>
+      <div class="grid cols-2">
+        <div><span class="muted">Mejor temporada</span><strong>${bestSeason ? `${bestSeason.year} · ${bestSeason.club?.name} · ${pcRatingLabel(bestSeason.averageRating)}` : '—'}</strong></div>
+        <div><span class="muted">Motivo del retiro</span><strong>${pcEscape(state.retirement?.reason || 'Fin de carrera')}</strong></div>
+      </div>
+      <div class="row player-career-retired-actions"><button type="button" class="ghost" data-pc-tab="history">Ver historial completo</button><button type="button" class="danger" data-pc-action="reset">Nueva carrera</button></div>
+    </section>
+    ${playerCareerViewMode === 'history' ? pcHistoryView(state) : ''}
+  `;
+}
+function pcCreationView(){
+  const countries = pcCountries();
+  const defaultCountry = countries.includes(String(game?.selectedCountry || '')) ? String(game.selectedCountry) : (countries[0] || 'Argentina');
+  const firstClub = pcInitialClubOptions(defaultCountry,'MC')[0];
+  return `
+    <section class="player-career-intro card">
+      <div>
+        <p class="label">Minijuego integrado</p>
+        <h2>Ser jugador</h2>
+        <p>Creá un futbolista y recorré una carrera breve de decisiones, rendimiento, lesiones, contratos y transferencias. La carrera del mánager permanece cargada y detenida.</p>
+      </div>
+      <div class="player-career-isolation">
+        <span>Calendario propio</span><span>Guardado independiente</span><span>Sin impacto en tu club</span>
+      </div>
+    </section>
+    <section class="card player-career-create-card">
+      <div class="row"><div><p class="label">Nueva carrera</p><h3>Crear futbolista</h3></div><span class="pill">Edad inicial: 16 a 19</span></div>
+      <div class="player-career-form-grid">
+        <label>Nombre y apellido<input id="pcPlayerName" type="text" maxlength="60" placeholder="Nombre del futbolista" autocomplete="off" /></label>
+        <label>Nacionalidad<select id="pcNationality">${countries.map(country=>`<option value="${pcEscape(country)}" ${country===defaultCountry?'selected':''}>${pcEscape(country)}</option>`).join('')}</select></label>
+        <label>Edad<select id="pcAge">${[16,17,18,19].map(age=>`<option value="${age}" ${age===17?'selected':''}>${age} años</option>`).join('')}</select></label>
+        <label>Posición<select id="pcPosition">${PLAYER_CAREER_POSITIONS.map(position=>`<option value="${position}" ${position==='MC'?'selected':''}>${position}</option>`).join('')}</select></label>
+        <label>Pierna hábil<select id="pcFoot"><option>Derecha</option><option>Izquierda</option></select></label>
+        <label>Perfil<select id="pcProfile"><option value="technical">Técnico</option><option value="physical">Físico</option><option value="balanced" selected>Equilibrado</option></select></label>
+        <label class="player-career-club-select">Club inicial<select id="pcInitialClub">${pcInitialClubOptionMarkup(defaultCountry,firstClub?.id || 0,'MC')}</select><small>Solo aparecen equipos donde un juvenil puede competir por minutos.</small></label>
+      </div>
+      <div class="row player-career-create-actions"><p id="pcCreateError" class="muted" aria-live="polite"></p><button type="button" class="primary" data-pc-action="create">Crear jugador</button></div>
+    </section>`;
+}
+function pcCreateFromForm(){
+  const name = String(document.getElementById('pcPlayerName')?.value || '').trim().replace(/\s+/g,' ');
+  const nationality = String(document.getElementById('pcNationality')?.value || '').trim();
+  const age = Number(document.getElementById('pcAge')?.value || 17);
+  const position = String(document.getElementById('pcPosition')?.value || 'MC');
+  const foot = String(document.getElementById('pcFoot')?.value || 'Derecha');
+  const profile = String(document.getElementById('pcProfile')?.value || 'balanced');
+  const clubId = Number(document.getElementById('pcInitialClub')?.value || 0);
+  const errorNode = document.getElementById('pcCreateError');
+  const eligibleClubIds = new Set(pcInitialClubOptions(nationality,position).map(club=>Number(club.id)));
+  let error = '';
+  if(name.length < 3) error = 'Ingresá un nombre y apellido válido.';
+  else if(!pcCountries().includes(nationality)) error = 'Seleccioná una nacionalidad disponible.';
+  else if(age < 16 || age > 19) error = 'La edad inicial debe estar entre 16 y 19 años.';
+  else if(!PLAYER_CAREER_POSITIONS.includes(position)) error = 'Seleccioná una posición válida.';
+  else if(!eligibleClubIds.has(clubId)) error = 'Seleccioná uno de los clubes iniciales disponibles.';
+  if(error){ if(errorNode) errorNode.textContent = error; return; }
+  const state = pcCreatePlayerCareer({ name,nationality,age,position,foot,profile,clubId });
+  pcSetCareerState(state);
+  playerCareerViewMode = 'summary';
+  pcPersist(state,true);
+}
+function pcRefreshClubSelect(){
+  const nationality = String(document.getElementById('pcNationality')?.value || '');
+  const position = String(document.getElementById('pcPosition')?.value || 'MC');
+  const select = document.getElementById('pcInitialClub');
+  if(select) select.innerHTML = pcInitialClubOptionMarkup(nationality,0,position);
+}
+function pcPalmaresSummary(state){
+  const titles = Array.isArray(state?.history?.titles) ? state.history.titles : [];
+  const counts = { total:titles.length, league:0, nationalCup:0, international:0, clubWorldCup:0 };
+  titles.forEach(title => {
+    const type = String(title?.type || '');
+    if(type === 'league') counts.league += 1;
+    else if(type === 'nationalCup') counts.nationalCup += 1;
+    else if(type === 'international') counts.international += 1;
+    else if(type === 'clubWorldCup') counts.clubWorldCup += 1;
+  });
+  return { ...counts, awards:pcNormalizeAwards(state?.careerAwards) };
+}
+function pcSeasonAwardsText(awards){
+  const normalized = pcNormalizeAwards(awards);
+  const parts = [];
+  if(normalized.manOfMatch) parts.push(`${normalized.manOfMatch} figura${normalized.manOfMatch===1?'':'s'} del partido`);
+  if(normalized.leaguePlayer) parts.push(`${normalized.leaguePlayer} mejor jugador de liga`);
+  if(normalized.cupPlayer) parts.push(`${normalized.cupPlayer} mejor jugador de copa`);
+  return parts.join(' · ') || '—';
+}
+function pcSeasonTitlesText(titles){
+  const list = Array.isArray(titles) ? titles.filter(Boolean) : [];
+  if(!list.length) return '—';
+  return `${list.length} · ${list.join(', ')}`;
+}
+function pcAnnualHistoryRows(state){
+  const rows = [];
+  if(state?.status === 'active' && Number(state?.season?.stage || 0) < 5){
+    rows.push({
+      current:true,
+      year:state.season.year,
+      club:state.club,
+      overallStart:state.season.overallStart ?? state.player.overall,
+      overallEnd:state.player.overall,
+      stats:pcNormalizeStats(state.season.stats),
+      titles:Object.values(state.season.competitions || {}).filter(item=>item?.champion).map(item=>item.name),
+      awards:pcNormalizeAwards(state.season.awards)
+    });
+  }
+  rows.push(...(state?.history?.seasons || []));
+  return rows.map(item => {
+    const stats = pcNormalizeStats(item?.stats);
+    const mediaStart = Number(item?.overallStart ?? item?.overallEnd ?? 0);
+    const mediaEnd = Number(item?.overallEnd ?? mediaStart);
+    const mediaText = Math.round(mediaStart) === Math.round(mediaEnd) ? `${Math.round(mediaEnd)}` : `${Math.round(mediaStart)}→${Math.round(mediaEnd)}`;
+    return `<tr class="${item.current?'current-season':''}">
+      <td>${pcFormatNumber(item.year)}${item.current?' <span class="pill">En curso</span>':''}</td>
+      <td>${pcEscape(item.club?.name || '—')}</td>
+      <td>${pcEscape(mediaText)}</td>
+      <td>${pcFormatNumber(stats.matches)}</td>
+      <td>${pcFormatNumber(stats.goals)}</td>
+      <td>${pcFormatNumber(stats.assists)}</td>
+      <td title="${pcEscape((item.titles || []).join(', '))}">${pcEscape(pcSeasonTitlesText(item.titles))}</td>
+      <td>${pcEscape(pcSeasonAwardsText(item.awards))}</td>
+    </tr>`;
+  }).join('');
+}
+function pcPalmaresMarkup(state){
+  const p = pcPalmaresSummary(state);
+  return `<section class="card player-career-palmares-card">
+    <div class="row"><div><p class="label">Palmarés</p><h3>Títulos y distinciones</h3></div><span class="pill">${pcFormatNumber(p.total)} títulos</span></div>
+    <div class="player-career-palmares-grid">
+      <div><span>Total</span><strong>${pcFormatNumber(p.total)}</strong></div>
+      <div><span>Ligas</span><strong>${pcFormatNumber(p.league)}</strong></div>
+      <div><span>Copas nacionales</span><strong>${pcFormatNumber(p.nationalCup)}</strong></div>
+      <div><span>Copas internacionales</span><strong>${pcFormatNumber(p.international)}</strong></div>
+      <div><span>Mundial de Clubes</span><strong>${pcFormatNumber(p.clubWorldCup)}</strong></div>
+      <div><span>Figura del partido</span><strong>${pcFormatNumber(p.awards.manOfMatch)}</strong></div>
+      <div><span>Mejor jugador de liga</span><strong>${pcFormatNumber(p.awards.leaguePlayer)}</strong></div>
+      <div><span>Mejor jugador de copa</span><strong>${pcFormatNumber(p.awards.cupPlayer)}</strong></div>
+    </div>
+  </section>`;
+}
+function pcCareerClubListMarkup(state){
+  const clubs = (state?.history?.clubs || []).slice().reverse();
+  return `<section class="card player-career-clubs-card">
+    <div class="row"><div><p class="label">Clubes</p><h3>Trayectoria</h3></div><span class="pill">${pcFormatNumber(clubs.length)}</span></div>
+    <div class="player-career-club-history compact">${clubs.length ? clubs.map(item => `<article>${pcClubBadge(item.club)}<div><strong>${pcEscape(item.club?.name || 'Club')}</strong><span>${pcEscape(item.type || 'Etapa')}</span><small>Temporada ${pcFormatNumber(item.fromSeason)}${item.toSeason?` a ${pcFormatNumber(item.toSeason)}`:' en adelante'}</small></div></article>`).join('') : '<p class="muted">Sin clubes registrados.</p>'}</div>
+  </section>`;
+}
+function pcOverallHeroMarkup(state){
+  const start = Number(state?.season?.overallStart ?? state?.player?.overall ?? 0);
+  const current = Number(state?.player?.overall || 0);
+  const delta = current-start;
+  return `<section class="card player-career-overall-hero" data-pc-stat="overall">
+    <div class="player-career-overall-copy"><p class="label">Media general</p><strong>${Math.round(current)}</strong><span>${pcEscape(state.player.position)} · ${pcEscape(pcProfileLabel(state))}</span></div>
+    <div class="player-career-overall-detail">${pcVectorIcon('trend')}<span>Temporada ${pcFormatNumber(state.season.year)}</span><b class="${delta>0?'positive':delta<0?'negative':''}">${delta===0?'Sin cambios':`${delta>0?'+':''}${pcRound(delta,1)} esta temporada`}</b><small>${pcFormatNumber(state.player.age)} años · ${pcEscape(state.player.nationality)}</small></div>
+  </section>${pcStatChangesMarkup(state)}`;
+}
+function pcCurrentSituationMarkup(state){
+  return `<section class="card player-career-situation-card">
+    <div class="row"><div><p class="label">Club, contrato y valor</p><h3>Tu situación</h3></div>${pcClubBadge(state.club)}</div>
+    <div class="player-career-current-club"><strong>${pcEscape(state.club.name)}</strong><span>${pcEscape(state.club.divisionName)} · ${pcEscape(state.club.country)}</span></div>
+    <div class="player-career-contract-lines">
+      <p><span>Rol</span><strong>${pcEscape(pcCurrentRole(state))}</strong></p>
+      <p><span>Sueldo</span><strong>${pcMoney(state.contract.salary)}</strong></p>
+      <p><span>Contrato</span><strong>${pcFormatNumber(state.contract.yearsRemaining)} temporada${Number(state.contract.yearsRemaining)===1?'':'s'}</strong></p>
+      <p data-pc-stat="value"><span>Valor de mercado</span><strong>${pcMoney(state.player.value)}</strong></p>
+    </div>
+  </section>`;
+}
+function pcStatisticsMarkup(state){
+  const season = pcNormalizeStats(state.season.stats);
+  const career = pcNormalizeStats(state.careerStats);
+  return `<section class="card player-career-statistics-card">
+    <div class="row"><div><p class="label">Tus estadísticas</p><h3>Temporada y carrera</h3></div><span class="pill">${pcEscape(pcCurrentRole(state))}</span></div>
+    <div class="player-career-stat-pairs">
+      <div><span>Partidos</span><strong data-pc-stat="matches">${pcFormatNumber(season.matches)}</strong><small>${pcFormatNumber(career.matches)} carrera</small></div>
+      <div><span>Goles</span><strong data-pc-stat="goals">${pcFormatNumber(season.goals)}</strong><small>${pcFormatNumber(career.goals)} carrera</small></div>
+      <div><span>Asistencias</span><strong data-pc-stat="assists">${pcFormatNumber(season.assists)}</strong><small>${pcFormatNumber(career.assists)} carrera</small></div>
+      <div><span>Puntaje</span><strong>${pcRatingLabel(pcAverageRating(season))}</strong><small>${pcRatingLabel(pcAverageRating(career))} carrera</small></div>
+      <div><span>Minutos</span><strong>${pcFormatNumber(season.minutes)}</strong><small>${pcFormatNumber(career.minutes)} carrera</small></div>
+      <div><span>Titularidades</span><strong>${pcFormatNumber(season.starts)}</strong><small>${pcFormatNumber(career.starts)} carrera</small></div>
+    </div>
+  </section>`;
+}
+function pcStatusMarkup(state){
+  return `<section class="card player-career-status-card">
+    <p class="label">Estado actual</p>
+    ${pcStatusBar('Estado físico',state.player.condition,'physical','condition')}
+    ${pcStatusBar('Moral y confianza',state.player.morale,'morale','morale')}
+    ${pcStatusBar('Forma reciente',state.player.form,'form','form')}
+    ${pcStatusBar('Confianza del entrenador',state.player.trust,'trust','trust')}
+  </section>`;
+}
+function pcCompetitionsMarkup(state){
+  return `<section class="card player-career-competitions-card"><div class="row"><div><p class="label">Temporada ${pcFormatNumber(state.season.year)}</p><h3>Competiciones</h3></div><span class="pill">${Math.round(pcStageProgress(state))}%</span></div><div class="player-career-progress"><i style="width:${pcStageProgress(state)}%"></i></div><div class="player-career-competition-grid compact">${Object.values(state.season.competitions || {}).map(pcCompetitionCard).join('')}</div></section>`;
+}
+function pcAnnualHistoryMarkup(state){
+  return `<section class="card player-career-annual-card">
+    <div class="row"><div><p class="label">Historial anual</p><h3>Temporada por temporada</h3></div><span class="pill">${pcFormatNumber((state.history.seasons || []).length + (Number(state.season.stage||0)<5?1:0))}</span></div>
+    <div class="table-wrap"><table class="player-career-table player-career-annual-table"><thead><tr><th>Año</th><th>Club</th><th>Media</th><th>PJ</th><th>G</th><th>A</th><th>Títulos</th><th>Distinciones</th></tr></thead><tbody>${pcAnnualHistoryRows(state) || '<tr><td colspan="8" class="muted">La primera temporada todavía no comenzó.</td></tr>'}</tbody></table></div>
+  </section>`;
+}
+function pcLatestActivityMarkup(state){
+  const events = state?.history?.events || [];
+  return `<section class="card player-career-activity-card"><div class="row"><div><p class="label">Historial reciente</p><h3>Últimos acontecimientos</h3></div></div><div class="player-career-timeline compact">${events.length ? events.slice(0,8).map(item => `<article><span>${pcEscape(item.type)}</span><div><p>${pcEscape(item.text)}</p><small>${pcFormatNumber(item.year)} · Temporada ${pcFormatNumber(item.season)}</small></div></article>`).join('') : '<p class="muted">Sin acontecimientos registrados.</p>'}</div></section>`;
+}
+function pcSingleScreenView(state){
+  return `<div class="player-career-dashboard">
+    <div class="player-career-dashboard-left">
+      ${pcCurrentSituationMarkup(state)}
+      ${pcStatisticsMarkup(state)}
+      ${pcStatusMarkup(state)}
+      ${pcPalmaresMarkup(state)}
+      ${pcCompetitionsMarkup(state)}
+    </div>
+    <div class="player-career-dashboard-right">
+      ${pcOverallHeroMarkup(state)}
+      ${pcCareerClubListMarkup(state)}
+      ${pcAnnualHistoryMarkup(state)}
+      ${pcLatestActivityMarkup(state)}
+    </div>
+  </div>
+  ${state.injury ? `<section class="card blocker player-career-injury"><p class="label">Lesión activa</p><h3>${pcEscape(state.injury.name)}</h3><p>Recuperación estimada: ${pcFormatNumber(state.injury.blocksRemaining)} período${Number(state.injury.blocksRemaining)===1?'':'s'}.</p></section>` : ''}
+  ${state.status === 'active' ? `${pcActiveDecisionMarkup(state)}${!state.pendingDecision ? pcLastDecisionResultMarkup(state) : ''}${pcMarketMarkup(state)}${pcAdvanceMarkup(state)}${pcLastBlockMarkup(state)}` : ''}`;
+}
+function pcRetirementBanner(state){
+  if(state.status !== 'retired') return '';
+  return `<section class="card player-career-retirement"><div><p class="label">Carrera finalizada</p><h3>${pcEscape(state.player.name)} se retiró a los ${pcFormatNumber(state.retirement?.age || state.player.age)} años</h3><p>${pcEscape(state.retirement?.reason || 'Fin de carrera')} · ${pcFormatNumber(state.history.seasons?.length || 0)} temporadas.</p></div></section>`;
+}
+function renderPlayerCareer(){
+  if(!game){
+    view.innerHTML = '<div class="card blocker"><h2>Ser jugador</h2><p>Primero cargá o creá una carrera de mánager. El minijuego se guarda dentro de esa partida.</p></div>';
+    return;
+  }
+  const state = pcCareerState();
+  if(!state){
+    view.innerHTML = `<div class="player-career-shell">${pcCreationView()}</div>`;
+    return;
+  }
+  pcSetCareerState(state);
+  view.innerHTML = `<div class="player-career-shell">
+    ${pcHeader(state)}
+    <div class="row player-career-toolbar player-career-single-toolbar">
+      <span class="muted">Toda la carrera se consulta desde esta pantalla.</span>
+      <div class="player-career-toolbar-actions">
+        ${state.status==='active' && Number(state.player.age || 0)>=33?'<button type="button" class="ghost" data-pc-action="retire">Retirarse</button>':''}
+        <button type="button" class="ghost danger" data-pc-action="reset">${state.status==='retired'?'Nueva carrera':'Reiniciar'}</button>
+      </div>
+    </div>
+    ${pcRetirementBanner(state)}
+    ${pcSingleScreenView(state)}
+  </div>`;
+  pcAnimateStatChanges(state);
+}
+
+if(typeof normalizeGame === 'function'){
+  const pcNormalizeGameBase = normalizeGame;
+  normalizeGame = function(saved){
+    const normalized = pcNormalizeGameBase(saved);
+    if(normalized?.miniGames && typeof normalized.miniGames === 'object' && normalized.miniGames.playerCareer){
+      normalized.miniGames.playerCareer = pcNormalizeCareer(normalized.miniGames.playerCareer);
+    }
+    return normalized;
+  };
+}
+
+if(typeof document !== 'undefined'){
+  document.addEventListener('change', event => {
+    if(event.target?.id === 'pcNationality' || event.target?.id === 'pcPosition') pcRefreshClubSelect();
+  });
+  document.addEventListener('click', event => {
+    const tabButton = event.target.closest('[data-pc-tab]');
+    if(tabButton){
+      playerCareerViewMode = String(tabButton.dataset.pcTab || 'summary');
+      renderPlayerCareer();
+      return;
+    }
+    const decisionButton = event.target.closest('[data-pc-decision]');
+    if(decisionButton){ pcResolveDecision(decisionButton.dataset.pcDecision); return; }
+    const marketButton = event.target.closest('[data-pc-market]');
+    if(marketButton){ pcApplyMarketChoice(marketButton.dataset.pcMarket); return; }
+    const actionButton = event.target.closest('[data-pc-action]');
+    if(!actionButton) return;
+    const action = String(actionButton.dataset.pcAction || '');
+    if(action === 'create') pcCreateFromForm();
+    else if(action === 'advance') pcAdvanceCareer();
+    else if(action === 'reset') pcResetCareer();
+    else if(action === 'retire') pcManualRetire();
+  });
+}

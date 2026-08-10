@@ -1,4 +1,4 @@
-/* V5.24 · Simulación viva con resultado directo y terminar partido. */
+/* Simulación viva con resultado directo y terminar partido. */
 (function(){
   let liveSession = null;
   let liveOptions = null;
@@ -14,7 +14,7 @@
   let liveSelectedBoardSlot = -1;
 
   function ehtml(value){
-    return typeof escapeHtml === 'function' ? escapeHtml(value) : String(value ?? '').replace(/[&<>\"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]));
+    return typeof escapeHtml === 'function' ? escapeHtml(value) : String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
   }
   function fmtNumber(value){ return new Intl.NumberFormat('es-AR').format(Number(value || 0)); }
   function lastName(name){ return typeof playerLastName === 'function' ? playerLastName(name) : String(name || 'Jugador').trim().split(/\s+/).slice(-1)[0]; }
@@ -98,7 +98,12 @@
     }
     if(liveState?.finished){
       const h = Number(liveState.homeGoals || 0), a = Number(liveState.awayGoals || 0);
-      return { tone:'final', title:'Final del partido', text:`Resultado final: ${h} - ${a}.`, sub:'Ya podés cerrar y guardar el resultado.' };
+      const shootout = liveState.penaltyShootout;
+      const winnerId = Number(liveState.winnerClubId || shootout?.winnerClubId || 0);
+      const shootoutText = shootout && winnerId
+        ? ` ${liveClubName(winnerId)} gana ${Number(shootout.home || 0)}-${Number(shootout.away || 0)} por penales.`
+        : '';
+      return { tone:'final', title:'Final del partido', text:`Resultado final: ${h} - ${a}.${shootoutText}`, sub:shootout ? 'La tanda no modifica los goles ni las estadísticas del partido.' : 'Ya podés cerrar y guardar el resultado.' };
     }
     if(latest && latest.minute === minute){
       const playerId = latest.data?.playerId || latest.data?.inId || latest.data?.outId || 0;
@@ -123,7 +128,7 @@
   }
   function meterClass(value){ const n = Number(value || 0); return n >= 76 ? 'ok' : n >= 55 ? 'warn' : 'bad'; }
   function fitClass(value){ const n = Number(value || 0); return n >= 90 ? 'ok' : n >= 74 ? 'warn' : 'bad'; }
-  function remainingSubstitutions(){ return Math.max(0, Number(liveState?.maxSubs || 3) - Number(liveState?.usedSubs || 0) - livePendingSubstitutions.length); }
+  function remainingSubstitutions(){ return Math.max(0, Number(liveState?.maxSubs || 5) - Number(liveState?.usedSubs || 0) - livePendingSubstitutions.length); }
   function pendingOutIds(){ return new Set(livePendingSubstitutions.map(s => Number(s.outId))); }
   function pendingInIds(){ return new Set(livePendingSubstitutions.map(s => Number(s.inId))); }
   function availabilityTag(player, inField, isOwn){
@@ -180,6 +185,14 @@
     const n = Number(value || 0);
     return n >= 7.2 ? 'ok' : n >= 6.0 ? 'warn' : 'bad';
   }
+  function liveDisplayOverall(player){
+    if(!player) return 0;
+    const source = typeof playerById === 'function' ? (playerById(player.id) || player) : player;
+    const visible = typeof visibleOverall === 'function' ? visibleOverall(source) : null;
+    const fallback = Number(player.overall || source?.overall || source?.media || 0);
+    const value = visible !== null && visible !== undefined && Number.isFinite(Number(visible)) ? Number(visible) : fallback;
+    return simClampUi(Math.round(value || 0), 1, 99);
+  }
   function livePlayerRating(player, side, inField=true){
     if(!player || !liveState) return '—';
     const id = Number(player.id || 0);
@@ -218,7 +231,8 @@
     const icons = livePlayerIcons(id);
     const nameCell = `<span class="live-name-cell"><strong>${ehtml(lastName(player.name))}</strong>${icons}${tag}</span>`;
     const rowNo = expelled ? 'R' : (injuredGhost ? 'L' : (inField ? String((Number(player.slotIndex || 0) + 1)).padStart(2,'0') : 'S'));
-    const body = `<span class="num">${rowNo}</span>${nameCell}<span>${ehtml(player.role || player.position || '—')}</span><b>${Math.round(Number(player.overall || 0))}</b><b class="live-rating ${ratingClass}">${ehtml(rating)}</b><i class="${meterClass(cond)}">${cond}</i><i class="${meterClass(morale)}">${morale}</i><i class="${fitClass(fit)}">${inField ? fit : '—'}</i>`;
+    const mediaCell = isOwn ? String(liveDisplayOverall(player)) : '—';
+    const body = `<span class="num">${rowNo}</span>${nameCell}<span>${ehtml(player.role || player.position || '—')}</span><b>${ehtml(mediaCell)}</b><b class="live-rating ${ratingClass}">${ehtml(rating)}</b><i class="${meterClass(cond)}">${cond}</i><i class="${meterClass(morale)}">${morale}</i><i class="${fitClass(fit)}">${inField ? fit : '—'}</i>`;
     return selectable ? `<button type="button" class="${cls}" ${attr} ${disabled ? 'disabled' : ''}>${body}</button>` : `<div class="${cls}">${body}</div>`;
   }
   function formationSelect(){
@@ -255,23 +269,35 @@
     return String(Math.round(Number(value || 0)));
   }
   function compareStatRow(label, left, right, type='num'){
-    const l = Number(left || 0);
-    const r = Number(right || 0);
-    const total = Math.max(1, l + r);
-    const lp = type === 'pct' ? simClampUi(l, 0, 100) : Math.round((l / total) * 100);
-    const rp = type === 'pct' ? simClampUi(r, 0, 100) : Math.round((r / total) * 100);
-    return `<div class="live-compare-row" style="--left:${lp}%;--right:${rp}%"><p>${ehtml(label)}</p><div class="live-compare-values"><strong>${ehtml(compareValue(left, type))}</strong><span class="bar left"><i></i></span><span class="bar right"><i></i></span><strong>${ehtml(compareValue(right, type))}</strong></div></div>`;
+    const l = Math.max(0, Number(left || 0));
+    const r = Math.max(0, Number(right || 0));
+    const total = l + r;
+    const lp = total > 0 ? (l / total) * 100 : 50;
+    const rp = 100 - lp;
+    const leftPercent = Math.max(0, Math.min(100, lp)).toFixed(2);
+    const rightPercent = Math.max(0, Math.min(100, rp)).toFixed(2);
+    const aria = `${label}: ${compareValue(left, type)} ${liveClubName(liveState?.match?.homeId)}, ${compareValue(right, type)} ${liveClubName(liveState?.match?.awayId)}. Distribución ${Math.round(lp)} a ${Math.round(rp)} por ciento.`;
+    return `<div class="live-compare-row" style="--left:${leftPercent}%;--right:${rightPercent}%"><p>${ehtml(label)}</p><div class="live-compare-values"><strong>${ehtml(compareValue(left, type))}</strong><span class="bar duel" role="img" aria-label="${ehtml(aria)}"><i class="left"></i><i class="right"></i></span><strong>${ehtml(compareValue(right, type))}</strong></div></div>`;
   }
   function simClampUi(value,min,max){ return Math.max(min, Math.min(max, Number(value || 0))); }
+  function liveCompareClubColor(clubId, fallback){
+    const raw = typeof clubById === 'function' ? clubById(clubId)?.primaryColor : null;
+    let rgb = typeof parseCssColorToRgb === 'function' ? parseCssColorToRgb(raw) : null;
+    if(!rgb) return fallback;
+    if(typeof rgbLuminance === 'function' && rgbLuminance(rgb) > 0.84 && typeof mixRgb === 'function') rgb = mixRgb(rgb, [100,116,139], 0.58);
+    return typeof rgbToCss === 'function' ? rgbToCss(rgb) : fallback;
+  }
   function compareStatsCard(){
     const match = liveState.match || {};
     const h = liveState.matchStats?.home || {};
     const a = liveState.matchStats?.away || {};
     const awayPoss = Number(a.possession ?? (100 - Number(h.possession || 50)));
-    return `<div class="card inner live-compare-card">
+    const homeColor = liveCompareClubColor(match.homeId, '#e11d48');
+    const awayColor = liveCompareClubColor(match.awayId, '#60a5fa');
+    return `<div class="card inner live-compare-card" style="--live-home-color:${ehtml(homeColor)};--live-away-color:${ehtml(awayColor)}">
       <div class="live-compare-top"><span>${liveBadge(match.homeId)} ${ehtml(liveClubName(match.homeId))}</span><b>Estadísticas del partido</b><span>${ehtml(liveClubName(match.awayId))} ${liveBadge(match.awayId)}</span></div>
-      ${compareStatRow('Disparos', h.attacks || 0, a.attacks || 0)}
-      ${compareStatRow('Tiros a puerta', h.chances || 0, a.chances || 0)}
+      ${compareStatRow('Intentos de ataque', h.attacks || 0, a.attacks || 0)}
+      ${compareStatRow('Tiros al arco', h.chances || 0, a.chances || 0)}
       ${compareStatRow('xG', h.xg || 0, a.xg || 0, 'xg')}
       ${compareStatRow('Faltas', h.fouls || 0, a.fouls || 0)}
       ${compareStatRow('Posesión', h.possession || 50, awayPoss, 'pct')}
@@ -308,7 +334,7 @@
       ${instructionButtons()}
       <div class="live-action-row">
         <button id="liveTacticBtn" class="ghost ${liveTacticOpen ? 'active' : ''}" ${liveState.finished ? 'disabled' : ''}>Táctica</button>
-        <button id="livePauseBtn" class="ghost">${livePaused ? 'Auto' : 'Pausar'}</button>
+        <button id="livePauseBtn" class="ghost">${livePaused ? 'Avance automático' : 'Pausar'}</button>
         <button id="liveNextBlockBtn" class="primary" ${liveState.finished ? 'disabled' : ''}>${ehtml(liveState?.nextBlock?.period === 'break' ? 'Simular descanso' : 'Simular 1 minuto')}</button>
         <button id="liveInstantFinishBtn" class="ghost" ${liveState.finished ? 'disabled' : ''}>Terminar partido</button>
         <button id="liveFinishBtn" class="primary" ${liveState.finished ? '' : 'disabled'}>Cerrar y guardar</button>
@@ -334,7 +360,7 @@
     const injuredGhost = Boolean(player?.injuredGhost || player?.ghost);
     const cls = `live-board-circle ${empty ? 'empty' : ''} ${injuredGhost ? 'ghost' : ''} ${selected ? 'selected' : ''} ${fit < 70 && player && !injuredGhost ? 'warn' : ''}`;
     const label = player ? lastName(player.name) : 'Hueco';
-    const meta = player ? (injuredGhost ? 'Lesionado · no aporta' : `${Math.round(Number(player.overall || 0))} · ${Math.round(Number(player.condition || 0))}%`) : 'Sin jugador';
+    const meta = player ? (injuredGhost ? 'Lesionado · no aporta' : `${liveDisplayOverall(player)} · ${Math.round(Number(player.condition || 0))}%`) : 'Sin jugador';
     return `<button type="button" class="${cls}" data-live-board-slot="${index}" ${liveState?.finished ? 'disabled' : ''}>
       <span class="role">${ehtml(slot?.role || '—')}</span>
       <strong>${ehtml(label)}</strong>
@@ -369,12 +395,9 @@
     const match = liveState.match || {};
     const homeTitle = liveClubName(match.homeId);
     const awayTitle = liveClubName(match.awayId);
-    const currentMinute = Number(liveState.minute || 0);
     const totalPhases = Number(liveState.totalPhases || 105);
     const phasesPlayed = Number(liveState.phasesPlayed || 0);
     const progress = Math.max(0, Math.min(100, Math.round((phasesPlayed / Math.max(1,totalPhases)) * 100)));
-    const nextBlock = liveState.nextBlock;
-    const nextButtonLabel = nextBlock?.period === 'break' ? 'Simular descanso' : 'Simular 1 minuto';
     const events = liveEvents();
     const narration = liveNarration(events);
     const recentEvents = events.slice().reverse().slice(0, 11);
@@ -412,7 +435,10 @@
       ${liveManagerPanel()}
     </div>`;
     const root = document.querySelector('#liveMatchRoot');
-    if(root) root.innerHTML = html;
+    if(root){
+      if(typeof replaceHtmlPreservingClubBadges === 'function') replaceHtmlPreservingClubBadges(root, html);
+      else root.innerHTML = html;
+    }
     bindLiveControls();
   }
   function resetLiveSelections(){ liveSelectedStarterId = 0; liveSelectedBenchId = 0; liveSelectedBoardSlot = -1; }
@@ -468,7 +494,7 @@
       livePaused = true;
       clearTimeout(liveAutoTimer);
       const injuredName = eventPlayerLabel(ownInjuries[0].playerId, true);
-      const canSub = Number(liveState?.usedSubs || 0) + livePendingSubstitutions.length < Number(liveState?.maxSubs || 3);
+      const canSub = Number(liveState?.usedSubs || 0) + livePendingSubstitutions.length < Number(liveState?.maxSubs || 5);
       liveShowNotice(canSub ? `${injuredName} queda lesionado en cancha. Tocá al lesionado y luego un suplente para reemplazarlo.` : `${injuredName} queda lesionado en cancha, pero ya no quedan cambios.`, false);
     }
     if(wasBeforeBreak && liveState?.nextBlock?.period === 'break' && !liveHalftimePaused){
@@ -552,6 +578,7 @@
       if(!liveSession?.result) return;
       window.__liveMatchCloseLocked = false;
       const result = liveSession.result;
+      window.__activeCompetitionSuspensionMatch = null;
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
       liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1;
@@ -568,8 +595,11 @@
     if(!match || !window.Simulator20?.createLiveMatchSession) return false;
     clearTimeout(liveAutoTimer);
     liveOptions = options || {}; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; resetLiveSelections();
-    liveSession = window.Simulator20.createLiveMatchSession(match);
+    liveSession = typeof withCompetitionSuspensionContext === 'function'
+      ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
+      : window.Simulator20.createLiveMatchSession(match);
     liveState = window.Simulator20.livePublicState(liveSession);
+    window.__activeCompetitionSuspensionMatch = { ...match };
     window.__liveMatchCloseLocked = false;
     openModal('<div id="liveMatchRoot"></div>');
     window.__liveMatchCloseLocked = true;

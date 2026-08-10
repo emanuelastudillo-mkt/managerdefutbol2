@@ -1,4 +1,4 @@
-/* V3.17 · Utilidades DOM, formato, avisos, transición de avance y helpers básicos de club. */
+/* Utilidades DOM, formato, avisos, transición de avance y helpers básicos de club. */
 
 function escapeHtml(value){
   return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
@@ -81,14 +81,35 @@ function formatMoney(value){
   const formatted = new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(Math.abs(num));
   return num < 0 ? `-${formatted}` : formatted;
 }
-function moneyTone(value){ return Number(value || 0) < 0 ? 'bad budget-negative' : 'ok'; }
 function budgetTone(value){ return Number(value || 0) < 0 ? 'budget-negative bad' : ''; }
-function clubName(id){ return seed.clubs.find(c => c.id === id)?.name || '—'; }
+let clubLookupSource = null;
+let clubLookupLength = -1;
+let clubLookupIndex = new Map();
+function refreshClubLookupIndex(){
+  const clubs = Array.isArray(seed?.clubs) ? seed.clubs : [];
+  if(clubLookupSource === clubs && clubLookupLength === clubs.length) return clubs;
+  clubLookupSource = clubs;
+  clubLookupLength = clubs.length;
+  clubLookupIndex = new Map(clubs.map((club,index) => [Number(club.id), index]));
+  return clubs;
+}
+function clubById(id){
+  const clubId = Number(id);
+  if(!Number.isFinite(clubId)) return undefined;
+  const clubs = refreshClubLookupIndex();
+  let index = clubLookupIndex.get(clubId);
+  let club = Number.isInteger(index) ? clubs[index] : undefined;
+  if(club && Number(club.id) === clubId) return club;
+  clubLookupSource = null;
+  refreshClubLookupIndex();
+  index = clubLookupIndex.get(clubId);
+  club = Number.isInteger(index) ? clubLookupSource[index] : undefined;
+  return club && Number(club.id) === clubId ? club : undefined;
+}
+function clubName(id){ return clubById(id)?.name || '—'; }
 function isFoundedClub(club){ return Boolean(club?.isFoundedClub || club?.founderClub || club?.modoFundador); }
-function isFoundedClubId(clubId){ return isFoundedClub(seed?.clubs?.find(c => Number(c.id) === Number(clubId))); }
+function isFoundedClubId(clubId){ return isFoundedClub(clubById(clubId)); }
 function currentGameIsFounderMode(state=game){ return Boolean(state?.founderMode || isFoundedClubId(state?.selectedClubId)); }
-function clubShort(id){ return seed.clubs.find(c => c.id === id)?.short || clubName(id).slice(0,3).toUpperCase(); }
-function clubColor(id){ return seed.clubs.find(c => c.id === id)?.primaryColor || '#3b82f6'; }
 
 function defaultClubTheme(){
   return { base:[59,130,246], accent:[96,165,250], accent2:[125,211,252] };
@@ -200,13 +221,38 @@ function uniqueBadgePaths(paths){
     return true;
   });
 }
+function clubBadgePathVariants(path){
+  const raw = String(path || '').trim();
+  if(!raw) return [];
+  if(raw.startsWith('data:') || raw.startsWith('blob:')) return [raw];
+  const suffixMatch = raw.match(/([?#].*)$/);
+  const suffix = suffixMatch ? suffixMatch[1] : '';
+  const clean = suffix ? raw.slice(0, -suffix.length) : raw;
+  const base = clean.replace(/\.(?:svg|png|webp|jpe?g)$/i, '');
+  return uniqueBadgePaths([
+    `${base}.svg${suffix}`,
+    `${base}.png${suffix}`,
+    `${base}.webp${suffix}`,
+    raw
+  ]);
+}
 function clubBadgeSrcCandidates(club){
   const name = club?.name || '';
   const slug = clubAssetSlug(name);
+  const exactHyphen = String(name || '').trim().replace(/\s+/g,'-');
   const underscore = typeof imageSlug === 'function' ? imageSlug(name) : String(name || '').trim().replace(/\s+/g,'_');
   const legacy = legacyEscudoSlug(name);
+  const foundedFallback = (club?.isFoundedClub || club?.founderClub) ? 'img/escudos/fundador-1.webp' : '';
   return uniqueBadgePaths([
-    club?.crestPath,
+    ...clubBadgePathVariants(club?.crestPath),
+    ...clubBadgePathVariants(foundedFallback),
+    `img/escudos/${exactHyphen}.svg`,
+    `img/escudos/${exactHyphen}.png`,
+    `img/escudos/${exactHyphen}.webp`,
+    `img/escudos/${slug}.svg`,
+    `img/escudos/${underscore}.svg`,
+    `img/escudos/${legacy}.svg`,
+    `IMG/ESCUDOS/${slug}.svg`,
     `img/escudos/${slug}.png`,
     `img/escudos/${slug}.webp`,
     `img/escudos/${underscore}.png`,
@@ -216,6 +262,59 @@ function clubBadgeSrcCandidates(club){
     `IMG/ESCUDOS/${slug}.png`,
     `IMG/ESCUDOS/${slug}.webp`
   ]).map(encodeAssetPath);
+}
+const CLUB_BADGE_RESOLVED_SRC_BY_ID = new Map();
+function clubBadgeCacheKey(id){
+  const numeric = Number(id || 0);
+  return numeric > 0 ? String(numeric) : String(id || '').trim();
+}
+function rememberedClubBadgeSrc(id){
+  return CLUB_BADGE_RESOLVED_SRC_BY_ID.get(clubBadgeCacheKey(id)) || '';
+}
+function rememberClubBadgeAssetSuccess(img){
+  if(!img) return;
+  const holder = img.closest?.('.club-badge-placeholder');
+  const id = img.dataset.clubId || holder?.dataset?.clubId || '';
+  const key = clubBadgeCacheKey(id);
+  const src = String(img.getAttribute('src') || img.currentSrc || img.src || '').trim();
+  if(!key || !src) return;
+  CLUB_BADGE_RESOLVED_SRC_BY_ID.set(key, src);
+  img.dataset.crestReady = '1';
+  holder?.classList?.add('is-ready');
+}
+function replaceHtmlPreservingClubBadges(root, html){
+  if(!root) return;
+  if(typeof document === 'undefined' || typeof root.querySelectorAll !== 'function'){
+    root.innerHTML = html;
+    return;
+  }
+  const reusable = new Map();
+  root.querySelectorAll('.club-badge-placeholder[data-club-id]').forEach(node => {
+    const key = clubBadgeCacheKey(node.dataset.clubId);
+    if(!key) return;
+    if(!reusable.has(key)) reusable.set(key, []);
+    reusable.get(key).push(node);
+  });
+  const template = document.createElement('template');
+  template.innerHTML = String(html ?? '');
+  template.content.querySelectorAll('.club-badge-placeholder[data-club-id]').forEach(fresh => {
+    const key = clubBadgeCacheKey(fresh.dataset.clubId);
+    const queue = reusable.get(key);
+    const current = queue?.shift();
+    if(!current) return;
+    current.className = fresh.className;
+    current.title = fresh.title || current.title || '';
+    current.setAttribute('data-club-id', fresh.dataset.clubId || current.dataset.clubId || '');
+    fresh.replaceWith(current);
+  });
+  root.replaceChildren(template.content);
+}
+function renderPersistentClubIdentity(root, clubId, name, extraHtml=''){
+  if(!root) return;
+  const key = `${clubBadgeCacheKey(clubId)}|${String(name || '')}|${String(extraHtml || '')}`;
+  if(root.dataset.clubIdentityKey === key) return;
+  replaceHtmlPreservingClubBadges(root, `${clubBadge(clubId)}<span>${escapeHtml(name || clubName(clubId))}</span>${extraHtml || ''}`);
+  root.dataset.clubIdentityKey = key;
 }
 function nextClubBadgeSrc(img){
   if(!img) return;
@@ -231,16 +330,53 @@ function nextClubBadgeSrc(img){
   img.onerror = null;
   img.style.visibility = 'hidden';
 }
+function handleDelegatedImageLoad(event){
+  const img = event?.target;
+  if(typeof HTMLImageElement === 'undefined' || !(img instanceof HTMLImageElement)) return;
+  if(img.dataset.fallbackSrcs) rememberClubBadgeAssetSuccess(img);
+  if(img.dataset.faceOriginBase && typeof rememberFaceAssetSuccess === 'function') rememberFaceAssetSuccess(img);
+}
+function handleDelegatedImageError(event){
+  const img = event?.target;
+  if(typeof HTMLImageElement === 'undefined' || !(img instanceof HTMLImageElement)) return;
+  if(img.dataset.fallbackSrcs){
+    nextClubBadgeSrc(img);
+    return;
+  }
+  if(img.dataset.faceBase && typeof tryNextFaceExt === 'function'){
+    tryNextFaceExt(img);
+    return;
+  }
+  const founderOption = img.closest('.founder-crest-option');
+  if(founderOption){
+    founderOption.classList.add('missing');
+    return;
+  }
+  if(img.classList.contains('challenge-crest')){
+    img.parentElement?.classList.add('crest-missing');
+    img.remove();
+    return;
+  }
+  const staffFallback = img.nextElementSibling;
+  if(staffFallback?.classList?.contains('staff-photo-fallback')){
+    img.style.display = 'none';
+    staffFallback.style.display = 'grid';
+  }
+}
+if(typeof document !== 'undefined'){
+  document.addEventListener('load', handleDelegatedImageLoad, true);
+  document.addEventListener('error', handleDelegatedImageError, true);
+}
 function clubBadge(id){
-  const club = seed.clubs.find(c=>c.id===id) || {};
-  const paths = clubBadgeSrcCandidates(club);
+  const club = seed.clubs.find(c=>Number(c.id)===Number(id)) || {};
+  const remembered = rememberedClubBadgeSrc(id);
+  const paths = uniqueBadgePaths([remembered, ...clubBadgeSrcCandidates(club)]);
   const src = paths[0] || '';
   const fallbackJson = escapeHtml(JSON.stringify(paths));
-  return `<span class="club-badge-placeholder" data-club-id="${id}" title="${escapeHtml(clubName(id))}"><img src="${escapeHtml(src)}" alt="" data-fallback-index="0" data-fallback-srcs='${fallbackJson}' onerror="nextClubBadgeSrc(this)"></span>`;
+  return `<span class="club-badge-placeholder" data-club-id="${escapeHtml(id)}" title="${escapeHtml(clubName(id))}"><img src="${escapeHtml(src)}" alt="" data-club-id="${escapeHtml(id)}" data-fallback-index="0" data-fallback-srcs='${fallbackJson}' loading="eager" decoding="sync"></span>`;
 }
 function clubLink(id){ return `<button class="linklike club-link" data-club-id="${id}">${clubBadge(id)}<span>${escapeHtml(clubName(id))}</span></button>`; }
 function clubSpan(id){ return `<span class="club-click" data-club-id="${id}">${clubBadge(id)}<span>${escapeHtml(clubName(id))}</span></span>`; }
-function clubAbbrev(id){ return clubBadge(id); }
 function divisionOptions(selected='all'){
   const divisions = seed?.divisions || [{ id:'default', name:'Liga única' }];
   return [`<option value="all" ${selected==='all'?'selected':''}>Todas las divisiones</option>`]
