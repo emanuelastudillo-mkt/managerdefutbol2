@@ -1,0 +1,25 @@
+/* V8.08 · Compatibilidad de cascada entre módulos.
+   Conserva el resultado visual final de V8.07 en selectores que antes
+   recibían una regla genérica posterior dentro del único style.css. */
+
+.first-team-tabs.card,
+.market-tabs.card{
+  padding:12px;
+}
+
+.featured-players-panel.card,
+.featured-player-card.card,
+.market-filters-card.card,
+.transfer-budget-card.card,
+.academy-youth-preparer-card.card{
+  border-color:rgba(var(--club-accent-rgb),.14);
+  background:linear-gradient(
+    145deg,
+    rgba(var(--club-rgb),calc(var(--club-theme-panel-opacity) + .01)),
+    rgba(255,255,255,.03)
+  );
+}
+
+.featured-player-card.card{
+  border-radius:15px;
+}

@@ -1,0 +1,652 @@
+/* V8.46 · Adaptación móvil inicial.
+   Todas las reglas visuales están aisladas a pantallas menores de 768 px.
+   Desktop, 1280x720 y tablets horizontales conservan la interfaz existente. */
+
+.mobile-only{display:none!important}
+
+@media (max-width:767px){
+  :root{
+    --mobile-edge:10px;
+    --mobile-radius:16px;
+  }
+
+  html{
+    overflow-x:hidden;
+    scroll-padding-top:76px;
+  }
+
+  body{
+    overflow-x:hidden;
+    min-width:320px;
+    padding-bottom:env(safe-area-inset-bottom,0);
+    background:
+      radial-gradient(circle at 50% -10%,rgba(37,99,235,.28),transparent 34%),
+      linear-gradient(180deg,#08111f,#0b1220 58%,#07101d);
+  }
+
+  body.mobile-overlay-open{
+    overflow:hidden;
+  }
+
+  .mobile-only{display:inline-flex!important}
+
+  /* Barra superior móvil. */
+  .topbar{
+    position:sticky;
+    top:0;
+    z-index:1050;
+    display:block!important;
+    padding:calc(8px + env(safe-area-inset-top,0)) var(--mobile-edge) 8px;
+    border-bottom:1px solid rgba(148,163,184,.16);
+    background:rgba(8,17,31,.96);
+    box-shadow:0 12px 32px rgba(0,0,0,.30);
+    backdrop-filter:blur(18px);
+  }
+
+  .topbar-brand{
+    width:100%;
+    display:grid;
+    grid-template-columns:42px minmax(0,1fr) 42px;
+    align-items:center;
+    justify-content:stretch;
+    gap:8px;
+  }
+
+  .game-brand-logo-top{
+    width:142px;
+    height:48px;
+    max-width:100%;
+    justify-self:center;
+    object-position:center;
+  }
+
+  .mobile-top-button{
+    width:42px;
+    height:42px;
+    min-width:42px;
+    min-height:42px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    border:1px solid rgba(148,163,184,.20);
+    border-radius:13px;
+    background:rgba(255,255,255,.055);
+    color:#e5edf7;
+    font-size:19px;
+    font-weight:900;
+    line-height:1;
+  }
+
+  .mobile-top-button[aria-expanded="true"]{
+    border-color:rgba(96,165,250,.48);
+    background:rgba(59,130,246,.18);
+    color:#fff;
+  }
+
+  .top-actions,
+  .top-actions.top-actions-compact{
+    display:none;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    width:100%;
+    max-height:calc(100dvh - 82px - env(safe-area-inset-top,0));
+    margin-top:8px;
+    padding-top:8px;
+    overflow-y:auto;
+    border-top:1px solid rgba(148,163,184,.12);
+    overscroll-behavior:contain;
+  }
+
+  body.mobile-actions-open .top-actions,
+  body.mobile-actions-open .top-actions.top-actions-compact{
+    display:grid;
+  }
+
+  .top-actions button{
+    width:100%;
+    min-height:42px;
+    margin:0;
+    padding:8px 9px;
+    border-radius:11px;
+    font-size:9.5px;
+    line-height:1.2;
+    text-align:center;
+  }
+
+  .top-actions #topResignClubBtn,
+  .top-actions #btnOnlineChallengeAvailable:not(.hidden){
+    grid-column:1 / -1;
+  }
+
+  /* Fondo común para menú y acciones desplegadas. */
+  .mobile-nav-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:1020;
+    display:none!important;
+    width:100%;
+    height:100%;
+    padding:0;
+    border:0;
+    border-radius:0;
+    background:rgba(2,6,23,.68);
+    backdrop-filter:blur(4px);
+  }
+
+  body.mobile-nav-open .mobile-nav-backdrop,
+  body.mobile-actions-open .mobile-nav-backdrop{
+    display:block!important;
+  }
+
+  /* Menú lateral convertido en drawer. */
+  .shell{
+    display:block;
+    width:100%;
+    padding:10px var(--mobile-edge) 24px;
+  }
+
+  .side{
+    position:fixed!important;
+    inset:0 auto 0 0;
+    z-index:1100;
+    display:block;
+    width:min(88vw,340px);
+    max-width:340px;
+    min-height:100dvh;
+    max-height:100dvh;
+    margin:0;
+    padding:0 12px calc(18px + env(safe-area-inset-bottom,0));
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    border-width:0 1px 0 0;
+    border-radius:0 22px 22px 0;
+    background:rgba(10,18,32,.985);
+    box-shadow:22px 0 70px rgba(0,0,0,.52);
+    transform:translateX(calc(-100% - 24px));
+    transition:transform .24s ease;
+    visibility:hidden;
+  }
+
+  body.mobile-nav-open .side{
+    transform:translateX(0);
+    visibility:visible;
+  }
+
+  .mobile-drawer-head{
+    position:sticky;
+    top:0;
+    z-index:3;
+    display:flex!important;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    min-height:62px;
+    margin:0 -12px 12px;
+    padding:calc(10px + env(safe-area-inset-top,0)) 12px 10px;
+    border-bottom:1px solid rgba(148,163,184,.14);
+    background:rgba(10,18,32,.98);
+  }
+
+  .mobile-drawer-head strong{
+    font-size:13px;
+    letter-spacing:.02em;
+  }
+
+  .mobile-drawer-close{
+    width:40px;
+    height:40px;
+    min-width:40px;
+    min-height:40px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    border-radius:12px;
+    border:1px solid rgba(148,163,184,.18);
+    background:rgba(255,255,255,.055);
+    font-size:23px;
+    line-height:1;
+  }
+
+  .new-game,
+  .status-card{
+    margin-bottom:10px;
+    padding:11px;
+    border-radius:14px;
+  }
+
+  .status-card h2{
+    font-size:18px;
+    line-height:1.15;
+  }
+
+  .sidebar-nav{
+    gap:6px;
+    margin-top:8px;
+    padding-bottom:12px;
+  }
+
+  .sidebar-nav>button,
+  .sidebar-nav .nav-group-toggle{
+    min-height:46px;
+    padding:10px 12px;
+    border-radius:12px;
+    font-size:12px;
+  }
+
+  .sidebar-nav .nav-group-items>button{
+    min-height:42px;
+    padding:9px 10px 9px 24px;
+    font-size:11px;
+  }
+
+  .sidebar-nav .nav-group.is-open .nav-group-items{
+    max-height:430px;
+  }
+
+  /* Área principal. */
+  .content{
+    width:100%;
+    min-width:0;
+  }
+
+  .view{
+    width:100%;
+    min-height:calc(100dvh - 100px);
+    padding:12px;
+    border-radius:var(--mobile-radius);
+    box-shadow:0 14px 42px rgba(0,0,0,.24);
+    backdrop-filter:none;
+  }
+
+  .notice{
+    position:relative;
+    z-index:1;
+    margin:0 0 10px;
+    padding:11px 12px;
+    border-radius:13px;
+    font-size:11px;
+    line-height:1.4;
+  }
+
+  .app-footer{
+    padding:0 12px calc(18px + env(safe-area-inset-bottom,0));
+  }
+
+  .app-footer p{
+    padding-top:10px;
+    font-size:9px;
+  }
+
+  /* Escala y superficies generales. */
+  h2{font-size:20px}
+  h3{font-size:16px}
+  .section-title{margin-bottom:12px}
+  .tagline{font-size:11px;line-height:1.5}
+  .metric{font-size:25px}
+
+  .card{
+    padding:13px;
+    border-radius:15px;
+  }
+
+  .panel,
+  .office-main-card,
+  .office-side-card{
+    border-radius:var(--mobile-radius);
+  }
+
+  .office-main-card,
+  .office-side-card{
+    padding:13px;
+  }
+
+  .grid.cols-2,
+  .grid.cols-3,
+  .grid.cols-4,
+  .grid.cols-5,
+  .grid.cols-6,
+  .split,
+  .form-grid,
+  .market-filter-grid,
+  .scouting-summary-grid,
+  .scouting-action-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  .office-mini-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px;
+  }
+
+  .office-mini-grid>div{
+    min-height:78px;
+    padding:10px;
+    border-radius:14px;
+  }
+
+  .office-mini-grid>div:last-child:nth-child(odd){
+    grid-column:1 / -1;
+  }
+
+  .office-status-bars,
+  .manager-alert-grid,
+  .turn-summary-list,
+  .dashboard-donut-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  .office-club-head{
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+  }
+
+  .office-club-head h2{
+    font-size:20px;
+  }
+
+  .office-days-remaining{
+    padding:10px 12px;
+  }
+
+  .office-days-remaining strong{
+    font-size:26px;
+  }
+
+  .office-advance{
+    width:100%;
+    justify-self:stretch;
+  }
+
+  .next-match{
+    grid-template-columns:1fr;
+    gap:9px;
+    padding:13px;
+    border-radius:16px;
+  }
+
+  .team-name{font-size:17px}
+  .score{font-size:23px}
+
+  .welcome-screen{gap:11px}
+  .welcome-hero{padding:14px;gap:12px}
+  .welcome-hero h2{font-size:25px}
+  .welcome-summary{grid-template-columns:1fr}
+  .welcome-about{gap:12px}
+
+  .save-slots-screen .save-slot-card,
+  .save-slots-screen .save-slot-card.save-slot-empty,
+  .save-slots-screen .save-slot-card.empty-slot{
+    grid-template-columns:1fr!important;
+    gap:10px;
+  }
+
+  .save-slot-actions{
+    width:100%;
+    justify-self:stretch!important;
+  }
+
+  .save-slot-actions button{
+    flex:1 1 120px;
+  }
+
+  /* Controles táctiles. */
+  input,
+  select,
+  textarea{
+    min-height:44px;
+    margin-bottom:10px;
+    padding:10px 11px;
+    border-radius:12px;
+    font-size:14px;
+  }
+
+  .primary,
+  .ghost{
+    min-height:42px;
+    padding:9px 12px;
+    border-radius:12px;
+  }
+
+  .full,
+  .sticky-actions>button,
+  .advance-buttons button{
+    width:100%;
+  }
+
+  .row{
+    gap:8px;
+  }
+
+  .section-title.row,
+  .market-filters-head.row,
+  .scouting-card-head.row,
+  .training-player-plan-head.row{
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .section-title.row>button,
+  .section-title.row>.row,
+  .market-filters-head.row>button{
+    width:100%;
+  }
+
+  /* Navegaciones internas desplazables. */
+  .subtabs,
+  .challenge-tabs,
+  .kicker{
+    flex-wrap:nowrap!important;
+    width:100%;
+    max-width:100%;
+    padding-bottom:4px;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    scrollbar-width:thin;
+  }
+
+  .subtabs button,
+  .challenge-tabs button,
+  .kicker button,
+  .kicker .pill{
+    flex:0 0 auto!important;
+    width:auto!important;
+    white-space:nowrap;
+  }
+
+  /* Tablas: conservan toda la información y se desplazan horizontalmente. */
+  .table-wrap,
+  .scouting-reports-table-wrap,
+  .cwc-bracket-wrap{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    border-radius:13px;
+  }
+
+  table{
+    min-width:660px;
+  }
+
+  th,
+  td{
+    padding:8px 9px;
+    font-size:10px;
+  }
+
+  .scouting-table,
+  .scouting-reports-table{
+    min-width:900px!important;
+  }
+
+  /* Táctica y entrenamiento. */
+  .tactic-workspace,
+  .scouting-workspace,
+  .live-v512-grid,
+  .live-control-grid,
+  .live-lineups-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  .pitch-board,
+  .pitch-board.centered{
+    width:100%;
+    max-width:100%!important;
+    border-radius:14px;
+  }
+
+  .pitch-slot{
+    width:52px!important;
+    min-height:52px!important;
+  }
+
+  .pitch-board .player-chip,
+  .pitch-board .player-chip.gk,
+  .pitch-board .player-chip.def,
+  .pitch-board .player-chip.mid,
+  .pitch-board .player-chip.att{
+    width:46px!important;
+    height:46px!important;
+    min-height:46px!important;
+    padding:5px 3px 9px!important;
+  }
+
+  .pitch-board .player-chip-name{
+    max-width:38px!important;
+    font-size:6px!important;
+  }
+
+  .lineup-row{
+    min-width:620px;
+  }
+
+  .tactic-lists,
+  .lineup-list{
+    max-width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .training-week-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  /* Modales como hoja inferior, más usable con teclado táctil. */
+  .modal-backdrop{
+    align-items:end;
+    justify-items:stretch;
+    padding:0;
+  }
+
+  .modal-panel{
+    width:100%;
+    max-width:none;
+    max-height:94dvh;
+    margin:0;
+    padding:14px 12px calc(14px + env(safe-area-inset-bottom,0));
+    border-width:1px 0 0;
+    border-radius:22px 22px 0 0;
+    box-shadow:0 -22px 70px rgba(0,0,0,.50);
+  }
+
+  .modal-close{
+    top:0;
+    z-index:4;
+    width:40px;
+    height:40px;
+    min-height:40px;
+    margin-bottom:6px;
+    font-size:21px;
+  }
+
+  .modal-actions,
+  .modal-actions.two-lines{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+
+  .modal-actions button{
+    width:100%;
+    min-height:44px;
+  }
+
+  .player-modal-grid,
+  .job-search-layout,
+  .game-over-screen,
+  .founder-mode-card,
+  .manager-courses-layout{
+    grid-template-columns:1fr!important;
+  }
+
+  /* Evita desbordes accidentales de medios y textos largos. */
+  img,
+  svg,
+  canvas{
+    max-width:100%;
+  }
+
+  pre,
+  code{
+    max-width:100%;
+    overflow-wrap:anywhere;
+  }
+
+  .pill,
+  .tagline,
+  .message-card,
+  .home-messages-summary{
+    overflow-wrap:anywhere;
+  }
+}
+
+@media (max-width:380px){
+  .top-actions,
+  .top-actions.top-actions-compact{
+    grid-template-columns:1fr;
+  }
+
+  .top-actions #topResignClubBtn,
+  .top-actions #btnOnlineChallengeAvailable:not(.hidden){
+    grid-column:auto;
+  }
+
+  .game-brand-logo-top{
+    width:126px;
+  }
+
+  .office-mini-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  .office-mini-grid>div:last-child:nth-child(odd){
+    grid-column:auto;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) and (max-width:767px){
+  .side{
+    transition:none;
+  }
+}
+
+@media (max-width:767px){
+  body.mobile-nav-open .mobile-nav-backdrop{
+    z-index:1080;
+  }
+}
+
+/* V8.49 provisoria · Ajustes móviles para la cancha personalizada. */
+@media (max-width:767px){
+  .tactic-mode-switch{grid-template-columns:1fr}
+  .pitch-board.custom-tactic-board{min-width:620px;min-height:440px}
+  .pitch-board-wrap:has(.custom-tactic-board){overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+  .custom-tactic-cell{width:54px;height:54px}
+  .custom-tactic-cell-target{width:26px;height:26px;min-height:26px}
+  .custom-tactic-cell-target.active-empty{width:42px;height:42px;min-height:42px}
+  .custom-balance-metrics{grid-template-columns:1fr}
+}

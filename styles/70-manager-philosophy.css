@@ -1,0 +1,129 @@
+/* V8.52 · Filosofía e identidad del manager. */
+
+.philosophy-shell{display:grid;gap:20px}
+.philosophy-hero,.philosophy-result-hero{
+  position:relative;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr);
+  gap:24px;
+  align-items:center;
+  padding:clamp(22px,4vw,38px);
+  border:1px solid rgba(96,165,250,.24);
+  border-radius:24px;
+  background:
+    radial-gradient(circle at 90% 10%,rgba(34,197,94,.18),transparent 30%),
+    linear-gradient(135deg,rgba(30,64,175,.24),rgba(15,23,42,.92));
+}
+.philosophy-hero h1,.philosophy-result-hero h1{max-width:800px;margin-bottom:12px}
+.philosophy-hero p:not(.eyebrow),.philosophy-result-hero>div>p:not(.eyebrow):not(.philosophy-kicker){max-width:760px;color:#cbd5e1;line-height:1.65}
+.philosophy-intro-pills{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
+.philosophy-intro-pills span{padding:7px 10px;border:1px solid rgba(147,197,253,.22);border-radius:999px;background:rgba(15,23,42,.42);color:#bfdbfe;font-size:10px;font-weight:800}
+.philosophy-start{min-width:min(100%,260px)}
+.philosophy-intro-mark{width:190px;height:190px;justify-self:center;display:grid;place-content:center;text-align:center;border:1px solid rgba(134,239,172,.28);border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.22),rgba(15,23,42,.5) 65%);box-shadow:0 0 60px rgba(34,197,94,.10)}
+.philosophy-intro-mark span{font-size:68px;line-height:.95;font-weight:950;letter-spacing:-.07em;color:#dcfce7}
+.philosophy-intro-mark small{text-transform:uppercase;letter-spacing:.22em;color:#86efac;font-weight:900}
+.philosophy-feature-grid .card{min-height:150px}
+.philosophy-feature-grid p{line-height:1.55}
+
+.philosophy-quiz-head,.philosophy-section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.philosophy-progress,.philosophy-dimension progress{
+  width:100%;
+  height:10px;
+  border:0;
+  border-radius:999px;
+  overflow:hidden;
+  background:#0b1220;
+  color:#3b82f6;
+}
+.philosophy-progress::-webkit-progress-bar,.philosophy-dimension progress::-webkit-progress-bar{background:#0b1220;border-radius:999px}
+.philosophy-progress::-webkit-progress-value,.philosophy-dimension progress::-webkit-progress-value{background:linear-gradient(90deg,#3b82f6,#22c55e);border-radius:999px}
+.philosophy-progress::-moz-progress-bar,.philosophy-dimension progress::-moz-progress-bar{background:linear-gradient(90deg,#3b82f6,#22c55e);border-radius:999px}
+.philosophy-question{padding:clamp(20px,4vw,34px)}
+.philosophy-question h1{max-width:900px;font-size:clamp(23px,3vw,36px);line-height:1.12;margin-bottom:24px}
+.philosophy-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.philosophy-option{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  gap:12px;
+  align-items:center;
+  min-height:92px;
+  padding:16px;
+  text-align:left;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:17px;
+  background:rgba(15,23,42,.58);
+  transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+.philosophy-option:hover,.philosophy-option:focus-visible{transform:translateY(-2px);border-color:rgba(96,165,250,.58);background:rgba(30,64,175,.20);outline:none}
+.philosophy-option.selected{border-color:rgba(34,197,94,.72);background:rgba(22,101,52,.22)}
+.philosophy-option>span{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:rgba(59,130,246,.18);color:#bfdbfe;font-weight:950}
+.philosophy-option.selected>span{background:rgba(34,197,94,.24);color:#bbf7d0}
+.philosophy-option strong{line-height:1.4}
+.philosophy-quiz-actions{min-height:42px}
+
+.philosophy-result-hero{grid-template-columns:minmax(0,1fr) minmax(310px,.8fr)}
+.philosophy-kicker{margin:-4px 0 12px;color:#86efac;font-size:15px;font-weight:850}
+.philosophy-affinity{display:inline-flex;align-items:center;gap:10px;margin-top:14px;padding:10px 14px;border:1px solid rgba(34,197,94,.28);border-radius:15px;background:rgba(22,101,52,.18)}
+.philosophy-affinity strong{font-size:22px;color:#bbf7d0}
+.philosophy-affinity span{color:#a7f3d0;font-size:11px}
+.philosophy-radar-wrap{display:grid;place-items:center;min-width:0}
+.philosophy-radar{display:block;width:min(100%,360px);height:auto;overflow:visible}
+.philosophy-radar-grid{fill:rgba(15,23,42,.20);stroke:rgba(148,163,184,.20);stroke-width:1}
+.philosophy-radar-axis{stroke:rgba(148,163,184,.18);stroke-width:1}
+.philosophy-radar-value{fill:rgba(59,130,246,.30);stroke:#60a5fa;stroke-width:2}
+.philosophy-radar-dot{fill:#86efac;stroke:#052e16;stroke-width:2}
+.philosophy-radar-label{fill:#cbd5e1;font-size:9px;font-weight:800}
+
+.philosophy-section{display:grid;gap:14px;padding-top:6px}
+.philosophy-section-head>p{max-width:500px;text-align:right}
+.philosophy-dimensions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.philosophy-dimension{padding:14px 16px;border:1px solid rgba(148,163,184,.12);border-radius:16px;background:rgba(255,255,255,.025)}
+.philosophy-dimension-head,.philosophy-scale-labels{display:flex;justify-content:space-between;gap:12px}
+.philosophy-dimension-head{align-items:baseline;margin-bottom:5px}
+.philosophy-dimension-head span{color:#cbd5e1;font-weight:800}
+.philosophy-dimension-head strong{color:#dbeafe;font-size:11px;text-align:right}
+.philosophy-scale-labels{margin-bottom:7px;color:#64748b}
+.philosophy-traits .card{height:100%}
+.philosophy-traits ul{display:grid;gap:8px;margin:8px 0 0;padding-left:20px;color:#cbd5e1}
+.philosophy-traits .warning{border-color:rgba(245,158,11,.22);background:rgba(120,53,15,.10)}
+
+.philosophy-coaches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.philosophy-coach{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center}
+.philosophy-coach-avatar{display:grid;place-items:center;width:50px;height:50px;border:1px solid rgba(96,165,250,.30);border-radius:16px;background:linear-gradient(145deg,rgba(59,130,246,.24),rgba(34,197,94,.15));color:#dbeafe;font-weight:950;letter-spacing:.04em}
+.philosophy-coach h3{margin:0 0 5px;font-size:14px}
+.philosophy-coach p{margin:0;color:var(--muted);font-size:10px;line-height:1.4}
+.philosophy-coach>strong{color:#86efac}
+
+.philosophy-action-plan{padding:20px;border:1px solid rgba(34,197,94,.16);border-radius:22px;background:linear-gradient(145deg,rgba(6,78,59,.10),rgba(15,23,42,.35))}
+.philosophy-advice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.philosophy-advice{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:17px;border:1px solid rgba(148,163,184,.13);border-radius:17px;background:rgba(15,23,42,.62)}
+.philosophy-advice.attack{border-color:rgba(239,68,68,.22)}
+.philosophy-advice.warning{border-color:rgba(245,158,11,.30)}
+.philosophy-advice.academy{border-color:rgba(34,197,94,.28)}
+.philosophy-advice.special{border-color:rgba(168,85,247,.30)}
+.philosophy-advice-number{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:rgba(59,130,246,.18);color:#bfdbfe;font-weight:950}
+.philosophy-advice h3{margin-bottom:7px}
+.philosophy-advice p:not(.label){margin:0 0 13px;color:#cbd5e1;line-height:1.55}
+.philosophy-advice button{padding:8px 11px;font-size:10px}
+.philosophy-result-footer{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding-top:4px}
+
+@media (max-width:1050px){
+  .philosophy-coaches{grid-template-columns:1fr}
+}
+@media (max-width:820px){
+  .philosophy-hero,.philosophy-result-hero{grid-template-columns:1fr}
+  .philosophy-intro-mark{display:none}
+  .philosophy-options,.philosophy-dimensions,.philosophy-advice-grid{grid-template-columns:1fr}
+  .philosophy-section-head>p{text-align:left}
+}
+@media (max-width:560px){
+  .philosophy-hero,.philosophy-result-hero,.philosophy-question{padding:18px}
+  .philosophy-option{grid-template-columns:34px minmax(0,1fr);min-height:78px;padding:13px}
+  .philosophy-option>span{width:32px;height:32px}
+  .philosophy-action-plan{padding:14px}
+  .philosophy-advice{grid-template-columns:32px minmax(0,1fr);padding:14px}
+  .philosophy-advice-number{width:30px;height:30px}
+  .philosophy-radar-label{font-size:8px}
+  .philosophy-result-footer .ghost{width:100%}
+}

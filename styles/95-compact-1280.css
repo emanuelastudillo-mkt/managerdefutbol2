@@ -1,0 +1,222 @@
+/* V8.16 · Adaptación compacta para notebooks y pantallas de hasta 1280 × 720.
+   Se carga al final para conservar intacta la presentación de escritorio amplio. */
+
+@media (min-width:901px) and (max-width:1280px){
+  :root{--radius:18px}
+  .topbar{
+    padding:10px 14px;
+    gap:10px;
+    flex-wrap:nowrap;
+  }
+  .topbar>div:first-child{flex:0 0 auto;min-width:220px}
+  .topbar h1{font-size:28px;line-height:1.02}
+  .topbar .eyebrow{font-size:8px;letter-spacing:.14em;margin-bottom:3px}
+  .top-actions{gap:5px;flex-wrap:nowrap;min-width:0}
+  .top-actions .small-btn{
+    min-height:30px;
+    padding:7px 8px;
+    border-radius:10px;
+    font-size:9px;
+    line-height:1.1;
+    white-space:nowrap;
+  }
+  #btnAssistantMessagesToggle{max-width:205px;overflow:hidden;text-overflow:ellipsis}
+
+  .shell{
+    grid-template-columns:250px minmax(0,1fr);
+    gap:12px;
+    padding:0 14px 18px;
+  }
+  .side{
+    top:8px;
+    padding:11px;
+    min-height:0;
+    max-height:calc(100vh - 16px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(148,163,184,.35) transparent;
+  }
+  .side::-webkit-scrollbar{width:7px}
+  .side::-webkit-scrollbar-thumb{background:rgba(148,163,184,.32);border-radius:999px}
+  .new-game,.status-card{padding:9px;border-radius:13px;margin-bottom:8px}
+  .new-game-toggle{min-height:34px;padding:8px 9px;border-radius:10px;font-size:10px}
+  .status-card .label{margin-bottom:5px}
+  .status-card h2{font-size:14px;line-height:1.1;margin:0 0 7px}
+  .status-card p{font-size:9px;line-height:1.25;margin:5px 0}
+  .status-card .club-badge-placeholder{width:34px;height:34px;min-width:34px;border-radius:10px}
+  .sidebar-nav{gap:3px;margin-top:6px}
+  .sidebar-nav>button,.sidebar-nav .nav-group-toggle{min-height:34px;padding:7px 9px;border-radius:9px;font-size:10px}
+  .sidebar-nav .nav-group-items>button{min-height:29px;padding:6px 8px 6px 21px;border-radius:8px;font-size:9.5px}
+  .sidebar-nav .nav-group-items>button::before{left:8px}
+  .sidebar-nav .nav-group.is-open .nav-group-items{padding-top:2px}
+  .reset-zone{margin-top:7px}
+  .reset-zone summary{font-size:9px}
+
+  .content{min-width:0}
+  .view{
+    padding:13px;
+    min-height:calc(100vh - 82px);
+    border-radius:18px;
+  }
+  h2{font-size:20px;line-height:1.12}
+  h3{font-size:14px;line-height:1.18}
+  .section-title{margin-bottom:10px}
+  .section-title h2,.section-title h3{margin-bottom:0}
+  .card{padding:12px;border-radius:14px}
+  .grid{gap:10px}
+  .stack{gap:9px}
+  .row{gap:8px}
+  .tagline{line-height:1.45}
+  .small{font-size:10px}
+  label,.label{font-size:8.5px;letter-spacing:.1em;margin-bottom:6px}
+  select,input{padding:8px 10px;border-radius:10px;margin-bottom:8px}
+  .primary,.ghost{padding:8px 10px;border-radius:10px}
+  .small-btn{min-height:28px;padding:5px 8px;font-size:9px}
+  .subtabs{gap:5px}
+  .subtabs button{padding:6px 10px;font-size:10px}
+  .table-wrap{border-radius:12px}
+  table{min-width:640px}
+  th,td{padding:6px 7px;font-size:9.5px}
+  th{font-size:7.5px;letter-spacing:.09em}
+  .photo-thumb,img.photo-thumb{width:30px;height:30px;border-radius:9px}
+  .pill{padding:3px 7px;font-size:9px}
+  .metric{font-size:25px}
+
+  .modal-backdrop{padding:10px}
+  .modal-panel{max-height:96vh;padding:14px;border-radius:17px}
+  .modal-close{width:30px;height:30px;font-size:17px}
+  .notice{top:68px;width:min(560px,calc(100vw - 28px));padding:9px 12px;font-size:10px;border-radius:14px!important}
+
+  .manager-office{grid-template-columns:minmax(0,1fr) minmax(230px,260px);gap:10px;margin-bottom:10px}
+  .office-main-card,.office-side-card{padding:12px;border-radius:18px}
+  .office-club-head{gap:10px;margin-bottom:10px}
+  .office-club-head .club-badge-placeholder{width:46px;height:46px;min-width:46px;border-radius:14px}
+  .office-club-head h2{font-size:26px}
+  .office-mini-grid{gap:7px;margin-bottom:10px}
+  .office-mini-grid>div{min-height:68px;padding:8px;border-radius:13px}
+  .office-mini-grid span{font-size:7px}
+  .office-mini-grid strong{font-size:18px}
+  .office-status-bars{gap:7px}
+  .mini-status-row{padding:8px 9px;border-radius:12px}
+  .office-side-card{gap:9px}
+  .office-days-remaining{padding:9px 10px;margin-bottom:7px}
+  .office-days-remaining strong{font-size:26px}
+  .manager-alert-grid{gap:8px}
+  .turn-summary-list{gap:7px}
+
+  .tactic-workspace{grid-template-columns:minmax(0,1fr) minmax(240px,270px);gap:10px}
+  .tactic-left-stack,.tactic-right-rail{gap:9px}
+  .tactic-grid-card{padding:10px;border-radius:13px}
+  .tactic-workspace .pitch-board.centered{max-width:760px!important}
+  .pitch-board .player-chip{width:58px;min-height:58px;padding:6px 4px 12px}
+  .pitch-board .player-chip-name{font-size:7px;max-width:45px}
+  .pitch-slot{width:64px;min-height:64px}
+  .tactic-state-legend{gap:5px!important;padding:6px 7px!important}
+  .tactic-state-legend span{font-size:7.5px!important}
+  .tactic-actions-card .tactic-autopick-row{gap:6px}
+  .tactic-online-category-summary{padding:9px}
+  .tactic-sector-card .sector-style-control{padding:7px}
+  .tactic-left-stack .tactic-lists{gap:9px}
+  .tactic-lineup-row,.tactic-lineup-head{padding:5px 6px;min-height:34px;gap:4px}
+  .drag-player.tactic-click-player{padding:6px}
+  .tactic-roster-card .drop-pool{padding:8px;margin-top:6px}
+  .autosub-row{padding:8px;gap:6px}
+
+  .training-help{padding:12px}
+  .training-week-grid{gap:5px}
+  .training-day-card{padding:6px}
+  .training-player-cell{min-width:180px}
+  .training-table .condition-bar,.training-table .morale-bar{width:125px;min-width:105px}
+  .training-table select{min-width:155px}
+
+  .scouting-workspace{grid-template-columns:minmax(0,1fr) minmax(245px,285px);gap:10px}
+  .market-filter-grid,.academy-summary-grid,.finance-summary-grid{gap:8px}
+
+  .cwc-groups-grid{grid-template-columns:repeat(2,minmax(250px,1fr));gap:9px}
+  .cwc-bracket-wrap,.table-wrap{scrollbar-width:thin}
+  .challenge-grid{gap:10px}
+  .challenge-match-layout{grid-template-columns:190px minmax(310px,1fr) 190px;gap:9px}
+  .challenge-cycle-prizes{gap:7px;margin:10px 0;padding:10px}
+
+  .live-v517 .live-v512-grid,
+  .live-v512-grid{grid-template-columns:1fr!important}
+  .live-v517 .live-team-list.starters{max-height:235px}
+  .live-v517 .live-team-list.bench{max-height:105px}
+  .live-v517 .live-events-list{max-height:118px}
+}
+
+@media (min-width:901px) and (max-width:1100px){
+  .topbar{align-items:flex-start;flex-wrap:wrap}
+  .topbar>div:first-child{min-width:190px}
+  .top-actions{flex:1 1 620px;justify-content:flex-end;flex-wrap:wrap}
+  .shell{grid-template-columns:220px minmax(0,1fr);padding-inline:10px}
+  .manager-office,.tactic-workspace,.scouting-workspace,.job-search-layout{grid-template-columns:1fr}
+  .grid.cols-4,.office-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tactic-right-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tactic-right-rail>*{min-width:0}
+  .challenge-match-layout{grid-template-columns:1fr;overflow:visible}
+  .cwc-groups-grid{grid-template-columns:1fr}
+}
+
+@media (min-width:901px) and (max-height:760px){
+  .topbar{padding-top:8px;padding-bottom:8px}
+  .side{max-height:calc(100vh - 72px);top:6px}
+  .view{min-height:calc(100vh - 72px)}
+  .notice{top:60px}
+  .modal-panel{max-height:97vh}
+  .available-clubs-panel{max-height:62vh}
+  .job-search-clubs{max-height:48vh}
+  .challenge-events{max-height:310px}
+}
+
+
+@media (min-width:901px) and (max-width:1280px){
+  .online-challenge-top-btn{padding-inline:9px}
+  .home-online-ranking-card{padding:11px 13px;margin-top:10px}
+  .home-online-ranking-card .home-online-position{font-size:1.325rem}
+}
+
+
+/* V8.29 · Logotipo compacto en pantallas de hasta 1280 × 720. */
+@media (min-width:901px) and (max-width:1280px){
+  .topbar-brand{min-width:170px;gap:8px}
+  .game-brand-logo-top{width:145px;height:58px}
+  .topbar-brand-copy{max-width:120px}
+  .game-brand-logo-welcome{width:min(320px,100%)}
+}
+@media (min-width:901px) and (max-height:760px){
+  .game-brand-logo-top{width:130px;height:52px}
+  .game-brand-logo-welcome{width:min(280px,100%)}
+}
+
+
+/* V8.32 · La marca se centra sobre la columna del menú lateral. */
+@media (min-width:1051px) and (max-width:1280px){
+  .topbar{
+    display:grid;
+    grid-template-columns:250px minmax(0,1fr);
+    gap:12px;
+    align-items:center;
+  }
+  .topbar-brand{
+    width:250px;
+    min-width:0;
+    justify-content:center;
+  }
+  .game-brand-logo-top{object-position:center center}
+}
+@media (min-width:901px) and (max-width:1050px){
+  .topbar{
+    display:grid;
+    grid-template-columns:220px minmax(0,1fr);
+    gap:10px;
+    align-items:center;
+  }
+  .topbar-brand{
+    width:220px;
+    min-width:0;
+    justify-content:center;
+  }
+  .game-brand-logo-top{object-position:center center}
+}
