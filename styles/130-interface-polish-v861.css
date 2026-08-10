@@ -1,0 +1,9 @@
+/* V8.61 · Alineación de controles y pulido de interfaz. */
+
+/* Centra el contenido textual de los botones. Los componentes de navegación
+   que necesitan alineación propia conservan sus reglas por mayor especificidad. */
+button{
+  text-align:center;
+  align-items:center;
+  justify-content:center;
+}

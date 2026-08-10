@@ -1,0 +1,25 @@
+/* V8.72 · Motor central de eventos y decisiones de carrera. */
+.career-decision-message .message-paper{margin-bottom:12px}
+.career-decision-panel,.career-decision-closed{border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel) 88%,transparent);padding:14px;display:grid;gap:12px}
+.career-decision-deadline{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.career-decision-deadline span{font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.career-decision-deadline strong{font-size:.85rem;color:var(--warning,#f2c46d)}
+.career-decision-prompt{margin:0;font-weight:700}
+.career-decision-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.career-decision-option{min-height:92px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;white-space:normal}
+.career-decision-option strong{font-size:.9rem}
+.career-decision-option small{font-size:.74rem;line-height:1.35;opacity:.82;font-weight:400}
+.career-decision-statuses{justify-content:flex-start;flex-wrap:wrap}
+.career-decision-result,.career-decision-effects,.career-decision-delayed{border-top:1px solid var(--line);padding-top:10px}
+.career-decision-result p,.career-decision-delayed p{margin:5px 0 0}
+.career-decision-effects ul,.career-decision-delayed ul{margin:6px 0 0;padding-left:20px;color:var(--muted);font-size:.84rem}
+.career-decision-delayed.is-negative{border-left:3px solid var(--danger);padding-left:10px}
+.career-decision-delayed.is-positive{border-left:3px solid var(--ok);padding-left:10px}
+.career-event-profile-card{margin-top:14px}
+.career-event-profile-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.career-event-profile-grid>div{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:4px;background:var(--panel-soft)}
+.career-event-profile-grid span{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.career-event-profile-grid strong{font-size:1.08rem}
+.career-event-profile-grid small{font-size:.76rem;color:var(--muted)}
+@media(max-width:900px){.career-decision-options{grid-template-columns:1fr}.career-decision-option{min-height:74px}.career-event-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.career-decision-deadline{align-items:flex-start;flex-direction:column}.career-event-profile-grid{grid-template-columns:1fr}}

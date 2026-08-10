@@ -1,0 +1,477 @@
+/* V9.04 · Corrección integral de contraste para el modo claro.
+   Esta capa se carga al final y no altera el modo oscuro. */
+
+:root[data-theme="light"]{
+  --light-text:#172033;
+  --light-text-strong:#0f172a;
+  --light-muted:#475569;
+  --light-subtle:#5b687a;
+  --light-border:#cbd5e1;
+  --light-surface:#ffffff;
+  --light-surface-soft:#f1f5f9;
+  --light-surface-tint:#eef4fb;
+  --light-link:#1d4ed8;
+  --light-positive:#166534;
+  --light-warning:#92400e;
+  --light-danger:#b91c1c;
+  --light-info:#1e40af;
+  --muted:#475569;
+  --sport-muted:#475569;
+  --sport-faint:#5b687a;
+}
+
+/* Texto base y jerarquía. */
+html[data-theme="light"] body,
+html[data-theme="light"] #view,
+html[data-theme="light"] .panel,
+html[data-theme="light"] .modal-panel,
+html[data-theme="light"] .card,
+html[data-theme="light"] .inner,
+html[data-theme="light"] table{
+  color:var(--light-text);
+}
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] h4,
+html[data-theme="light"] h5,
+html[data-theme="light"] h6,
+html[data-theme="light"] .metric,
+html[data-theme="light"] .viz-stat-value{
+  color:var(--light-text-strong);
+}
+html[data-theme="light"] .muted,
+html[data-theme="light"] .small.muted,
+html[data-theme="light"] .label,
+html[data-theme="light"] .eyebrow,
+html[data-theme="light"] .tagline,
+html[data-theme="light"] .events,
+html[data-theme="light"] figcaption,
+html[data-theme="light"] .helper,
+html[data-theme="light"] .hint{
+  color:var(--light-muted)!important;
+}
+html[data-theme="light"] a,
+html[data-theme="light"] .linklike,
+html[data-theme="light"] .club-link,
+html[data-theme="light"] .club-click,
+html[data-theme="light"] .message-player-link,
+html[data-theme="light"] .message-player-inline{
+  color:var(--light-link);
+}
+html[data-theme="light"] a:hover,
+html[data-theme="light"] .linklike:hover,
+html[data-theme="light"] .club-link:hover,
+html[data-theme="light"] .club-click:hover{
+  color:#1e3a8a;
+}
+html[data-theme="light"] .ok,
+html[data-theme="light"] strong.ok,
+html[data-theme="light"] .field-state.excellent,
+html[data-theme="light"] .field-state.normal,
+html[data-theme="light"] .ranking-movement.up,
+html[data-theme="light"] .discord-community-status.is-online{
+  color:var(--light-positive)!important;
+}
+html[data-theme="light"] .warn,
+html[data-theme="light"] strong.warn,
+html[data-theme="light"] .field-state.regular,
+html[data-theme="light"] .field-state.bad,
+html[data-theme="light"] .club-service-blocked{
+  color:var(--light-warning)!important;
+}
+html[data-theme="light"] .danger,
+html[data-theme="light"] .bad,
+html[data-theme="light"] .pill.danger,
+html[data-theme="light"] .reset-bottom-btn,
+html[data-theme="light"] .resign-club-btn,
+html[data-theme="light"] .top-resign-club-btn,
+html[data-theme="light"] .ranking-movement.down{
+  color:var(--light-danger)!important;
+}
+
+/* Controles y navegación. */
+html[data-theme="light"] .tabs button,
+html[data-theme="light"] .subtabs button,
+html[data-theme="light"] .sidebar-nav button,
+html[data-theme="light"] .challenge-tabs button,
+html[data-theme="light"] .academy-submenu-btn,
+html[data-theme="light"] .challenge-category-buttons button{
+  color:#475569;
+}
+html[data-theme="light"] .tabs button:hover,
+html[data-theme="light"] .tabs button.active,
+html[data-theme="light"] .subtabs button:hover,
+html[data-theme="light"] .subtabs button.active,
+html[data-theme="light"] .sidebar-nav button:hover,
+html[data-theme="light"] .sidebar-nav button.active{
+  color:#153e75;
+}
+html[data-theme="light"] select,
+html[data-theme="light"] input,
+html[data-theme="light"] textarea,
+html[data-theme="light"] .training-individual-bulk,
+html[data-theme="light"] .training-individual-select,
+html[data-theme="light"] .live-formation-control select,
+html[data-theme="light"] .live-manager-panel select,
+html[data-theme="light"] .live-sub-row select{
+  color:var(--light-text)!important;
+  background:#fff!important;
+  border-color:var(--light-border)!important;
+}
+html[data-theme="light"] select option{color:#172033;background:#fff}
+
+/* Tarjetas que conservaban fondos oscuros heredados. */
+html[data-theme="light"] .office-main-card,
+html[data-theme="light"] .office-side-card,
+html[data-theme="light"] .market-filters-card,
+html[data-theme="light"] .staff-tier-card,
+html[data-theme="light"] .staff-contract-card,
+html[data-theme="light"] .staff-contract-card.mini,
+html[data-theme="light"] .scouting-hero,
+html[data-theme="light"] .scouting-asset-strip,
+html[data-theme="light"] .scouting-empty-list,
+html[data-theme="light"] .scouting-signing-chance,
+html[data-theme="light"] .academy-control-center,
+html[data-theme="light"] .season-end-card,
+html[data-theme="light"] .ranking-auto-status,
+html[data-theme="light"] .ranking-preview-grid>div,
+html[data-theme="light"] .ranking-sort,
+html[data-theme="light"] .integrity-summary-grid>div,
+html[data-theme="light"] .integrity-item,
+html[data-theme="light"] .integrity-repair-list li,
+html[data-theme="light"] .founder-crest-option,
+html[data-theme="light"] .challenge-team-summary,
+html[data-theme="light"] .challenge-simple-card-footer,
+html[data-theme="light"] .manager-course-overall,
+html[data-theme="light"] .manager-course-license,
+html[data-theme="light"] .manager-course-license[open],
+html[data-theme="light"] .manager-course-topic,
+html[data-theme="light"] .challenge-current-category,
+html[data-theme="light"] .discord-community-card,
+html[data-theme="light"] .discord-community-metrics>div,
+html[data-theme="light"] .philosophy-hero,
+html[data-theme="light"] .philosophy-result-hero,
+html[data-theme="light"] .philosophy-option,
+html[data-theme="light"] .philosophy-action-plan,
+html[data-theme="light"] .philosophy-advice,
+html[data-theme="light"] .turn-summary-card,
+html[data-theme="light"] .turn-summary-item,
+html[data-theme="light"] .mini-status-row,
+html[data-theme="light"] .tactic-online-category-summary,
+html[data-theme="light"] .tactic-online-category-summary.incomplete,
+html[data-theme="light"] .tactic-captain-profile,
+html[data-theme="light"] .tactic-captain-metrics>div,
+html[data-theme="light"] .saved-tactic-slot,
+html[data-theme="light"] .saved-tactic-slot.filled,
+html[data-theme="light"] .saved-training-slot.filled,
+html[data-theme="light"] .training-day-card,
+html[data-theme="light"] .training-picker-card,
+html[data-theme="light"] .locker-room-decision-panel,
+html[data-theme="light"] .scouting-player-aggregate-card,
+html[data-theme="light"] .scouting-player-aggregate-grid.is-pending .scouting-player-aggregate-card{
+  color:var(--light-text);
+  border-color:rgba(100,116,139,.22)!important;
+  background:linear-gradient(145deg,rgba(var(--club-rgb),.035),#fff 28%,#f8fafc)!important;
+  box-shadow:0 8px 24px rgba(15,23,42,.06);
+}
+
+/* Inicio y oficina. */
+html[data-theme="light"] .welcome-summary>div,
+html[data-theme="light"] .office-mini-grid>div,
+html[data-theme="light"] .empty-office-box{
+  color:var(--light-text);
+  background:#fff;
+  border-color:rgba(100,116,139,.20);
+}
+html[data-theme="light"] .welcome-summary strong,
+html[data-theme="light"] .office-days-remaining strong,
+html[data-theme="light"] .office-mini-grid strong,
+html[data-theme="light"] .office-club-head h2{
+  color:var(--light-text-strong)!important;
+}
+html[data-theme="light"] .welcome-features span,
+html[data-theme="light"] .welcome-about-points span,
+html[data-theme="light"] .office-days-remaining{
+  color:#1e3a5f;
+  border-color:#bfdbfe;
+  background:#eff6ff;
+}
+html[data-theme="light"] .office-days-remaining span{color:#365b86}
+
+/* Mensajes y avisos. */
+html[data-theme="light"] .message-card{
+  color:var(--light-text);
+  border-color:#d4dde8;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(15,23,42,.07);
+}
+html[data-theme="light"] .message-card h3,
+html[data-theme="light"] .message-card-main strong,
+html[data-theme="light"] .message-paper strong{
+  color:var(--light-text-strong);
+}
+html[data-theme="light"] .message-card .label,
+html[data-theme="light"] .message-date-chip,
+html[data-theme="light"] .message-paper p,
+html[data-theme="light"] .message-card p{
+  color:var(--light-muted)!important;
+}
+html[data-theme="light"] .message-card .pill,
+html[data-theme="light"] .message-type-chip{
+  color:#1e40af;
+  border-color:#bfdbfe;
+  background:#eff6ff;
+}
+html[data-theme="light"] .message-card .pill.warn{color:#854d0e;background:#fef9c3;border-color:#fde68a}
+html[data-theme="light"] .message-card .ghost{color:#334155;background:#f8fafc;border-color:#cbd5e1}
+html[data-theme="light"] .message-card .primary{color:#fff}
+html[data-theme="light"] .notice{
+  color:#163d75!important;
+  border-color:#bfdbfe!important;
+  background:linear-gradient(135deg,#eff6ff,#dbeafe)!important;
+}
+html[data-theme="light"] .notice-inline{color:#334155;background:#f8fafc;border-color:#cbd5e1}
+html[data-theme="light"] .turn-summary-item strong{color:#334155}
+html[data-theme="light"] .turn-summary-item span{color:var(--light-muted)}
+
+/* Equipo, táctica y entrenamiento. Se mantienen oscuros sólo cancha y fichas sobre el césped. */
+html[data-theme="light"] .training-option-grid strong,
+html[data-theme="light"] .training-day-head strong,
+html[data-theme="light"] .training-slot-band,
+html[data-theme="light"] .training-picker-card,
+html[data-theme="light"] .saved-tactic-slot strong,
+html[data-theme="light"] .live-tactical-player,
+html[data-theme="light"] .live-tactical-meta b,
+html[data-theme="light"] .starter-club-meta strong,
+html[data-theme="light"] .tactic-captain-profile strong,
+html[data-theme="light"] .custom-cell-role{
+  color:var(--light-text-strong)!important;
+}
+html[data-theme="light"] .featured-player-meta span,
+html[data-theme="light"] .starter-club-stats span,
+html[data-theme="light"] .saved-tactic-slot span,
+html[data-theme="light"] .tactic-state-legend span,
+html[data-theme="light"] .message-event-player-list>span,
+html[data-theme="light"] .daily-skill-points-animation small,
+html[data-theme="light"] .daily-skill-points-animation em{
+  color:var(--light-muted)!important;
+}
+html[data-theme="light"] .training-pill,
+html[data-theme="light"] .tactic-state-legend,
+html[data-theme="light"] .job-availability-box,
+html[data-theme="light"] .club-availability-row.locked,
+html[data-theme="light"] .starter-club-meta>div,
+html[data-theme="light"] .squad-scroll-top{
+  color:var(--light-text);
+  background:#f8fafc!important;
+  border-color:#d4dde8!important;
+}
+
+/* Mercado, academia y empleados. */
+html[data-theme="light"] .staff-tier-card,
+html[data-theme="light"] .staff-contract-card,
+html[data-theme="light"] .staff-tier-card strong,
+html[data-theme="light"] .academy-residence-stats strong,
+html[data-theme="light"] .academy-consult-animation strong,
+html[data-theme="light"] .academy-consult-revealed span{
+  color:var(--light-text-strong)!important;
+}
+html[data-theme="light"] .staff-tier-card small,
+html[data-theme="light"] .offer-choice-grid .plain p,
+html[data-theme="light"] .scouting-icon-stack span.more{
+  color:var(--light-muted)!important;
+}
+html[data-theme="light"] .staff-tier-card em,
+html[data-theme="light"] .scouting-search-switch.on{
+  color:var(--light-positive)!important;
+}
+html[data-theme="light"] .transfer-listed-badge{color:#854d0e;background:#fef9c3;border-color:#fde68a}
+html[data-theme="light"] .academy-injury-alert{color:var(--light-danger)}
+html[data-theme="light"] .scouting-search-switch{color:#334155;background:#e2e8f0;border-color:#cbd5e1}
+html[data-theme="light"] .scouting-search-switch.on{background:#dcfce7;border-color:#86efac}
+
+/* Finanzas, estadio y convenios. */
+html[data-theme="light"] .finance-monthly-card,
+html[data-theme="light"] .finance-category-detail,
+html[data-theme="light"] .sponsor-places-card,
+html[data-theme="light"] .sponsor-place-item,
+html[data-theme="light"] .member-campaign-option,
+html[data-theme="light"] .member-campaign-active,
+html[data-theme="light"] .club-service-option{
+  color:var(--light-text);
+  border-color:#d4dde8!important;
+  background:#fff!important;
+}
+html[data-theme="light"] .sponsors-card h4,
+html[data-theme="light"] .sponsor-place-item strong,
+html[data-theme="light"] .stadium-identity-line,
+html[data-theme="light"] .club-service-option h4,
+html[data-theme="light"] .club-service-option-foot strong{
+  color:var(--light-text-strong)!important;
+}
+html[data-theme="light"] .club-service-effects span,
+html[data-theme="light"] .finance-monthly-table td:first-child span{
+  color:var(--light-muted)!important;
+  background:#f1f5f9;
+  border-color:#d4dde8;
+}
+html[data-theme="light"] .finance-mini-pill{color:var(--light-positive);background:#dcfce7;border-color:#86efac}
+html[data-theme="light"] .afa-field-sanction-card strong{color:var(--light-danger)}
+
+/* Partidos y simulación. */
+html[data-theme="light"] .modal-panel:has(.match-modal-head),
+html[data-theme="light"] .reveal-commentary-card,
+html[data-theme="light"] .live-commentary-card,
+html[data-theme="light"] .live-event,
+html[data-theme="light"] .live-stat-mini,
+html[data-theme="light"] .live-pending-subs div,
+html[data-theme="light"] .live-list-row,
+html[data-theme="light"] .live-instruction-buttons button{
+  color:var(--light-text);
+  border-color:#d4dde8!important;
+  background:#fff!important;
+}
+html[data-theme="light"] .turn-result-line,
+html[data-theme="light"] .reveal-commentary-text,
+html[data-theme="light"] .live-commentary-text,
+html[data-theme="light"] .live-head-right strong,
+html[data-theme="light"] .live-stat-mini strong,
+html[data-theme="light"] .live-list-row strong,
+html[data-theme="light"] .live-compare-values strong{
+  color:var(--light-text-strong)!important;
+}
+html[data-theme="light"] .reveal-commentary-sub,
+html[data-theme="light"] .live-possession-strip span,
+html[data-theme="light"] .live-compare-top span,
+html[data-theme="light"] .live-compare-row p,
+html[data-theme="light"] .fixture-division-block h4{
+  color:var(--light-muted)!important;
+}
+html[data-theme="light"] .live-instruction-buttons button:hover,
+html[data-theme="light"] .live-list-row.clickable:hover{background:#f1f5f9!important}
+html[data-theme="light"] .live-progress{background:#dbe3ec}
+/* La cancha, camisetas y círculos tácticos conservan texto claro por contraste. */
+html[data-theme="light"] .live-board-field,
+html[data-theme="light"] .live-board-circle,
+html[data-theme="light"] .live-pitch-board,
+html[data-theme="light"] .pitch-board .player-chip,
+html[data-theme="light"] .player-chip{
+  color:#f8fafc;
+}
+
+/* Competiciones, cursos, ranking online y comunidad. */
+html[data-theme="light"] .manager-alert-icon{color:#334155}
+html[data-theme="light"] .manager-alert.ok .manager-alert-icon{color:var(--light-positive)}
+html[data-theme="light"] .manager-alert.warn .manager-alert-icon{color:var(--light-warning)}
+html[data-theme="light"] .manager-alert.bad .manager-alert-icon{color:var(--light-danger)}
+html[data-theme="light"] .manager-alert.info .manager-alert-icon{color:var(--light-info)}
+html[data-theme="light"] .help-section h3,
+html[data-theme="light"] .help-card h4,
+html[data-theme="light"] .manager-course-license-title strong,
+html[data-theme="light"] .manager-course-topic h4,
+html[data-theme="light"] .discord-community-metrics strong,
+html[data-theme="light"] .online-medal-title-total strong{
+  color:var(--light-text-strong)!important;
+}
+html[data-theme="light"] .manager-courses-hero p:not(.eyebrow),
+html[data-theme="light"] .manager-course-overall span,
+html[data-theme="light"] .manager-course-intro,
+html[data-theme="light"] .manager-course-reward p,
+html[data-theme="light"] .manager-course-certificate>p:last-of-type,
+html[data-theme="light"] .discord-community-status,
+html[data-theme="light"] .challenge-completion-lead{
+  color:var(--light-muted)!important;
+}
+html[data-theme="light"] .manager-course-example strong{color:var(--light-info)}
+html[data-theme="light"] .manager-course-check{color:#334155}
+html[data-theme="light"] .manager-course-topic.is-checked .manager-course-check{color:var(--light-positive)}
+html[data-theme="light"] .online-medal-shelf,
+html[data-theme="light"] .online-medal-item{
+  color:var(--light-text);
+  background:#fff!important;
+  border-color:#d4dde8!important;
+}
+html[data-theme="light"] .medal-gold strong{color:#854d0e}
+html[data-theme="light"] .medal-silver strong{color:#475569}
+html[data-theme="light"] .medal-bronze strong{color:#9a3412}
+html[data-theme="light"] .ranking-movement.new{color:#1d4ed8;background:#dbeafe}
+html[data-theme="light"] .ranking-movement.same{color:#475569;background:#e2e8f0}
+
+/* Filosofía y vestuario. */
+html[data-theme="light"] .philosophy-hero p:not(.eyebrow),
+html[data-theme="light"] .philosophy-result-hero>div>p:not(.eyebrow):not(.philosophy-kicker),
+html[data-theme="light"] .philosophy-dimension-head span,
+html[data-theme="light"] .philosophy-traits ul,
+html[data-theme="light"] .philosophy-advice p:not(.label),
+html[data-theme="light"] .locker-room-decision-result p,
+html[data-theme="light"] .locker-room-promise-result p,
+html[data-theme="light"] .locker-room-effect-summary li{
+  color:var(--light-muted)!important;
+}
+html[data-theme="light"] .philosophy-option>span,
+html[data-theme="light"] .philosophy-dimension-head strong,
+html[data-theme="light"] .philosophy-advice-number,
+html[data-theme="light"] .locker-room-effect-summary>strong{
+  color:var(--light-info)!important;
+}
+html[data-theme="light"] .philosophy-kicker,
+html[data-theme="light"] .philosophy-affinity strong,
+html[data-theme="light"] .philosophy-coach>strong,
+html[data-theme="light"] .locker-room-decision-result strong,
+html[data-theme="light"] .locker-room-promise-result strong{
+  color:var(--light-positive)!important;
+}
+html[data-theme="light"] .philosophy-radar-label{fill:#475569}
+html[data-theme="light"] .locker-room-decision-prompt{color:#9d174d}
+
+/* Perfil de jugador, ficha de club, ranking FIFA y transferencias. */
+html[data-theme="light"] .player-skill-row>span,
+html[data-theme="light"] .player-stat-compare-row span,
+html[data-theme="light"] .player-skill-legend span,
+html[data-theme="light"] .ranking-breakdown span,
+html[data-theme="light"] .ranking-points span,
+html[data-theme="light"] .ranking-world-value span,
+html[data-theme="light"] .club-profile-squad-strip span{
+  color:var(--light-muted)!important;
+}
+html[data-theme="light"] .player-stat-compare-row strong:last-child{color:var(--light-info)}
+html[data-theme="light"] .club-profile-metric,
+html[data-theme="light"] .club-profile-squad-strip>div,
+html[data-theme="light"] .club-profile-tactic-card,
+html[data-theme="light"] .club-profile-report-card,
+html[data-theme="light"] .club-profile-roster,
+html[data-theme="light"] .ranking-summary-grid .metric-card,
+html[data-theme="light"] .ranking-formula-card,
+html[data-theme="light"] .transfer-history-summary .card{
+  color:var(--light-text);
+  background:#fff!important;
+  border-color:#d4dde8!important;
+}
+html[data-theme="light"] .club-profile-metric .metric,
+html[data-theme="light"] .club-profile-squad-strip strong,
+html[data-theme="light"] .ranking-points strong,
+html[data-theme="light"] .ranking-world-value strong,
+html[data-theme="light"] .transfer-history-summary .metric{
+  color:var(--light-text-strong)!important;
+}
+html[data-theme="light"] .transfer-history-table thead th{color:#334155;background:#e8eef5!important}
+
+/* Estados de acción: mantener blanco únicamente sobre fondos sólidos. */
+html[data-theme="light"] .primary,
+html[data-theme="light"] button.action-success,
+html[data-theme="light"] button.action-failure,
+html[data-theme="light"] .academy-submenu-btn.active,
+html[data-theme="light"] .challenge-tabs button.active,
+html[data-theme="light"] .challenge-category-buttons button.active>b,
+html[data-theme="light"] .manager-alert.assistant .manager-alert-icon,
+html[data-theme="light"] .assistant-message-badge{
+  color:#fff!important;
+}
+
+/* Mejor contraste móvil. */
+@media(max-width:767px){
+  html[data-theme="light"] .top-actions .ghost,
+  html[data-theme="light"] .top-actions .theme-switch,
+  html[data-theme="light"] .mobile-top-button{color:#1e293b}
+}

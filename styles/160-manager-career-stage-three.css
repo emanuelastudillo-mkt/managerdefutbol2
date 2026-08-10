@@ -1,0 +1,36 @@
+/* V8.71 · Tercera etapa de carrera */
+.career-profile-match{margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.025)}
+.career-profile-match>div{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.career-profile-match>div span{font-size:.78rem;color:var(--muted)}
+.career-profile-match>div strong{font-size:.92rem;text-align:right}
+.career-profile-match p{margin:7px 0 0}
+.career-application-fit{display:block;margin-top:7px;font-size:.72rem;color:var(--muted)}
+.career-job-profile-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px;padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.025)}
+.career-job-profile-summary>div{display:flex;flex-direction:column;gap:3px}
+.career-job-profile-summary span{font-size:.76rem;color:var(--muted)}
+.career-job-profile-summary strong{font-size:1.05rem}
+.career-job-profile-summary p{grid-column:1/-1;margin:0;color:var(--muted);font-size:.78rem}
+.objective-context-note{display:block;margin-top:5px;color:var(--muted);font-size:.68rem;font-weight:400;line-height:1.25}
+.career-narrative{margin-top:14px;padding:16px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.025)}
+.career-narrative.compact{padding:13px}
+.career-narrative h3{margin:2px 0 5px}
+.career-narrative-summary{font-size:.92rem;line-height:1.5;margin:12px 0}
+.career-narrative-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.career-narrative-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.career-narrative-grid>div{padding:10px;border:1px solid var(--border);border-radius:12px}
+.career-narrative-grid span{display:block;margin-bottom:5px;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.career-narrative-grid p,.career-narrative-footer p{margin:0;font-size:.82rem;line-height:1.42}
+.career-narrative-footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.career-narrative-history{margin-top:14px}
+.career-narrative-history-list{display:grid;gap:10px;margin-top:10px}
+.career-narrative-history-list article{padding:12px;border:1px solid var(--border);border-radius:12px}
+.career-narrative-history-list article>div{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.career-narrative-history-list span,.career-narrative-history-list small{font-size:.72rem;color:var(--muted)}
+.career-narrative-history-list strong{font-size:.86rem;text-align:right}
+.career-narrative-history-list p{margin:7px 0;font-size:.8rem}
+@media(max-width:720px){
+  .career-job-profile-summary,.career-narrative-grid,.career-narrative-footer{grid-template-columns:1fr}
+  .career-narrative-history-list article>div{display:block}
+  .career-narrative-history-list strong{display:block;margin-top:4px;text-align:left}
+  .career-narrative-tags{justify-content:flex-start}
+}

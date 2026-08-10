@@ -1,8 +1,8 @@
 {
-  "version": "V4.16",
+  "version": "V9.72",
   "sistema": "habilidades_especiales",
   "descripcion": "Sistema de cartas especiales para managers. Permite acumular puntos ocultos, abrir sobres, activar cartas y destruir cartas sobrantes.",
-  "caracteristicas_version": "Agrega cartas de objetivo más bajo y aumento de socios ganados.",
+  "caracteristicas_version": "La reducción de objetivos queda aplicada durante toda la temporada, se acumula entre usos y cartas, y se reinicia al comenzar la siguiente temporada.",
   "menu": {
     "nombre": "Habilidades especiales",
     "mostrar_nombre_manager": true,
@@ -19,10 +19,24 @@
   "limites": {
     "cartas_activas_max": 5,
     "cartas_reserva_max": 50,
-    "dias_bloqueo_cambio_cartas": 100,
+    "dias_bloqueo_cambio_cartas": 15,
     "permitir_abrir_sobres_con_reserva_llena": false,
     "permitir_cartas_repetidas_activas": true,
-    "bonus_se_apilan": true
+    "bonus_se_apilan": true,
+    "activaciones_por_carta": 5,
+    "activaciones_por_rareza": {
+      "inutil": 1,
+      "comun": 1,
+      "rara": 2,
+      "epica": 3,
+      "legendaria": 5
+    },
+    "dias_por_consumo_activo": 100,
+    "consumir_uso_al_desactivar": true,
+    "cartas_objetivo_acumulan_por_activacion": true,
+    "cartas_objetivo_no_consumen_al_desactivar": true,
+    "cartas_objetivo_permanentes_durante_temporada": true,
+    "cartas_objetivo_se_reinician_nueva_temporada": true
   },
   "rareza_orden_visual": [
     "inutil",
@@ -45,11 +59,11 @@
     "moneda": "puntos_habilidad",
     "acciones": {
       "ganar_partido": {
-        "puntos": 125,
+        "puntos": 150,
         "visible_para_manager": false
       },
       "empatar_partido": {
-        "puntos": 100,
+        "puntos": 50,
         "visible_para_manager": false
       },
       "salir_campeon_division_3": {
@@ -65,7 +79,7 @@
         "visible_para_manager": false
       },
       "tratar_jugador_lesionado": {
-        "puntos": 50,
+        "puntos": 10,
         "visible_para_manager": false
       },
       "meter_mas_de_5_goles_en_un_partido": {
@@ -77,8 +91,16 @@
         "visible_para_manager": false
       },
       "consultar_juveniles": {
-        "puntos": 100,
+        "puntos": 10,
         "visible_para_manager": false
+      },
+      "completar_reto_campo_destruido_primero": {
+        "puntos": 10000,
+        "visible_para_manager": true
+      },
+      "primera_victoria_manager": {
+        "puntos": 5000,
+        "visible_para_manager": true
       }
     }
   },
@@ -151,6 +173,83 @@
       "tope_porcentaje": null,
       "aplica_a": "apertura_de_sobres",
       "descripcion": "Aumenta de forma relativa la probabilidad base de obtener cartas legendarias."
+    },
+    "idolo_club": {
+      "se_apila": true,
+      "metodo": "suma_directa_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "hinchas_y_socios_ganados_por_buenas_rachas_o_resultados_positivos",
+      "descripcion": "Aumenta hinchas/socios ganados en cambios positivos de público."
+    },
+    "especialista_libres": {
+      "se_apila": true,
+      "metodo": "suma_directa_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "aceptacion_de_jugadores_libres_para_el_manager",
+      "descripcion": "Suma puntos porcentuales a la probabilidad de aceptación de jugadores libres."
+    },
+    "preparacion_fisica": {
+      "se_apila": true,
+      "metodo": "suma_directa_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "recuperacion_directa_postpartido_de_jugadores_que_disputaron_el_partido_en_el_club_del_manager",
+      "descripcion": "Suma puntos directos de forma física después de aplicar el desgaste del partido."
+    },
+    "cohesion_activar": {
+      "se_apila": true,
+      "metodo": "efecto_inmediato_por_activacion_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "cohesion_del_club_al_activar_la_carta",
+      "descripcion": "Suma cohesión una sola vez al activar la carta. Puede volver a aplicar si se desactiva y reactiva después del bloqueo."
+    },
+    "apoyo_capitan": {
+      "se_apila": true,
+      "metodo": "suma_directa_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "progreso_de_capitania_obtenido_por_partido",
+      "descripcion": "Suma puntos porcentuales directos al progreso de capitanía obtenido por el capitán después del partido."
+    },
+    "director_marketing": {
+      "se_apila": true,
+      "metodo": "suma_directa_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "asistencia_e_ingresos_de_partidos_como_local_del_club_del_manager",
+      "descripcion": "Aumenta la asistencia local hasta la capacidad del estadio y aplica el mismo porcentaje extra sobre la recaudación de entradas."
+    },
+    "director_deportivo": {
+      "se_apila": true,
+      "metodo": "suma_directa_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "porcentaje_de_clausula_en_ofertas_recibidas_por_jugadores_propios",
+      "descripcion": "Suma puntos porcentuales al porcentaje de cláusula ofrecido por otros clubes, sin modificar ofertas de cláusula completa."
+    },
+    "medico_milagroso": {
+      "se_apila": true,
+      "metodo": "suma_directa_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "dias_reducidos_en_tratamientos_medicos_exitosos",
+      "descripcion": "Resta días adicionales a una lesión cuando el tratamiento del kinesiólogo resulta exitoso."
+    },
+    "prevencion_lesiones_partido": {
+      "se_apila": true,
+      "metodo": "suma_directa_con_tope",
+      "tope_porcentaje": 95,
+      "aplica_a": "probabilidad_de_lesion_durante_partidos_del_club_del_manager",
+      "descripcion": "Reduce porcentualmente la probabilidad final de que los jugadores del manager se lesionen durante un partido."
+    },
+    "experto_juveniles": {
+      "se_apila": true,
+      "metodo": "suma_directa_sin_tope",
+      "tope_porcentaje": null,
+      "aplica_a": "cantidad_de_habilidades_reveladas_al_consultar_juveniles",
+      "descripcion": "Suma habilidades directas al resultado normal calculado por el Preparador de juveniles."
+    },
+    "objetivo_mas_bajo": {
+      "se_apila": true,
+      "metodo": "suma_permanente_por_uso_y_temporada_con_tope",
+      "tope_porcentaje": 80,
+      "aplica_a": "objetivo_de_puntos_de_la_directiva",
+      "descripcion": "Cada uso suma su porcentaje base al objetivo de la temporada actual. El efecto permanece aunque la carta deje de estar activa y se reinicia al comenzar una nueva temporada."
     }
   },
   "bonus_por_rareza": {
@@ -171,6 +270,66 @@
       "rara": 10,
       "epica": 15,
       "legendaria": 25
+    },
+    "idolo_club": {
+      "comun": 5,
+      "rara": 10,
+      "epica": 20,
+      "legendaria": 50
+    },
+    "cohesion_activar": {
+      "comun": 3,
+      "rara": 5,
+      "epica": 10,
+      "legendaria": 20
+    },
+    "especialista_libres": {
+      "comun": 2,
+      "rara": 3,
+      "epica": 5,
+      "legendaria": 10
+    },
+    "preparacion_fisica": {
+      "comun": 1,
+      "rara": 3,
+      "epica": 5,
+      "legendaria": 12
+    },
+    "apoyo_capitan": {
+      "comun": 1,
+      "rara": 3,
+      "epica": 5,
+      "legendaria": 12
+    },
+    "director_marketing": {
+      "comun": 1,
+      "rara": 3,
+      "epica": 5,
+      "legendaria": 12
+    },
+    "director_deportivo": {
+      "comun": 1,
+      "rara": 2,
+      "epica": 3,
+      "legendaria": 7
+    },
+    "medico_milagroso": {
+      "comun": 1,
+      "rara": 2,
+      "epica": 3,
+      "legendaria": 5
+    },
+    "prevencion_lesiones_partido": {
+      "comun": 2,
+      "rara": 5,
+      "epica": 8,
+      "legendaria": 15
+    },
+    "experto_juveniles": {
+      "comun": 1,
+      "rara": 2,
+      "epica": 3,
+      "legendaria": 7
     }
   },
   "cartas_base": [
@@ -374,7 +533,7 @@
       "valor_bonus": 1,
       "unidad": "porcentaje",
       "activable": true,
-      "texto": "Reduce el objetivo de puntos de la directiva un 1% mientras esté activa."
+      "texto": "Cada uso reduce de forma permanente un 1% el objetivo de la temporada actual. Se acumula con otros usos y cartas."
     },
     {
       "id_base": "OBJETIVO_RARA_001",
@@ -384,7 +543,7 @@
       "valor_bonus": 2,
       "unidad": "porcentaje",
       "activable": true,
-      "texto": "Reduce el objetivo de puntos de la directiva un 2% mientras esté activa."
+      "texto": "Cada uso reduce de forma permanente un 2% el objetivo de la temporada actual. Se acumula con otros usos y cartas."
     },
     {
       "id_base": "OBJETIVO_EPICA_001",
@@ -394,7 +553,7 @@
       "valor_bonus": 3,
       "unidad": "porcentaje",
       "activable": true,
-      "texto": "Reduce el objetivo de puntos de la directiva un 3% mientras esté activa."
+      "texto": "Cada uso reduce de forma permanente un 3% el objetivo de la temporada actual. Se acumula con otros usos y cartas."
     },
     {
       "id_base": "OBJETIVO_LEGENDARIA_001",
@@ -404,47 +563,417 @@
       "valor_bonus": 10,
       "unidad": "porcentaje",
       "activable": true,
-      "texto": "Reduce el objetivo de puntos de la directiva un 10% mientras esté activa."
+      "texto": "Cada uso reduce de forma permanente un 10% el objetivo de la temporada actual. Se acumula con otros usos y cartas."
     },
     {
-      "id_base": "SOCIOS_COMUN_001",
-      "nombre": "Campaña de barrio",
+      "id_base": "IDOLO_CLUB_COMUN_001",
+      "nombre": "Ídolo de barrio",
       "rareza": "comun",
-      "tipo_bonus": "socios_extra",
+      "tipo_bonus": "idolo_club",
+      "valor_bonus": 5,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 5% los hinchas/socios ganados por buenos resultados y rachas."
+    },
+    {
+      "id_base": "IDOLO_CLUB_RARA_001",
+      "nombre": "Referente popular",
+      "rareza": "rara",
+      "tipo_bonus": "idolo_club",
       "valor_bonus": 10,
       "unidad": "porcentaje",
       "activable": true,
-      "texto": "Aumenta un 10% los socios ganados por resultados y posición."
+      "texto": "Aumenta un 10% los hinchas/socios ganados por buenos resultados y rachas."
     },
     {
-      "id_base": "SOCIOS_RARA_001",
-      "nombre": "Movida popular",
-      "rareza": "rara",
-      "tipo_bonus": "socios_extra",
-      "valor_bonus": 15,
-      "unidad": "porcentaje",
-      "activable": true,
-      "texto": "Aumenta un 15% los socios ganados por resultados y posición."
-    },
-    {
-      "id_base": "SOCIOS_EPICA_001",
-      "nombre": "Explosión de tribuna",
+      "id_base": "IDOLO_CLUB_EPICA_001",
+      "nombre": "Ídolo del Club",
       "rareza": "epica",
-      "tipo_bonus": "socios_extra",
+      "tipo_bonus": "idolo_club",
       "valor_bonus": 20,
       "unidad": "porcentaje",
       "activable": true,
-      "texto": "Aumenta un 20% los socios ganados por resultados y posición."
+      "texto": "Aumenta un 20% los hinchas/socios ganados por buenos resultados y rachas."
     },
     {
-      "id_base": "SOCIOS_LEGENDARIA_001",
-      "nombre": "Fiebre de socios",
+      "id_base": "IDOLO_CLUB_LEGENDARIA_001",
+      "nombre": "Leyenda de tribuna",
       "rareza": "legendaria",
-      "tipo_bonus": "socios_extra",
+      "tipo_bonus": "idolo_club",
       "valor_bonus": 50,
       "unidad": "porcentaje",
       "activable": true,
-      "texto": "Aumenta un 50% los socios ganados por resultados y posición."
+      "texto": "Aumenta un 50% los hinchas/socios ganados por buenos resultados y rachas."
+    },
+    {
+      "id_base": "ENTRENADOR_TACTICO_COMUN_001",
+      "nombre": "Orden táctico básico",
+      "rareza": "comun",
+      "tipo_bonus": "cohesion_activar",
+      "valor_bonus": 3,
+      "unidad": "puntos",
+      "activable": true,
+      "texto": "Al activarse suma +3 de cohesión una sola vez."
+    },
+    {
+      "id_base": "ENTRENADOR_TACTICO_RARA_001",
+      "nombre": "Entrenador táctico",
+      "rareza": "rara",
+      "tipo_bonus": "cohesion_activar",
+      "valor_bonus": 5,
+      "unidad": "puntos",
+      "activable": true,
+      "texto": "Al activarse suma +5 de cohesión una sola vez."
+    },
+    {
+      "id_base": "ENTRENADOR_TACTICO_EPICA_001",
+      "nombre": "Maestro de pizarra",
+      "rareza": "epica",
+      "tipo_bonus": "cohesion_activar",
+      "valor_bonus": 10,
+      "unidad": "puntos",
+      "activable": true,
+      "texto": "Al activarse suma +10 de cohesión una sola vez."
+    },
+    {
+      "id_base": "ENTRENADOR_TACTICO_LEGENDARIA_001",
+      "nombre": "Arquitecto táctico",
+      "rareza": "legendaria",
+      "tipo_bonus": "cohesion_activar",
+      "valor_bonus": 20,
+      "unidad": "puntos",
+      "activable": true,
+      "texto": "Al activarse suma +20 de cohesión una sola vez."
+    },
+    {
+      "id_base": "ESPECIALISTA_LIBRES_COMUN_001",
+      "nombre": "Rastreador de libres",
+      "rareza": "comun",
+      "tipo_bonus": "especialista_libres",
+      "valor_bonus": 2,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +2% a la aceptación de jugadores libres."
+    },
+    {
+      "id_base": "ESPECIALISTA_LIBRES_RARA_001",
+      "nombre": "Especialista en libres",
+      "rareza": "rara",
+      "tipo_bonus": "especialista_libres",
+      "valor_bonus": 3,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +3% a la aceptación de jugadores libres."
+    },
+    {
+      "id_base": "ESPECIALISTA_LIBRES_EPICA_001",
+      "nombre": "Agenda de representantes",
+      "rareza": "epica",
+      "tipo_bonus": "especialista_libres",
+      "valor_bonus": 5,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +5% a la aceptación de jugadores libres."
+    },
+    {
+      "id_base": "ESPECIALISTA_LIBRES_LEGENDARIA_001",
+      "nombre": "Red global de libres",
+      "rareza": "legendaria",
+      "tipo_bonus": "especialista_libres",
+      "valor_bonus": 10,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +10% a la aceptación de jugadores libres."
+    },
+    {
+      "id_base": "PREPARACION_FISICA_COMUN_001",
+      "nombre": "Rutina de recuperación",
+      "rareza": "comun",
+      "tipo_bonus": "preparacion_fisica",
+      "valor_bonus": 1,
+      "unidad": "puntos",
+      "activable": true,
+      "texto": "Suma +1 punto de recuperación física después del partido."
+    },
+    {
+      "id_base": "PREPARACION_FISICA_RARA_001",
+      "nombre": "Preparación física",
+      "rareza": "rara",
+      "tipo_bonus": "preparacion_fisica",
+      "valor_bonus": 3,
+      "unidad": "puntos",
+      "activable": true,
+      "texto": "Suma +3 puntos de recuperación física después del partido."
+    },
+    {
+      "id_base": "PREPARACION_FISICA_EPICA_001",
+      "nombre": "Laboratorio físico",
+      "rareza": "epica",
+      "tipo_bonus": "preparacion_fisica",
+      "valor_bonus": 5,
+      "unidad": "puntos",
+      "activable": true,
+      "texto": "Suma +5 puntos de recuperación física después del partido."
+    },
+    {
+      "id_base": "PREPARACION_FISICA_LEGENDARIA_001",
+      "nombre": "Cuerpo técnico de élite",
+      "rareza": "legendaria",
+      "tipo_bonus": "preparacion_fisica",
+      "valor_bonus": 12,
+      "unidad": "puntos",
+      "activable": true,
+      "texto": "Suma +12 puntos de recuperación física después del partido."
+    },
+    {
+      "id_base": "APOYO_CAPITAN_COMUN_001",
+      "nombre": "Todo al apoyo a mi capitán",
+      "rareza": "comun",
+      "tipo_bonus": "apoyo_capitan",
+      "valor_bonus": 1,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +1% al progreso de capitanía obtenido por partido."
+    },
+    {
+      "id_base": "APOYO_CAPITAN_RARA_001",
+      "nombre": "Todo al apoyo a mi capitán",
+      "rareza": "rara",
+      "tipo_bonus": "apoyo_capitan",
+      "valor_bonus": 3,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +3% al progreso de capitanía obtenido por partido."
+    },
+    {
+      "id_base": "APOYO_CAPITAN_EPICA_001",
+      "nombre": "Todo al apoyo a mi capitán",
+      "rareza": "epica",
+      "tipo_bonus": "apoyo_capitan",
+      "valor_bonus": 5,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +5% al progreso de capitanía obtenido por partido."
+    },
+    {
+      "id_base": "APOYO_CAPITAN_LEGENDARIA_001",
+      "nombre": "Todo al apoyo a mi capitán",
+      "rareza": "legendaria",
+      "tipo_bonus": "apoyo_capitan",
+      "valor_bonus": 12,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +12% al progreso de capitanía obtenido por partido."
+    },
+    {
+      "id_base": "DIRECTOR_MARKETING_COMUN_001",
+      "nombre": "Director de marketing",
+      "rareza": "comun",
+      "tipo_bonus": "director_marketing",
+      "valor_bonus": 1,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 1% la asistencia y la recaudación de los partidos como local."
+    },
+    {
+      "id_base": "DIRECTOR_MARKETING_RARA_001",
+      "nombre": "Director de marketing",
+      "rareza": "rara",
+      "tipo_bonus": "director_marketing",
+      "valor_bonus": 3,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 3% la asistencia y la recaudación de los partidos como local."
+    },
+    {
+      "id_base": "DIRECTOR_MARKETING_EPICA_001",
+      "nombre": "Director de marketing",
+      "rareza": "epica",
+      "tipo_bonus": "director_marketing",
+      "valor_bonus": 5,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 5% la asistencia y la recaudación de los partidos como local."
+    },
+    {
+      "id_base": "DIRECTOR_MARKETING_LEGENDARIA_001",
+      "nombre": "Director de marketing",
+      "rareza": "legendaria",
+      "tipo_bonus": "director_marketing",
+      "valor_bonus": 12,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Aumenta un 12% la asistencia y la recaudación de los partidos como local."
+    },
+    {
+      "id_base": "DIRECTOR_DEPORTIVO_COMUN_001",
+      "nombre": "Director deportivo",
+      "rareza": "comun",
+      "tipo_bonus": "director_deportivo",
+      "valor_bonus": 1,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +1% al porcentaje de cláusula ofrecido por otros clubes."
+    },
+    {
+      "id_base": "DIRECTOR_DEPORTIVO_RARA_001",
+      "nombre": "Director deportivo",
+      "rareza": "rara",
+      "tipo_bonus": "director_deportivo",
+      "valor_bonus": 2,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +2% al porcentaje de cláusula ofrecido por otros clubes."
+    },
+    {
+      "id_base": "DIRECTOR_DEPORTIVO_EPICA_001",
+      "nombre": "Director deportivo",
+      "rareza": "epica",
+      "tipo_bonus": "director_deportivo",
+      "valor_bonus": 3,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +3% al porcentaje de cláusula ofrecido por otros clubes."
+    },
+    {
+      "id_base": "DIRECTOR_DEPORTIVO_LEGENDARIA_001",
+      "nombre": "Director deportivo",
+      "rareza": "legendaria",
+      "tipo_bonus": "director_deportivo",
+      "valor_bonus": 7,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Suma +7% al porcentaje de cláusula ofrecido por otros clubes."
+    },
+    {
+      "id_base": "MEDICO_MILAGROSO_COMUN_001",
+      "nombre": "Médico Milagroso",
+      "rareza": "comun",
+      "tipo_bonus": "medico_milagroso",
+      "valor_bonus": 1,
+      "unidad": "dias",
+      "activable": true,
+      "texto": "Resta 1 día adicional a una lesión cuando el tratamiento es exitoso."
+    },
+    {
+      "id_base": "MEDICO_MILAGROSO_RARA_001",
+      "nombre": "Médico Milagroso",
+      "rareza": "rara",
+      "tipo_bonus": "medico_milagroso",
+      "valor_bonus": 2,
+      "unidad": "dias",
+      "activable": true,
+      "texto": "Resta 2 días adicionales a una lesión cuando el tratamiento es exitoso."
+    },
+    {
+      "id_base": "MEDICO_MILAGROSO_EPICA_001",
+      "nombre": "Médico Milagroso",
+      "rareza": "epica",
+      "tipo_bonus": "medico_milagroso",
+      "valor_bonus": 3,
+      "unidad": "dias",
+      "activable": true,
+      "texto": "Resta 3 días adicionales a una lesión cuando el tratamiento es exitoso."
+    },
+    {
+      "id_base": "MEDICO_MILAGROSO_LEGENDARIA_001",
+      "nombre": "Médico Milagroso",
+      "rareza": "legendaria",
+      "tipo_bonus": "medico_milagroso",
+      "valor_bonus": 5,
+      "unidad": "dias",
+      "activable": true,
+      "texto": "Resta 5 días adicionales a una lesión cuando el tratamiento es exitoso."
+    },
+    {
+      "id_base": "PREVENCION_LESION_COMUN_001",
+      "nombre": "Vendaje preventivo",
+      "rareza": "comun",
+      "tipo_bonus": "prevencion_lesiones_partido",
+      "valor_bonus": 2,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Reduce un 2% la probabilidad de lesiones de tus jugadores durante los partidos."
+    },
+    {
+      "id_base": "PREVENCION_LESION_RARA_001",
+      "nombre": "Control de cargas",
+      "rareza": "rara",
+      "tipo_bonus": "prevencion_lesiones_partido",
+      "valor_bonus": 5,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Reduce un 5% la probabilidad de lesiones de tus jugadores durante los partidos."
+    },
+    {
+      "id_base": "PREVENCION_LESION_EPICA_001",
+      "nombre": "Laboratorio de prevención",
+      "rareza": "epica",
+      "tipo_bonus": "prevencion_lesiones_partido",
+      "valor_bonus": 8,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Reduce un 8% la probabilidad de lesiones de tus jugadores durante los partidos."
+    },
+    {
+      "id_base": "PREVENCION_LESION_LEGENDARIA_001",
+      "nombre": "Plantel blindado",
+      "rareza": "legendaria",
+      "tipo_bonus": "prevencion_lesiones_partido",
+      "valor_bonus": 15,
+      "unidad": "porcentaje",
+      "activable": true,
+      "texto": "Reduce un 15% la probabilidad de lesiones de tus jugadores durante los partidos."
+    },
+    {
+      "id_base": "EXPERTO_JUVENILES_COMUN_001",
+      "nombre": "Experto en juveniles",
+      "rareza": "comun",
+      "tipo_bonus": "experto_juveniles",
+      "valor_bonus": 1,
+      "unidad": "habilidades",
+      "activable": true,
+      "texto": "Suma 1 habilidad visible al resultado normal de cada consulta de juveniles."
+    },
+    {
+      "id_base": "EXPERTO_JUVENILES_RARA_001",
+      "nombre": "Experto en juveniles",
+      "rareza": "rara",
+      "tipo_bonus": "experto_juveniles",
+      "valor_bonus": 2,
+      "unidad": "habilidades",
+      "activable": true,
+      "texto": "Suma 2 habilidades visibles al resultado normal de cada consulta de juveniles."
+    },
+    {
+      "id_base": "EXPERTO_JUVENILES_EPICA_001",
+      "nombre": "Experto en juveniles",
+      "rareza": "epica",
+      "tipo_bonus": "experto_juveniles",
+      "valor_bonus": 3,
+      "unidad": "habilidades",
+      "activable": true,
+      "texto": "Suma 3 habilidades visibles al resultado normal de cada consulta de juveniles."
+    },
+    {
+      "id_base": "EXPERTO_JUVENILES_LEGENDARIA_001",
+      "nombre": "Experto en juveniles",
+      "rareza": "legendaria",
+      "tipo_bonus": "experto_juveniles",
+      "valor_bonus": 4,
+      "unidad": "habilidades",
+      "activable": true,
+      "texto": "Suma 4 habilidades visibles al resultado normal de cada consulta de juveniles."
+    },
+    {
+      "id_base": "EXPERTO_JUVENILES_LEGENDARIA_002",
+      "nombre": "Experto en juveniles",
+      "rareza": "legendaria",
+      "tipo_bonus": "experto_juveniles",
+      "valor_bonus": 7,
+      "unidad": "habilidades",
+      "activable": true,
+      "texto": "Suma 7 habilidades visibles al resultado normal de cada consulta de juveniles."
     }
   ],
   "estructura_datos_manager": {
@@ -468,6 +997,10 @@
     "activa": false,
     "destruida": false,
     "obtenida_en_turno": null,
-    "obtenida_desde_sobre": ""
+    "obtenida_desde_sobre": "",
+    "activaciones_max": 1,
+    "activaciones_usadas": 0,
+    "active_slot_id": "",
+    "ultimo_slot_activacion": ""
   }
 }

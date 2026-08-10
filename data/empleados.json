@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "version": "V3.17",
-    "descripcion": "Catálogo de empleados por categoría para Fútbol Manager. Incluye rutas de imagen por puesto y calidad."
+    "version": "V8.57",
+    "descripcion": "Catálogo de empleados por categoría para Fútbol Manager. Incluye rutas de imagen por puesto, calidad y ciclos de análisis."
   },
   "categorias": [
     {
@@ -47,12 +47,41 @@
       "rol": "Recuperación",
       "costoBase": 1000000,
       "duracion": "temporada",
-      "descripcion": "Permite tratar lesionados una vez por semana para reducir días de recuperación.",
+      "descripcion": "Inicia tratamientos automáticos diarios para cada jugador lesionado y permite asignar un jugador a trabajo diferenciado con menor carga, recuperación diaria y prevención de lesiones.",
       "accion": "tratamiento_lesion",
       "imagenes": {
         "regular": "img/empleados/kinesiologo-regular.webp",
         "bueno": "img/empleados/kinesiologo-bueno.webp",
         "elite": "img/empleados/kinesiologo-elite.webp"
+      }
+    },
+    {
+      "id": "assistant_coach",
+      "nombre": "Segundo entrenador",
+      "rol": "Análisis situacional",
+      "costoBase": 2000000,
+      "duracion": "temporada",
+      "descripcion": "Analiza el plantel, la economía, la Academia, el estadio, la táctica y el próximo rival para entregar tres prioridades explicadas.",
+      "accion": "analisis_situacion",
+      "nombresCategoria": {
+        "regular": "Principiante",
+        "bueno": "Asentado",
+        "elite": "Experimentado"
+      },
+      "costosPorCategoria": {
+        "regular": 2000000,
+        "bueno": 7000000,
+        "elite": 23000000
+      },
+      "diasAnalisisPorCategoria": {
+        "regular": 25,
+        "bueno": 18,
+        "elite": 10
+      },
+      "imagenes": {
+        "regular": "img/empleados/segundo-entrenador-principiante.webp",
+        "bueno": "img/empleados/segundo-entrenador-asentado.webp",
+        "elite": "img/empleados/segundo-entrenador-experimentado.webp"
       }
     },
     {

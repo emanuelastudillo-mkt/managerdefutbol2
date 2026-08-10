@@ -1,0 +1,199 @@
+/* V8.08 · Finanzas, banco, sponsors, hinchas, estadio e instalaciones.
+   Archivo generado desde style.css conservando el orden interno de cada sistema. */
+
+.field-bar{
+  position:relative;
+  height:18px;
+  border-radius:999px;
+  background:rgba(15,23,42,.88);
+  border:1px solid rgba(148,163,184,.18);
+  overflow:hidden;
+  min-width:180px;
+}
+.field-bar span{
+  position:absolute;
+  inset:0 auto 0 0;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#7f1d1d 0%,#dc2626 22%,#f97316 40%,#facc15 60%,#84cc16 78%,#22c55e 100%);
+  box-shadow:0 0 18px rgba(34,197,94,.15);
+}
+.field-bar.unplayable span{background:linear-gradient(90deg,#450a0a,#991b1b,#dc2626)}
+.field-bar.bad span{background:linear-gradient(90deg,#991b1b,#ef4444,#f97316)}
+.field-bar.regular span{background:linear-gradient(90deg,#dc2626,#f97316,#facc15)}
+.field-bar.normal span{background:linear-gradient(90deg,#f59e0b,#84cc16,#22c55e)}
+.field-bar.excellent span{background:linear-gradient(90deg,#84cc16,#22c55e,#16a34a)}
+.field-bar em{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  font-style:normal;
+  font-size:9px;
+  font-weight:900;
+  color:#f8fafc;
+  text-shadow:0 1px 2px rgba(0,0,0,.55);
+}
+.field-state.excellent{color:#86efac}
+.field-state.normal{color:#bbf7d0}
+.field-state.regular{color:#fde68a}
+.field-state.bad{color:#fdba74}
+.field-state.unplayable{color:#fca5a5}
+.stadium-effects>div{
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.12);
+  background:rgba(255,255,255,.03);
+}
+.stadium-effects strong{font-size:22px;display:block;letter-spacing:-.03em}
+.stadium-progress-card{border-color:rgba(59,130,246,.24);background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(255,255,255,.025))}
+.stadium-effects,.injury-rules{display:none!important}
+.sponsors-card h4{font-size:11px;margin:12px 0 8px;color:#cbd5e1;text-transform:uppercase;letter-spacing:.06em}
+.sponsor-table td .small{display:block;margin-top:2px}
+.sponsor-table td:last-child{display:flex;gap:6px;flex-wrap:wrap}
+.sponsor-table th,.sponsor-table td{white-space:nowrap}
+@media (max-width:760px){
+  .sponsor-table td:last-child{display:table-cell}
+}
+.finance-category-grid{align-items:start}
+.finance-category-card{min-height:100%}
+.finance-category-card>h3{margin-bottom:8px}
+.finance-category-detail{border:1px solid rgba(148,163,184,.14);border-radius:16px;background:rgba(255,255,255,.03);overflow:hidden;margin-top:10px}
+.finance-category-detail summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 14px;font-weight:900}
+.finance-category-detail summary::-webkit-details-marker{display:none}
+.finance-category-detail summary:before{content:'▸';color:#93c5fd;font-size:11px;transform:translateY(1px);grid-column:1/2;display:inline-block;margin-right:8px;width:12px}
+.finance-category-detail[open] summary:before{content:'▾'}
+.finance-category-detail summary span{grid-column:1/2;margin-left:20px}
+.finance-category-detail summary small{color:var(--muted);font-weight:800}
+.compact-finance-table{border:0;border-top:1px solid rgba(148,163,184,.12);border-radius:0}
+.compact-finance-table table{min-width:620px}
+.compact-finance-table th,.compact-finance-table td{padding:9px 10px;font-size:11px}
+.finance-mini-pill{margin-left:6px;vertical-align:middle;background:rgba(34,197,94,.10);color:#bbf7d0}
+@media (max-width:900px){.finance-category-detail summary{grid-template-columns:1fr auto}.finance-category-detail summary small{grid-column:1/-1;margin-left:20px}
+}
+.stadium-expansions-card h4{margin:16px 0 10px}
+.stadium-expansion-summary{margin:12px 0 14px}
+.stadium-expansion-summary>div{padding:12px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(148,163,184,.10)}
+.stadium-expansion-summary strong{font-size:20px;letter-spacing:-.03em}
+.stadium-expansion-option,.stadium-expansion-active{padding:13px 14px;border-radius:16px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.03)}
+.stadium-expansion-option{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.stadium-expansion-option .primary{white-space:nowrap}
+.stadium-expansion-option p{margin:4px 0 0}
+.stadium-expansion-active .project-progress{margin-top:10px}
+@media (max-width:900px){.stadium-expansion-option{align-items:flex-start;flex-direction:column}.stadium-expansion-option .primary{width:100%}
+}
+.finance-category-grid{gap:9px}
+.finance-category-card{padding:11px;border-radius:14px}
+.finance-category-card>h3{font-size:14px;margin-bottom:5px}
+.finance-category-detail{border-radius:12px;margin-top:7px}
+.finance-category-detail summary{padding:8px 10px;gap:7px;font-size:10px;grid-template-columns:1fr auto}
+.finance-category-detail summary:before{font-size:9px;margin-right:5px;width:9px}
+.finance-category-detail summary span{margin-left:15px}
+.finance-category-detail summary small{font-size:9px}
+.compact-finance-table th,.compact-finance-table td{padding:6px 8px;font-size:10px}
+.stadium-identity-line{margin:10px 0 0;color:#e5e7eb;font-size:clamp(13px,1.8vw,17px);line-height:1.25;font-weight:850;letter-spacing:-.02em}
+.stadium-identity-line::first-letter{text-transform:uppercase}
+.stadium-card .grid.cols-3 .label{font-size:9px;line-height:1.15}
+.stadium-card .grid.cols-3 strong{font-size:clamp(18px,2.2vw,25px);letter-spacing:-.035em}
+.budget-negative,
+.bad.budget-negative{
+  color:#f87171 !important;
+  font-weight:850;
+}
+.bank-loan-active [data-payoff-bank-loan]{
+  margin-top:8px;
+}
+.finance-salary-card{display:block}
+.finance-salary-card .table-wrap{max-height:none}
+.member-campaigns-box{
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid rgba(148,163,184,.22);
+}
+.member-campaign-option,
+.member-campaign-active{
+  padding:10px;
+  border-radius:14px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(15,23,42,.035);
+}
+.member-campaign-active-list{
+  display:grid;
+  gap:8px;
+}
+.member-campaign-progress-inline{
+  min-width:180px;
+  flex:1 1 220px;
+  display:grid;
+  gap:7px;
+  justify-items:end;
+}
+.member-campaign-running{
+  border-color:rgba(34,197,94,.22);
+  background:rgba(34,197,94,.055);
+}
+.member-campaign-running .project-progress{width:100%;min-width:160px}
+.sponsor-special-line{display:block;margin-top:6px;line-height:1.35}
+.sponsor-special-line .pill{margin-right:6px}
+.sponsor-places-card{
+  margin:12px 0 14px;
+  padding:12px;
+  border-radius:16px;
+  background:rgba(15,23,42,.42);
+  border:1px solid rgba(148,163,184,.14);
+}
+.sponsor-places-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:8px;
+  margin-top:10px;
+}
+.sponsor-place-item{
+  display:grid;
+  gap:3px;
+  padding:10px;
+  border-radius:12px;
+  background:rgba(15,23,42,.62);
+  border:1px solid rgba(148,163,184,.16);
+  min-height:82px;
+}
+.sponsor-place-item strong{font-size:11px;color:#e5edf7;line-height:1.18}
+.sponsor-place-item span{font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9fb0c9;font-weight:900}
+.sponsor-place-item em{font-style:normal;font-size:9px;line-height:1.25;color:#9fb0c9}
+.sponsor-place-item.available{border-color:rgba(34,197,94,.25);background:rgba(34,197,94,.06)}
+.sponsor-place-item.occupied{border-color:rgba(59,130,246,.25);background:rgba(59,130,246,.07)}
+.sponsor-place-item.locked{opacity:.48;filter:grayscale(.45);border-style:dashed}
+.sponsor-place-item.locked strong,.sponsor-place-item.locked span,.sponsor-place-item.locked em{color:#7f8da3}
+@media (max-width:720px){.sponsor-places-grid{grid-template-columns:1fr}
+}
+.stadium-facilities-grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.35fr);gap:14px;margin-top:14px}
+.stadium-facility-card{display:grid;gap:14px;align-content:start;min-width:0}
+.facility-card-head{align-items:flex-start}
+.facility-project{padding:12px;border-radius:14px;background:rgba(59,130,246,.08);border:1px solid rgba(96,165,250,.18)}
+.facility-actions{display:grid;gap:10px}
+.facility-switch-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(255,255,255,.035);cursor:pointer}
+.facility-switch-row span:first-child{display:grid;gap:3px}
+.facility-switch-row small{color:var(--muted)}
+.facility-switch-row input{position:absolute;opacity:0;pointer-events:none}
+.facility-switch{width:48px;height:26px;border-radius:999px;background:rgba(148,163,184,.35);position:relative;transition:.2s}
+.facility-switch:after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,.28)}
+.facility-switch-row input:checked + .facility-switch{background:rgba(34,197,94,.75)}
+.facility-switch-row input:checked + .facility-switch:after{transform:translateX(22px)}
+.facility-switch-row input:disabled + .facility-switch{opacity:.45}
+.facility-level-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.facility-level{display:grid;gap:8px;padding:12px;border-radius:14px;border:1px solid rgba(148,163,184,.15);background:rgba(255,255,255,.025)}
+.facility-level.completed{border-color:rgba(34,197,94,.28);background:rgba(34,197,94,.06)}
+.facility-level.active{border-color:rgba(59,130,246,.34);background:rgba(59,130,246,.08)}
+.facility-level p,.facility-level small{margin:0}
+.facility-level small{color:var(--muted)}
+.facility-summary-grid .card{padding:12px 14px}
+.facility-summary-grid strong{font-size:20px}
+@media (max-width:900px){.stadium-facilities-grid{grid-template-columns:1fr}.facility-level-grid{grid-template-columns:1fr}.facility-switch-row{grid-template-columns:1fr auto}.facility-switch-row>span:first-child{grid-column:1}.facility-switch-row>.facility-switch{grid-column:2;grid-row:1}
+}
+.facility-level-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.afa-field-sanction-card{
+  margin-bottom:14px;
+  border-color:rgba(248,113,113,.42);
+  background:linear-gradient(135deg,rgba(127,29,29,.28),rgba(69,10,10,.16));
+}
+.afa-field-sanction-card strong{color:#fecaca}
+.academy-owned-facility>.stadium-facility-card{margin:0}

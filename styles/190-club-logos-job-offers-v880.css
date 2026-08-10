@@ -1,0 +1,60 @@
+/* V8.80 · Escudos completos y ofertas laborales durante contratos activos. */
+
+.club-badge-placeholder img,
+.available-club-badge img,
+.available-club-badge .club-badge-img,
+.challenge-crest,
+.founder-crest-option img,
+.scouting-team-badge img{
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  box-sizing:border-box!important;
+  padding:2px!important;
+  border-radius:0!important;
+}
+.office-club-head .club-badge-placeholder img,
+.club-modal-head .club-badge-placeholder img,
+.champion-card .club-badge-placeholder img{
+  padding:4px!important;
+}
+.club-badge-placeholder,
+.available-club-badge,
+.challenge-crest-shell,
+.founder-crest-option span{
+  align-items:center;
+  justify-items:center;
+}
+
+.employed-job-offers-panel{
+  margin-top:14px;
+  display:grid;
+  gap:12px;
+}
+.job-offers-employed-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.job-offer-context{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  margin:9px 0 2px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+}
+.job-offer-context>span:not(.pill){
+  padding:4px 7px;
+  border:1px solid rgba(148,163,184,.15);
+  border-radius:999px;
+  background:rgba(15,23,42,.38);
+}
+@media (max-width:900px){
+  .job-offers-employed-grid{grid-template-columns:1fr}
+}

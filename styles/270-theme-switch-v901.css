@@ -1,0 +1,265 @@
+/* V9.01 · Selector de modo claro/oscuro y capa visual clara.
+   Se carga al final para adaptar también módulos históricos con fondos oscuros propios. */
+
+:root[data-theme="dark"]{
+  color-scheme:dark;
+}
+
+.theme-switch{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:34px;
+  padding:6px 9px;
+  border:1px solid rgba(148,163,184,.20);
+  border-radius:12px;
+  color:var(--text);
+  background:rgba(255,255,255,.055);
+  font-size:10px;
+  font-weight:850;
+  line-height:1;
+  white-space:nowrap;
+  transition:background .18s ease,border-color .18s ease,color .18s ease;
+}
+.theme-switch:hover{border-color:rgba(148,163,184,.38);background:rgba(255,255,255,.09)}
+.theme-switch:focus-visible{outline:2px solid rgb(var(--club-accent-rgb));outline-offset:2px}
+.theme-switch-icon{width:12px;text-align:center;font-size:12px;line-height:1}
+.theme-switch-track{
+  position:relative;
+  display:inline-block;
+  width:30px;
+  height:17px;
+  flex:0 0 30px;
+  border:1px solid rgba(148,163,184,.34);
+  border-radius:999px;
+  background:#111827;
+  transition:background .18s ease,border-color .18s ease;
+}
+.theme-switch-thumb{
+  position:absolute;
+  top:2px;
+  left:2px;
+  width:11px;
+  height:11px;
+  border-radius:50%;
+  background:#f8fafc;
+  box-shadow:0 1px 5px rgba(0,0,0,.34);
+  transition:transform .18s ease,background .18s ease;
+}
+.theme-switch[aria-checked="true"] .theme-switch-track{
+  border-color:rgba(var(--club-accent-rgb),.48);
+  background:rgba(var(--club-accent-rgb),.78);
+}
+.theme-switch[aria-checked="true"] .theme-switch-thumb{transform:translateX(13px);background:#fff}
+.theme-switch[aria-checked="true"] .theme-switch-sun{color:#ca8a04}
+.theme-switch[aria-checked="false"] .theme-switch-moon{color:#bfdbfe}
+
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#eef2f7;
+  --panel:rgba(255,255,255,.96);
+  --panel-2:#f5f7fb;
+  --line:#d4dde8;
+  --text:#172033;
+  --muted:#64748b;
+  --accent:#2563eb;
+  --shadow:0 18px 54px rgba(15,23,42,.10);
+  --sport-surface:#ffffff;
+  --sport-surface-raised:#f8fafc;
+  --sport-surface-soft:#eef2f7;
+  --sport-border:#d7dee8;
+  --sport-text:#172033;
+  --sport-muted:#64748b;
+  --sport-faint:#8491a3;
+  --sport-white:#172033;
+}
+
+html[data-theme="light"]{
+  background:#eef2f7;
+  scrollbar-color:#aab6c6 #e5ebf3;
+}
+html[data-theme="light"] body{
+  color:var(--text);
+  background:
+    radial-gradient(circle at 9% -8%,rgba(var(--club-accent-rgb),.12),transparent 29rem),
+    radial-gradient(circle at 92% 8%,rgba(var(--club-rgb),.08),transparent 34rem),
+    linear-gradient(180deg,#f8fafc 0%,#eef2f7 48%,#e8edf4 100%);
+}
+html[data-theme="light"] ::-webkit-scrollbar-track{background:#e5ebf3}
+html[data-theme="light"] ::-webkit-scrollbar-thumb{background:#aab6c6;border-color:#e5ebf3}
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover{background:#8795a8}
+html[data-theme="light"] body::selection{background:rgba(var(--club-accent-rgb),.24);color:#10213b}
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] h4{color:#172033}
+html[data-theme="light"] a{color:#315fb5}
+html[data-theme="light"] a:hover{color:#163e8c}
+html[data-theme="light"] .eyebrow,
+html[data-theme="light"] label,
+html[data-theme="light"] .label,
+html[data-theme="light"] .muted,
+html[data-theme="light"] .tagline,
+html[data-theme="light"] .events{color:var(--muted)}
+
+html[data-theme="light"] .topbar{
+  border-bottom-color:rgba(100,116,139,.20);
+  background:rgba(248,250,252,.94);
+  box-shadow:0 10px 30px rgba(15,23,42,.08);
+}
+html[data-theme="light"] .game-brand-logo-top{filter:drop-shadow(0 6px 15px rgba(15,23,42,.12))}
+html[data-theme="light"] .panel,
+html[data-theme="light"] .modal-panel{
+  color:var(--text);
+  border-color:rgba(100,116,139,.20);
+  background:linear-gradient(145deg,rgba(var(--club-rgb),.045),rgba(255,255,255,.98) 22%,rgba(248,250,252,.96));
+  box-shadow:0 18px 54px rgba(15,23,42,.10);
+}
+html[data-theme="light"] .side{background:rgba(248,250,252,.98);box-shadow:0 18px 44px rgba(15,23,42,.10)}
+html[data-theme="light"] #view.panel{border-color:rgba(100,116,139,.17);background:rgba(255,255,255,.88);box-shadow:0 22px 60px rgba(15,23,42,.09)}
+html[data-theme="light"] .app-footer{border-top-color:rgba(100,116,139,.16);color:#64748b}
+html[data-theme="light"] .app-footer p{border-top-color:rgba(100,116,139,.16)}
+html[data-theme="light"] .app-footer a{color:#315fb5}
+
+html[data-theme="light"] select,
+html[data-theme="light"] input,
+html[data-theme="light"] textarea{
+  color:#172033;
+  border-color:#cbd5e1;
+  background:#fff;
+}
+html[data-theme="light"] select:focus,
+html[data-theme="light"] input:focus,
+html[data-theme="light"] textarea:focus{border-color:rgb(var(--club-accent-rgb));box-shadow:0 0 0 3px rgba(var(--club-accent-rgb),.10)}
+html[data-theme="light"] .ghost,
+html[data-theme="light"] .theme-switch,
+html[data-theme="light"] .mobile-top-button{
+  color:#27354a;
+  border-color:rgba(100,116,139,.22);
+  background:rgba(255,255,255,.82);
+}
+html[data-theme="light"] .ghost:hover,
+html[data-theme="light"] .theme-switch:hover,
+html[data-theme="light"] .mobile-top-button:hover{background:#fff;border-color:rgba(100,116,139,.36)}
+html[data-theme="light"] .theme-switch-track{background:#dce4ee;border-color:#aab6c6}
+html[data-theme="light"] .theme-switch-thumb{background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.24)}
+html[data-theme="light"] .danger{color:#b91c1c}
+
+html[data-theme="light"] .new-game,
+html[data-theme="light"] .status-card,
+html[data-theme="light"] .card,
+html[data-theme="light"] .inner,
+html[data-theme="light"] .match-card,
+html[data-theme="light"] .empty-office-box,
+html[data-theme="light"] .office-mini-grid>div,
+html[data-theme="light"] .welcome-summary>div,
+html[data-theme="light"] .live-instruction-help div,
+html[data-theme="light"] .live-instruction-log div{
+  color:var(--text);
+  border-color:rgba(100,116,139,.18);
+  background:rgba(255,255,255,.72);
+}
+html[data-theme="light"] .card.inner{background:rgba(248,250,252,.86)}
+html[data-theme="light"] .empty{color:var(--muted)}
+html[data-theme="light"] code{color:#1e293b;border-color:#cbd5e1;background:#f1f5f9}
+html[data-theme="light"] .pill{color:#334155;background:rgba(100,116,139,.10)}
+html[data-theme="light"] .bar,
+html[data-theme="light"] .live-progress{background:rgba(100,116,139,.16)}
+html[data-theme="light"] .sticky-actions{border-color:#d5dde8;background:rgba(248,250,252,.94)}
+
+html[data-theme="light"] .tabs button,
+html[data-theme="light"] .sidebar-nav .nav-group-toggle,
+html[data-theme="light"] .sidebar-nav .nav-group-items>button{color:#617087}
+html[data-theme="light"] .tabs button:hover,
+html[data-theme="light"] .tabs button.active,
+html[data-theme="light"] .subtabs button:hover,
+html[data-theme="light"] .subtabs button.active,
+html[data-theme="light"] .sidebar-nav>button:hover,
+html[data-theme="light"] .sidebar-nav>button.active,
+html[data-theme="light"] .sidebar-nav .nav-group-toggle:hover,
+html[data-theme="light"] .sidebar-nav .nav-group-items>button:hover,
+html[data-theme="light"] .sidebar-nav .nav-group-items>button.active{
+  color:#183c78;
+  border-color:rgba(var(--club-accent-rgb),.22);
+  background:rgba(var(--club-accent-rgb),.10);
+}
+html[data-theme="light"] .sidebar-nav .nav-group-items>button::before{background:#8fa0b5}
+html[data-theme="light"] .sidebar-nav .nav-chevron{color:#8491a3}
+
+html[data-theme="light"] .table-wrap{border-color:rgba(100,116,139,.20);background:#fff}
+html[data-theme="light"] table{color:#1e293b;background:rgba(255,255,255,.94)}
+html[data-theme="light"] th,
+html[data-theme="light"] .transfer-history-table thead th{
+  color:#526279;
+  border-bottom-color:rgba(100,116,139,.18);
+  background:#edf2f7;
+}
+html[data-theme="light"] td{border-bottom-color:rgba(100,116,139,.14)}
+html[data-theme="light"] tr:hover td{background:rgba(var(--club-accent-rgb),.055)}
+html[data-theme="light"] .pos,
+html[data-theme="light"] .rank-num{color:#315fb5}
+
+html[data-theme="light"] .notice{color:#1e4d91;border-color:rgba(37,99,235,.22);background:rgba(219,234,254,.78)}
+html[data-theme="light"] .next-match{color:#172033;border-color:rgba(var(--club-accent-rgb),.16);background:linear-gradient(135deg,rgba(var(--club-rgb),.08),rgba(var(--club-accent-2-rgb),.055))}
+html[data-theme="light"] .blocker{border-color:rgba(220,38,38,.25);background:linear-gradient(135deg,rgba(254,226,226,.86),rgba(255,247,237,.82))}
+html[data-theme="light"] .modal-backdrop{background:rgba(15,23,42,.48)}
+html[data-theme="light"] .modal-close{color:#334155;border-color:#cbd5e1;background:#fff}
+html[data-theme="light"] .modal-close:hover{color:#0f172a;background:#f1f5f9}
+html[data-theme="light"] .radar-wrap{border-color:#d5dde8;background:radial-gradient(circle at center,rgba(var(--club-accent-rgb),.08),rgba(248,250,252,.92))}
+html[data-theme="light"] .radar-label{fill:#475569}
+
+/* Elementos de módulos históricos con fondos oscuros explícitos. */
+html[data-theme="light"] .live-event,
+html[data-theme="light"] .welcome-summary>div,
+html[data-theme="light"] .finance-monthly-card,
+html[data-theme="light"] .transfer-history-summary>div,
+html[data-theme="light"] .club-profile-panel,
+html[data-theme="light"] .club-profile-summary-item,
+html[data-theme="light"] .club-fifa-ranking-row,
+html[data-theme="light"] .manager-dressing-room-card,
+html[data-theme="light"] .player-profile-section,
+html[data-theme="light"] .career-stage-card{
+  color:#172033;
+  border-color:rgba(100,116,139,.18);
+  background:rgba(255,255,255,.78);
+}
+html[data-theme="light"] .live-event span,
+html[data-theme="light"] .live-instruction-help span,
+html[data-theme="light"] .live-instruction-log span,
+html[data-theme="light"] .match-date-line,
+html[data-theme="light"] .fixture-division-block h4{color:#64748b}
+
+@media (min-width:901px) and (max-width:1280px){
+  .theme-switch-label{display:none}
+  .theme-switch{padding-inline:7px;gap:4px}
+}
+
+@media (max-width:767px){
+  .top-actions .theme-switch{grid-column:1 / -1;justify-self:stretch;width:100%}
+  html[data-theme="light"] .topbar{background:rgba(248,250,252,.97);box-shadow:0 12px 30px rgba(15,23,42,.11)}
+  html[data-theme="light"] .side{background:rgba(248,250,252,.99);box-shadow:22px 0 60px rgba(15,23,42,.22)}
+  html[data-theme="light"] .mobile-nav-backdrop{background:rgba(15,23,42,.44)}
+  html[data-theme="light"] .top-actions,
+  html[data-theme="light"] .top-actions.top-actions-compact{border-top-color:rgba(100,116,139,.16)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .theme-switch,.theme-switch-track,.theme-switch-thumb{transition:none}
+}
+
+/* Ajustes de contraste del panel lateral en modo claro. */
+html[data-theme="light"] .new-game-toggle{
+  color:#243247;
+  border-color:#cbd5e1;
+  background:#f8fafc;
+  box-shadow:0 5px 14px rgba(15,23,42,.06);
+}
+html[data-theme="light"] .new-game-toggle:hover{
+  color:#102b58;
+  border-color:rgba(var(--club-accent-rgb),.30);
+  background:#fff;
+}
+html[data-theme="light"] .status-card #currentSeason{color:#31527e}
+html[data-theme="light"] .status-card #currentDate,
+html[data-theme="light"] .status-card #currentRound{color:#68778b}

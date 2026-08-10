@@ -1,0 +1,127 @@
+/* V8.56 · Recursos visuales dinámicos, contraste y estados de infraestructura. */
+
+/* Los botones blancos deben conservar texto oscuro incluso dentro de tarjetas
+   que en versiones anteriores imponían texto blanco por mayor especificidad. */
+.message-card .primary:not(.danger):not(.action-processing):not(.action-success):not(.action-failure),
+.special-card .primary:not(.danger):not(.action-processing):not(.action-success):not(.action-failure),
+button.primary:not(.danger):not(.action-processing):not(.action-success):not(.action-failure),
+a.primary:not(.danger):not(.action-processing):not(.action-success):not(.action-failure){
+  color:#09090b!important;
+}
+
+.game-visual-asset{
+  position:relative;
+  isolation:isolate;
+  width:100%;
+  min-height:150px;
+  margin:12px 0;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;
+  background:#09090b;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 16px 35px rgba(0,0,0,.22);
+}
+.game-visual-asset::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:linear-gradient(180deg,transparent 48%,rgba(9,9,11,.76));
+}
+.game-visual-asset img{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:inherit;
+  aspect-ratio:16/7;
+  object-fit:cover;
+}
+.game-visual-asset-badge{
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:2;
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:5px 10px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:999px;
+  color:#fafafa;
+  background:rgba(9,9,11,.76);
+  box-shadow:0 8px 20px rgba(0,0,0,.28);
+  backdrop-filter:blur(9px);
+  font-size:10px;
+  font-weight:850;
+}
+.game-visual-asset figcaption{
+  position:absolute;
+  right:12px;
+  bottom:10px;
+  left:12px;
+  z-index:2;
+  color:#e4e4e7;
+  font-size:10px;
+  font-weight:750;
+}
+.stadium-main-visual,
+.fans-visual{
+  min-height:230px;
+  margin:0 0 14px;
+}
+.stadium-main-visual img,
+.fans-visual img{
+  aspect-ratio:16/6;
+}
+.pitch-visual,
+.facility-visual,
+.residence-visual{
+  min-height:165px;
+}
+.pitch-visual img,
+.facility-visual img,
+.residence-visual img{
+  aspect-ratio:16/7;
+}
+.game-visual-asset-empty{
+  display:grid;
+  place-items:center;
+  gap:4px;
+  min-height:130px;
+  margin:12px 0;
+  padding:20px;
+  border:1px dashed rgba(161,161,170,.24);
+  border-radius:16px;
+  color:#a1a1aa;
+  text-align:center;
+  background:linear-gradient(135deg,rgba(39,39,42,.46),rgba(9,9,11,.72));
+}
+.game-visual-asset-empty strong{color:#e4e4e7}
+.game-visual-asset-empty span{font-size:10px}
+
+@media(max-width:720px){
+  .game-visual-asset,
+  .stadium-main-visual,
+  .fans-visual,
+  .pitch-visual,
+  .facility-visual,
+  .residence-visual{
+    min-height:135px;
+    border-radius:13px;
+  }
+  .game-visual-asset img,
+  .stadium-main-visual img,
+  .fans-visual img,
+  .pitch-visual img,
+  .facility-visual img,
+  .residence-visual img{
+    aspect-ratio:16/8;
+  }
+  .game-visual-asset-badge{
+    top:8px;
+    right:8px;
+    min-height:25px;
+    padding:4px 8px;
+  }
+}

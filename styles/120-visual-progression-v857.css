@@ -1,0 +1,24 @@
+/* V8.57 · Progresión visual por ocupación de Tu Academia y tamaño estructural del estadio. */
+
+.academy-youth-occupancy-visual{
+  min-height:250px;
+  margin:0 0 14px;
+}
+.academy-youth-occupancy-visual img{
+  aspect-ratio:16/7;
+  object-position:center center;
+}
+.academy-youth-visual-empty{
+  min-height:150px;
+  margin:0 0 14px;
+}
+
+@media(max-width:720px){
+  .academy-youth-occupancy-visual{
+    min-height:150px;
+    border-radius:13px;
+  }
+  .academy-youth-occupancy-visual img{
+    aspect-ratio:16/8;
+  }
+}

@@ -1,0 +1,186 @@
+/* V9.12 · Bandeja de mensajes en Inicio, orden visual de alertas y barras comparativas unificadas. */
+
+.home-inbox-row{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  min-height:42px;
+  margin:4px 0 8px;
+}
+.home-inbox-button{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:36px;
+  padding:0;
+  border-radius:8px;
+  border:1px solid rgba(148,163,184,.2);
+  background:rgba(255,255,255,.035);
+  color:#cbd5e1;
+}
+.home-inbox-button:hover,
+.home-inbox-button:focus-visible{
+  border-color:rgba(249,115,22,.55);
+  background:rgba(249,115,22,.09);
+  color:#f8fafc;
+}
+.home-inbox-button.has-unread{
+  border-color:rgba(249,115,22,.48);
+  background:rgba(249,115,22,.1);
+  color:#fff7ed;
+}
+.home-inbox-envelope{
+  display:block;
+  width:22px;
+  height:22px;
+}
+.home-inbox-envelope svg{
+  display:block;
+  width:100%;
+  height:100%;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.home-inbox-count{
+  position:absolute;
+  right:-7px;
+  top:-8px;
+  min-width:20px;
+  height:20px;
+  padding:0 5px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px solid #111113;
+  background:#f97316;
+  color:#fff;
+  font-size:9px;
+  line-height:1;
+  font-weight:900;
+  box-shadow:0 3px 10px rgba(0,0,0,.32);
+}
+.home-inbox-empty-dot{
+  position:absolute;
+  right:5px;
+  top:5px;
+  width:6px;
+  height:6px;
+  border-radius:999px;
+  background:#64748b;
+}
+
+.message-inbox-section{
+  display:grid;
+  gap:8px;
+}
+.message-inbox-section + .message-inbox-section{
+  margin-top:8px;
+}
+.message-inbox-section-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:4px 2px 2px;
+  color:#cbd5e1;
+}
+.message-inbox-section-head strong{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.message-inbox-section-head span{
+  display:inline-flex;
+  min-width:24px;
+  height:20px;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(148,163,184,.08);
+  color:#e2e8f0;
+  font-size:9px;
+  font-weight:900;
+}
+.message-inbox-unread .message-inbox-section-head strong,
+.message-inbox-unread .message-inbox-section-head span{
+  color:#fed7aa;
+}
+.message-inbox-unread .message-inbox-section-head span{
+  border-color:rgba(249,115,22,.35);
+  background:rgba(249,115,22,.1);
+}
+.message-inbox-read .message-card{
+  opacity:.84;
+}
+.message-inbox-read .message-card:hover{
+  opacity:1;
+}
+.message-read-action{
+  justify-content:flex-end;
+  margin-top:6px;
+}
+.message-read-action .mini{
+  min-height:28px;
+  padding:5px 8px;
+  font-size:8px;
+}
+
+.live-compare-values{
+  grid-template-columns:42px minmax(0,1fr) 42px;
+}
+.live-compare-values .bar.duel{
+  display:flex;
+  width:100%;
+  height:9px;
+  padding:0;
+  gap:0;
+  border-radius:999px;
+  overflow:hidden;
+  background:rgba(148,163,184,.14);
+  border:1px solid rgba(148,163,184,.2);
+}
+.live-compare-values .bar.duel i{
+  display:block;
+  min-width:0;
+  height:100%;
+  transition:width .22s ease;
+}
+.live-compare-values .bar.duel i.left{
+  width:var(--left);
+  border-radius:999px 0 0 999px;
+  background:var(--live-home-color,#e11d48);
+}
+.live-compare-values .bar.duel i.right{
+  width:var(--right);
+  border-radius:0 999px 999px 0;
+  background:var(--live-away-color,#60a5fa);
+}
+.live-v517 .live-compare-values{
+  grid-template-columns:36px minmax(0,1fr) 36px;
+}
+.live-v517 .live-compare-values .bar.duel{
+  height:7px;
+}
+
+@media (max-width:760px){
+  .home-inbox-row{margin-top:2px}
+  .home-inbox-button{width:40px;height:34px}
+  .live-compare-values{grid-template-columns:36px minmax(0,1fr) 36px}
+}
+
+/* V9.46 · Bandeja esencial y acciones masivas. */
+.messages-section-title{align-items:flex-start;gap:14px}
+.messages-bulk-actions{justify-content:flex-end;flex-wrap:wrap;gap:8px}
+.messages-bulk-actions .ghost{white-space:nowrap}
+@media (max-width:760px){
+  .messages-section-title{align-items:stretch;flex-direction:column}
+  .messages-bulk-actions{justify-content:flex-start;width:100%}
+  .messages-bulk-actions .ghost{flex:1 1 190px}
+}

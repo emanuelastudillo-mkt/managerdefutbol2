@@ -1,0 +1,70 @@
+/* V9.32 · Ser jugador: pulido visual, trofeos históricos y archivo de carreras */
+.player-career-v932 .pc-v930-board{box-shadow:0 22px 55px rgba(0,0,0,.32);border-color:#30313a;background:linear-gradient(145deg,#0b0c10,#121319)}
+.player-career-v932 .pc-v930-left{background:radial-gradient(circle at 25% 0,rgba(234,123,24,.055),transparent 34%),#0d0e12}
+.player-career-v932 .pc-v930-right{background:linear-gradient(180deg,#121319,#0e0f13)}
+.player-career-v932 .pc-v930-overall{height:86px;border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px rgba(255,255,255,.16),0 10px 28px rgba(173,74,0,.2)}
+.player-career-v932 .pc-v930-overall small{font-size:.61rem;letter-spacing:.09em}
+.player-career-v932 .pc-v930-player-card{border-color:#29322e;box-shadow:inset 0 1px rgba(255,255,255,.025)}
+.player-career-v932 .pc-v931-trophy-card{transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.player-career-v932 .pc-v931-trophy-card:hover{transform:translateY(-1px);border-color:#4a4d57;background:#17191f}
+.player-career-v932 .pc-v931-trophy-card.major{border-color:#5d4814;background:linear-gradient(145deg,#211c0f,#131316)}
+.player-career-v932 .pc-v932-individual-history{grid-column:1/-1;margin-top:15px;padding:13px;border:1px solid #252730;border-radius:14px;background:linear-gradient(180deg,#111318,#0d0e12)}
+.player-career-v932 .pc-v932-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.player-career-v932 .pc-v932-section-head small{display:block;color:#f2a259;font-size:.62rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+.player-career-v932 .pc-v932-section-head h3{margin:3px 0 0;font-size:.94rem}
+.player-career-v932 .pc-v932-section-head>span{display:grid;place-items:center;min-width:34px;height:28px;padding:0 8px;border:1px solid #353842;border-radius:999px;background:#191b21;color:#e6e8eb;font-size:.71rem;font-weight:800}
+.player-career-v932 .pc-v932-award-list{display:grid;gap:6px}
+.player-career-v932 .pc-v932-award-list article{display:grid;grid-template-columns:31px minmax(0,1fr) auto;align-items:center;gap:9px;padding:7px 8px;border:1px solid #21242b;border-radius:10px;background:#0c0e12}
+.player-career-v932 .pc-v932-award-list i{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:rgba(240,190,83,.1);color:#efbd52}
+.player-career-v932 .pc-v932-award-list i svg{width:17px;height:17px}
+.player-career-v932 .pc-v932-award-list article>div{display:grid;gap:2px;min-width:0}
+.player-career-v932 .pc-v932-award-list strong{font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-career-v932 .pc-v932-award-list small,.player-career-v932 .pc-v932-award-list article>span{color:#78808a;font-size:.62rem}
+.player-career-v932 .pc-v932-award-list article>span{text-align:right;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-career-v932 .pc-v932-individual-history footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px solid #22242a}
+.player-career-v932 .pc-v932-individual-history footer span{padding:5px 8px;border-radius:999px;background:#17191e;color:#9299a3;font-size:.62rem}
+.player-career-v932 .pc-v932-individual-history footer b{color:#fff}
+.player-career-v932 .pc-v932-empty{margin:0;padding:11px;border:1px dashed #2d3038;border-radius:10px;color:#717984;font-size:.7rem;text-align:center}
+.player-career-v932 .pc-v930-list-head,.player-career-v932 .pc-v930-list-rows article{grid-template-columns:48px minmax(170px,1fr) 62px 42px 42px 42px}
+.player-career-v932 .pc-v930-list-rows article{transition:transform .12s ease,border-color .12s ease,filter .12s ease}
+.player-career-v932 .pc-v930-list-rows article:hover{transform:translateX(2px);border-color:#363943;filter:brightness(1.08)}
+.player-career-v932 .pc-v932-career-archive{margin-top:11px;padding:15px;border:1px solid #292b33;border-radius:15px;background:linear-gradient(180deg,#111218,#0c0d11);box-shadow:0 12px 35px rgba(0,0,0,.2)}
+.player-career-v932-empty .pc-v932-career-archive{margin-top:15px}
+.player-career-v932 .pc-v932-archive-list,.player-career-v932-empty .pc-v932-archive-list{display:grid;gap:5px;max-height:470px;overflow:auto;padding-right:3px}
+.pc-v932-archive-row{display:grid;grid-template-columns:32px minmax(160px,1.4fr) repeat(6,minmax(54px,.55fr)) minmax(150px,1fr);align-items:center;gap:7px;min-height:48px;padding:7px 9px;border:1px solid #21232a;border-radius:11px;background:linear-gradient(90deg,#14161b,#101116);font-size:.68rem}
+.pc-v932-archive-row:hover{border-color:#3a3d47;background:linear-gradient(90deg,#181a20,#111318)}
+.pc-v932-archive-rank{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#262932;color:#aeb4bc;font-size:.64rem;font-weight:800}
+.pc-v932-archive-player{display:grid;gap:2px;min-width:0}
+.pc-v932-archive-player strong{font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-v932-archive-player small{color:#727a84;font-size:.61rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-v932-archive-row>div:not(.pc-v932-archive-player):not(.pc-v932-archive-club){display:grid;justify-items:center;gap:2px}
+.pc-v932-archive-row>div>small{color:#6e7681;font-size:.56rem;text-transform:uppercase}
+.pc-v932-archive-row>div>strong{font-size:.72rem}
+.pc-v932-archive-club{display:flex;align-items:center;gap:7px;min-width:0}
+.pc-v932-archive-club>img,.pc-v932-archive-club>.club-badge{width:26px;height:26px;object-fit:contain;flex:0 0 auto}
+.pc-v932-archive-club>span{display:grid;gap:2px;min-width:0}
+.pc-v932-archive-club strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1180px){
+  .pc-v932-archive-row{grid-template-columns:30px minmax(150px,1.4fr) repeat(4,minmax(50px,.55fr)) minmax(135px,1fr)}
+  .pc-v932-archive-row>div:nth-of-type(6),.pc-v932-archive-row>div:nth-of-type(7){display:none!important}
+}
+@media(max-width:900px){
+  .player-career-v932 .pc-v930-list-head,.player-career-v932 .pc-v930-list-rows article{grid-template-columns:44px minmax(145px,1fr) 56px 38px 38px 38px}
+  .pc-v932-archive-row{grid-template-columns:28px minmax(150px,1fr) repeat(3,52px);}
+  .pc-v932-archive-row>div:nth-of-type(n+5){display:none!important}
+  .pc-v932-archive-club{display:none}
+}
+@media(max-width:620px){
+  .player-career-v932 .pc-v932-award-list article{grid-template-columns:30px minmax(0,1fr)}
+  .player-career-v932 .pc-v932-award-list article>span{display:none}
+  .pc-v932-archive-row{grid-template-columns:26px minmax(120px,1fr) 48px 48px}
+  .pc-v932-archive-row>div:nth-of-type(n+4){display:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .player-career-v932 .pc-v931-trophy-card,.player-career-v932 .pc-v930-list-rows article{transition:none}
+}
+.player-career-v932-empty .pc-v932-career-archive{padding:15px;border:1px solid #292b33;border-radius:15px;background:linear-gradient(180deg,#111218,#0c0d11);box-shadow:0 12px 35px rgba(0,0,0,.2)}
+.player-career-v932-empty .pc-v932-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.player-career-v932-empty .pc-v932-section-head small{display:block;color:#f2a259;font-size:.62rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+.player-career-v932-empty .pc-v932-section-head h3{margin:3px 0 0;font-size:.94rem}
+.player-career-v932-empty .pc-v932-section-head>span{display:grid;place-items:center;min-width:34px;height:28px;padding:0 8px;border:1px solid #353842;border-radius:999px;background:#191b21;color:#e6e8eb;font-size:.71rem;font-weight:800}

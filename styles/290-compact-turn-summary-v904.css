@@ -1,0 +1,82 @@
+/* V9.04 · Resumen del último avance compacto. */
+.turn-summary-compact{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:4px 8px;
+  margin:0 0 8px;
+  padding:5px 8px;
+  border:1px solid rgba(148,163,184,.16);
+  border-left:2px solid rgba(59,130,246,.55);
+  border-radius:8px;
+  background:rgba(15,23,42,.34);
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.25;
+}
+.turn-summary-compact.ok{border-left-color:rgba(34,197,94,.7)}
+.turn-summary-compact.warn{border-left-color:rgba(245,158,11,.75)}
+.turn-summary-compact.bad{border-left-color:rgba(239,68,68,.75)}
+.turn-summary-compact-title,
+.turn-summary-compact-phase,
+.turn-summary-compact-result,
+.turn-summary-compact-item{
+  font:inherit;
+  color:inherit;
+  min-width:0;
+}
+.turn-summary-compact-title{
+  color:var(--text);
+  font-weight:600;
+}
+.turn-summary-compact-phase{
+  padding-right:8px;
+  border-right:1px solid rgba(148,163,184,.2);
+}
+.turn-summary-compact-result{
+  font-variant-numeric:tabular-nums;
+}
+.turn-summary-compact-item strong{
+  color:var(--text);
+  font-size:inherit;
+  font-weight:600;
+  letter-spacing:0;
+  text-transform:none;
+}
+.turn-summary-compact-item + .turn-summary-compact-item::before{
+  content:'·';
+  margin-right:8px;
+  color:rgba(148,163,184,.65);
+}
+html[data-theme="light"] .turn-summary-compact{
+  border-color:#cbd5e1;
+  border-left-color:#2563eb;
+  background:#f8fafc;
+  color:#475569;
+}
+html[data-theme="light"] .turn-summary-compact.ok{border-left-color:#15803d}
+html[data-theme="light"] .turn-summary-compact.warn{border-left-color:#a16207}
+html[data-theme="light"] .turn-summary-compact.bad{border-left-color:#b91c1c}
+html[data-theme="light"] .turn-summary-compact-title,
+html[data-theme="light"] .turn-summary-compact-item strong{color:#0f172a}
+html[data-theme="light"] .turn-summary-compact-phase{border-right-color:#cbd5e1}
+@media (max-width:700px){
+  .turn-summary-compact{
+    align-items:flex-start;
+    gap:3px 6px;
+    margin-bottom:6px;
+    padding:5px 7px;
+    font-size:9.5px;
+  }
+  .turn-summary-compact-title,
+  .turn-summary-compact-phase,
+  .turn-summary-compact-result{
+    white-space:nowrap;
+  }
+  .turn-summary-compact-item{
+    flex-basis:100%;
+  }
+  .turn-summary-compact-item + .turn-summary-compact-item::before{
+    content:none;
+  }
+}

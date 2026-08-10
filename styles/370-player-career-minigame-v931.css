@@ -1,0 +1,22 @@
+/* V9.31 · Ser jugador: palmarés corregido, trofeos vectoriales y curva de progreso */
+.player-career-v931 .pc-v931-trophy-strip{grid-column:1/-1;display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:8px;padding:12px 0 10px;border-bottom:1px solid #23242a}
+.player-career-v931 .pc-v931-trophy-card{display:flex;align-items:center;gap:8px;min-height:56px;padding:9px 10px;border:1px solid #24262d;border-radius:12px;background:linear-gradient(180deg,#14161b,#0f1116)}
+.player-career-v931 .pc-v931-trophy-card.major{background:linear-gradient(180deg,#1d1a11,#131316);border-color:#4b3b12}
+.player-career-v931 .pc-v931-trophy-card svg{width:24px;height:24px;color:#f0be53;flex:0 0 auto}
+.player-career-v931 .pc-v931-trophy-card span{display:grid;gap:2px;min-width:0}
+.player-career-v931 .pc-v931-trophy-card small{color:#818894;font-size:.59rem;text-transform:uppercase;letter-spacing:.05em}
+.player-career-v931 .pc-v931-trophy-card strong{font-size:.95rem;line-height:1}
+.player-career-v931 .pc-v931-trophy-card em{font-style:normal;color:#77808b;font-size:.62rem;line-height:1.2}
+.player-career-v931 .pc-v931-awards-summary{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;padding-top:10px}
+.player-career-v931 .pc-v931-awards-summary span{display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #22242b;border-radius:999px;background:#111217;color:#aab0b8;font-size:.68rem}
+.player-career-v931 .pc-v931-awards-summary svg{width:15px;height:15px;color:#f0be53}
+.player-career-v931 .pc-v931-awards-summary b{color:#fff;font-size:.73rem}
+.player-career-v931 .pc-v930-market-choice .pc-v930-market-outcome em{letter-spacing:.005em}
+@media(max-width:900px){
+  .player-career-v931 .pc-v931-trophy-strip{grid-template-columns:repeat(2,1fr)}
+  .player-career-v931 .pc-v931-trophy-card.major{grid-column:1/-1}
+}
+@media(max-width:620px){
+  .player-career-v931 .pc-v931-trophy-strip{grid-template-columns:1fr}
+  .player-career-v931 .pc-v931-awards-summary{flex-direction:column}
+}

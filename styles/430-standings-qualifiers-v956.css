@@ -1,0 +1,24 @@
+/* V9.56 · Clasificación continental y Mundial visible en tablas de liga. */
+.standings-division-head{align-items:flex-start;gap:12px;flex-wrap:wrap}
+.standings-division-head>h3{margin:2px 0}
+.standings-qualification-legend{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin-left:auto}
+.standings-legend-item,.standings-qualification-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid transparent;font-weight:850;letter-spacing:.01em;white-space:nowrap}
+.standings-legend-item{padding:5px 9px;font-size:.58rem}
+.standings-qualification-pill{padding:4px 7px;font-size:.54rem;line-height:1}
+.standings-legend-item.libertadores,.standings-qualification-pill.libertadores{background:rgba(16,185,129,.15);border-color:rgba(52,211,153,.34);color:#a7f3d0}
+.standings-legend-item.champions,.standings-qualification-pill.champions{background:rgba(139,92,246,.16);border-color:rgba(167,139,250,.36);color:#ddd6fe}
+.standings-legend-item.world-cup,.standings-qualification-pill.world-cup{background:rgba(59,130,246,.16);border-color:rgba(96,165,250,.38);color:#bfdbfe}
+.standings-qualification-pills{display:flex;align-items:center;justify-content:flex-start;gap:5px;flex-wrap:wrap}
+.standings-qualification-cell{min-width:125px}
+.standings-no-qualification{color:var(--muted);opacity:.55}
+tr.libertadores-qualification-row td{background:rgba(16,185,129,.075)!important;border-bottom-color:rgba(52,211,153,.18)}
+tr.champions-qualification-row td{background:rgba(139,92,246,.075)!important;border-bottom-color:rgba(167,139,250,.18)}
+tr.libertadores-qualification-row td:first-child{border-left:3px solid rgba(52,211,153,.72)}
+tr.champions-qualification-row td:first-child{border-left:3px solid rgba(167,139,250,.75)}
+tr.own-club-row.libertadores-qualification-row td{box-shadow:inset 0 0 0 1px rgba(52,211,153,.20)}
+tr.own-club-row.champions-qualification-row td{box-shadow:inset 0 0 0 1px rgba(167,139,250,.22)}
+.standings-table-with-qualification th:last-child,.standings-table-with-qualification td:last-child{text-align:left}
+@media(max-width:900px){
+  .standings-qualification-legend{justify-content:flex-start;margin-left:0;width:100%}
+  .standings-table-with-qualification{min-width:850px}
+}

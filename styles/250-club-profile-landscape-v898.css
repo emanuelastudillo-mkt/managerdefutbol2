@@ -1,0 +1,180 @@
+/* V8.99 · Ficha de club horizontal y valores monetarios compactos. */
+
+.club-profile-landscape{
+  clear:both;
+  display:grid;
+  grid-template-columns:minmax(260px,.42fr) minmax(0,1.58fr);
+  grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:
+    "header header"
+    "side roster";
+  gap:10px;
+  min-width:0;
+  min-height:0;
+}
+.club-profile-header{
+  grid-area:header;
+  display:grid;
+  grid-template-columns:minmax(280px,.72fr) minmax(0,1.28fr);
+  gap:10px;
+  min-width:0;
+}
+.club-profile-identity{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  padding:11px 13px;
+}
+.club-profile-identity .club-modal-head{width:100%;min-width:0}
+.club-profile-identity .club-modal-head h2{
+  min-width:0;
+  margin:0;
+  font-size:clamp(1.05rem,1.8vw,1.45rem);
+  line-height:1.1;
+}
+.club-profile-identity .club-modal-head .muted{margin:4px 0 0}
+.club-profile-key-metrics{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  min-width:0;
+}
+.club-profile-metric{
+  min-width:0;
+  padding:10px 11px;
+  display:grid;
+  align-content:center;
+  gap:2px;
+}
+.club-profile-metric .label{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.club-profile-metric .metric{
+  margin:0;
+  font-size:clamp(1.05rem,1.7vw,1.45rem);
+  line-height:1.05;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.club-profile-money{letter-spacing:-.035em}
+.club-profile-side{
+  grid-area:side;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr);
+  gap:8px;
+  min-width:0;
+  min-height:0;
+  overflow:auto;
+  padding-right:2px;
+}
+.club-profile-squad-strip{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+}
+.club-profile-squad-strip>div{
+  min-width:0;
+  padding:8px 9px;
+  border-radius:13px;
+  border:1px solid rgba(148,163,184,.14);
+  background:rgba(255,255,255,.035);
+  text-align:center;
+}
+.club-profile-squad-strip span{
+  display:block;
+  color:var(--muted);
+  font-size:8px;
+  font-weight:850;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.club-profile-squad-strip strong{display:block;margin-top:2px;font-size:1.15rem;line-height:1}
+.club-profile-tactic-card,.club-profile-report-card{padding:10px 11px;min-width:0}
+.club-profile-tactic-card h3,.club-profile-report-card h3{margin:0 0 4px;font-size:.9rem}
+.club-profile-tactic-card .club-lines{gap:5px;margin-top:8px}
+.club-profile-tactic-card .club-line{min-height:58px;padding:6px;border-radius:11px}
+.club-profile-tactic-card .club-line strong{font-size:19px}
+.club-profile-tactic-card .club-line span{font-size:7px;letter-spacing:.045em}
+.club-profile-report-card{overflow:auto}
+.club-profile-roster{
+  grid-area:roster;
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding:10px 11px;
+}
+.club-profile-roster-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:7px;
+}
+.club-profile-roster-head .label{margin:0 0 2px}
+.club-profile-roster-head h3{margin:0;font-size:.95rem}
+.club-profile-roster .table-wrap{
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  border-radius:12px;
+}
+.club-profile-roster .scouting-table{margin:0}
+.club-profile-roster .scouting-table th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#182233;
+}
+
+@supports selector(.modal-panel:has(.club-profile-landscape)){
+  @media (min-width:981px){
+    .modal-panel:has(.club-profile-landscape){
+      width:min(1560px,98vw);
+      height:min(94vh,980px);
+      max-height:94vh;
+      overflow:hidden;
+      padding:11px;
+      border-radius:17px;
+    }
+    .modal-panel:has(.club-profile-landscape) .modal-close{
+      position:absolute;
+      top:9px;
+      right:9px;
+      z-index:8;
+      float:none;
+    }
+    .modal-panel:has(.club-profile-landscape) .club-profile-landscape{
+      height:100%;
+      padding-top:1px;
+    }
+    .modal-panel:has(.club-profile-landscape) .club-profile-header{padding-right:39px}
+  }
+}
+
+@media (max-width:1180px) and (min-width:981px){
+  .club-profile-landscape{grid-template-columns:minmax(230px,.38fr) minmax(0,1.62fr)}
+  .club-profile-header{grid-template-columns:minmax(245px,.62fr) minmax(0,1.38fr)}
+  .club-profile-key-metrics{grid-template-columns:repeat(4,minmax(105px,1fr))}
+  .club-profile-metric{padding:9px 8px}
+  .club-profile-metric .metric{font-size:1.05rem}
+}
+
+@media (max-width:980px){
+  .club-profile-landscape{display:block}
+  .club-profile-header{display:grid;grid-template-columns:1fr;gap:8px}
+  .club-profile-key-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .club-profile-side{display:grid;grid-template-columns:1fr;overflow:visible;margin-top:8px}
+  .club-profile-roster{margin-top:8px;overflow:visible}
+  .club-profile-roster .table-wrap{max-height:none;overflow:auto}
+}
+
+@media (max-width:540px){
+  .club-profile-key-metrics{grid-template-columns:1fr 1fr}
+  .club-profile-identity .club-modal-head .row.between{align-items:stretch}
+  .club-profile-identity .club-modal-head .row.between button{width:100%}
+  .club-profile-roster-head .pill{display:none}
+}

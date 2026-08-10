@@ -1,0 +1,131 @@
+/* V9.51 · Diagnósticos del panel principal con empleados responsables. */
+.office-status-advisors{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.home-status-advisor-card{
+  position:relative;
+  min-width:0;
+  display:grid;
+  grid-template-rows:auto auto 1fr auto;
+  gap:8px;
+  padding:12px;
+  border:1px solid rgba(148,163,184,.14);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(2,6,23,.34),rgba(255,255,255,.035));
+  overflow:hidden;
+}
+.home-status-advisor-card::after{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:2px;
+  background:rgba(59,130,246,.72);
+}
+.home-status-advisor-card.ok::after{background:linear-gradient(90deg,#84cc16,#22c55e)}
+.home-status-advisor-card.warn::after{background:linear-gradient(90deg,#f97316,#facc15)}
+.home-status-advisor-card.bad::after{background:linear-gradient(90deg,#991b1b,#ef4444)}
+.home-status-advisor-head{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  min-width:0;
+}
+.home-status-advisor-profile{
+  width:54px;
+  height:54px;
+  min-width:54px;
+  border-radius:16px;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(15,23,42,.72);
+}
+.home-status-advisor-photo{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.home-status-advisor-profile .staff-photo-fallback{
+  width:100%;
+  height:100%;
+  place-items:center;
+  font-size:22px;
+  font-weight:900;
+  color:#dbeafe;
+  background:linear-gradient(145deg,rgba(59,130,246,.24),rgba(15,23,42,.9));
+}
+.home-status-empty-profile{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  color:#64748b;
+  background:linear-gradient(145deg,rgba(51,65,85,.22),rgba(2,6,23,.7));
+}
+.home-status-empty-profile svg{width:36px;height:36px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round}
+.home-status-team-badge{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  background:radial-gradient(circle,rgba(var(--club-accent-rgb),.20),rgba(2,6,23,.72));
+}
+.home-status-team-badge .club-badge-placeholder{
+  width:42px;
+  height:42px;
+  min-width:42px;
+  border-radius:13px;
+}
+.home-status-advisor-value{min-width:0;display:grid;gap:1px}
+.home-status-advisor-value>span{
+  color:var(--muted);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+.home-status-advisor-value>strong{
+  font-size:27px;
+  line-height:1;
+  letter-spacing:-.045em;
+}
+.home-status-advisor-value>small{
+  color:#94a3b8;
+  font-size:9px;
+  line-height:1.25;
+  white-space:normal;
+}
+.home-status-advisor-source{display:flex;align-items:center;gap:7px;min-width:0}
+.home-status-advisor-source strong{
+  color:#dbeafe;
+  font-size:10px;
+  line-height:1.25;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.home-status-advisor-card p{
+  margin:0;
+  color:#b8c4d6;
+  font-size:10px;
+  line-height:1.42;
+}
+.home-status-advisor-progress{
+  display:block;
+  height:7px;
+  border-radius:999px;
+  background:rgba(15,23,42,.88);
+  overflow:hidden;
+}
+.home-status-advisor-progress b{display:block;height:100%;border-radius:inherit;background:var(--accent)}
+.home-status-advisor-card.ok .home-status-advisor-progress b{background:linear-gradient(90deg,#84cc16,#22c55e)}
+.home-status-advisor-card.warn .home-status-advisor-progress b{background:linear-gradient(90deg,#f97316,#facc15)}
+.home-status-advisor-card.bad .home-status-advisor-progress b{background:linear-gradient(90deg,#991b1b,#ef4444)}
+@media (max-width:700px){
+  .office-status-advisors{grid-template-columns:1fr}
+  .home-status-advisor-card{padding:11px}
+}

@@ -1,0 +1,35 @@
+/* V8.69 · Perfil acumulativo, evaluaciones e historial anual. */
+.career-profile-stage-one{margin-top:14px}
+.career-profile-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.career-profile-main{border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.025);padding:14px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.career-profile-main>span{font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.career-profile-main>strong{font-size:1.55rem;line-height:1.12;overflow-wrap:anywhere}
+.career-profile-main>strong small{font-size:.72rem;color:var(--muted);margin-left:3px}
+.career-profile-main>em{font-size:.78rem;color:var(--muted);font-style:normal}
+.career-capabilities-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;margin-top:12px}
+.career-capability{display:grid;gap:5px}
+.career-capability>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.82rem}
+.career-capability>div:first-child span{color:var(--muted)}
+.career-capability-track{height:8px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.career-capability-track i{display:block;height:100%;border-radius:inherit;background:var(--accent);opacity:.82}
+.career-season-history-card td small,.career-club-history-card td small{display:block;margin-top:3px;color:var(--muted);font-size:.72rem}
+.career-managed-club-row{background:rgba(69,200,120,.055)}
+.career-season-evaluation{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0}
+.career-season-evaluation.compact{grid-template-columns:repeat(3,minmax(0,1fr))}
+.career-season-evaluation>div{border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.025);padding:10px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.career-season-evaluation span{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.career-season-evaluation strong{font-size:1rem;overflow-wrap:anywhere}
+.career-season-evaluation em{font-size:.72rem;color:var(--muted);font-style:normal}
+.office-objective-card-qualitative strong{font-size:clamp(.96rem,1.35vw,1.3rem)!important;line-height:1.08;max-width:100%;overflow-wrap:anywhere}
+.office-objective-card-qualitative .office-objective-meta span{font-size:.7rem;line-height:1.15}
+.career-club-history-card select{min-width:170px}
+@media(max-width:900px){
+  .career-profile-summary{grid-template-columns:1fr}
+  .career-capabilities-grid{grid-template-columns:1fr}
+  .career-season-evaluation,.career-season-evaluation.compact{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .career-season-evaluation,.career-season-evaluation.compact{grid-template-columns:1fr}
+  .career-club-history-card>.row{align-items:stretch}
+  .career-club-history-card select{width:100%;min-width:0}
+}

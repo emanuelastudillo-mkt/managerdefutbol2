@@ -1,0 +1,27 @@
+/* V9.43 · Relaciones persistentes del mánager */
+.manager-relations-summary{margin-bottom:14px}
+.manager-relations-summary .card strong{display:block;font-size:1.65rem;margin-top:4px}
+.manager-relations-explanation{margin-bottom:14px}
+.manager-relations-explanation p{margin:8px 0 0;max-width:980px;line-height:1.55}
+.manager-relations-table-card .row{align-items:flex-start;gap:12px;margin-bottom:10px}
+.manager-relations-table-card td,.manager-relations-market-row td{vertical-align:middle}
+.manager-relations-table-card td small,.manager-relations-market-row td small{display:block;margin-top:3px;color:var(--muted)}
+.manager-relation-player{display:flex;align-items:center;gap:10px;min-width:190px}
+.manager-relation-player .photo-thumb{width:42px;height:42px;flex:0 0 42px}
+.manager-relation-player>div{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.manager-relation-player strong{display:block;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.manager-relation-player span{font-size:.78rem;color:var(--muted)}
+.relation-player-placeholder{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.07);color:var(--muted)}
+.manager-relation-inline-badge{display:inline-flex;margin-left:7px;padding:2px 6px;border:1px solid rgba(88,211,154,.35);border-radius:999px;background:rgba(88,211,154,.10);color:var(--ok);font-size:.68rem;font-weight:700;vertical-align:middle}
+.manager-relations-market-note{margin-bottom:14px;border-color:rgba(88,211,154,.25)}
+.manager-relations-market-note p{margin:5px 0 0;color:var(--muted);line-height:1.45}
+.manager-relation-market-row.active-target{background:linear-gradient(90deg,rgba(88,211,154,.07),transparent 55%)}
+.manager-relation-offer-note{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:10px 0;padding:10px 12px;border:1px solid rgba(88,211,154,.28);border-radius:10px;background:rgba(88,211,154,.08)}
+.manager-relation-offer-note span{font-size:.82rem;color:var(--muted);text-align:right}
+.player-manager-relation-card{border-color:rgba(88,211,154,.25)}
+.player-manager-relation-card p:last-child{margin-bottom:0}
+@media (max-width:760px){
+  .manager-relations-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .manager-relation-offer-note{align-items:flex-start;flex-direction:column}
+  .manager-relation-offer-note span{text-align:left}
+}

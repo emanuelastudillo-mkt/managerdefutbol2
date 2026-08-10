@@ -1,0 +1,11 @@
+/* V8.97 · Jerarquía y disciplina de estrellas. */
+.star-discipline-summary{margin-bottom:14px}
+.star-discipline-summary .row{align-items:flex-start;gap:12px}
+.star-discipline-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.star-discipline-grid>div{display:flex;flex-direction:column;gap:3px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-soft)}
+.star-discipline-grid span{font-size:.78rem;color:var(--muted)}
+.star-discipline-grid strong{font-size:1rem}
+.star-discipline-grid small{color:var(--muted)}
+.player-star-discipline-card .stat-rank strong{max-width:62%;text-align:right}
+@media (max-width:900px){.star-discipline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.star-discipline-grid{grid-template-columns:1fr}.player-star-discipline-card .stat-rank{align-items:flex-start;flex-direction:column}.player-star-discipline-card .stat-rank strong{max-width:none;text-align:left}}

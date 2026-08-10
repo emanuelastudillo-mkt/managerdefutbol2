@@ -1,0 +1,166 @@
+/* V8.70 · Vestuario y confianza del manager */
+
+.dressing-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:14px;
+}
+.dressing-main-summary{
+  min-height:132px;
+  padding:18px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--panel-2);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:5px;
+}
+.dressing-main-summary>span{
+  color:var(--muted);
+  font-size:.78rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.dressing-main-summary>strong{
+  font-size:2rem;
+  line-height:1;
+}
+.dressing-main-summary>em{
+  color:var(--muted);
+  font-size:.82rem;
+  font-style:normal;
+}
+.dressing-groups-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+.dressing-group-card{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-height:118px;
+}
+.dressing-group-card>strong{
+  font-size:1.65rem;
+}
+.dressing-group-card>small,
+.dressing-table td small{
+  display:block;
+  color:var(--muted);
+  margin-top:3px;
+}
+.dressing-explanation{
+  margin-bottom:14px;
+}
+.dressing-explanation p{
+  margin:0;
+}
+.dressing-table-wrap{
+  max-height:none;
+}
+.dressing-table td{
+  vertical-align:middle;
+}
+.dressing-table td:nth-child(2){
+  min-width:210px;
+}
+.dressing-table td:nth-child(4){
+  min-width:150px;
+}
+.dressing-trust-cell{
+  min-width:140px;
+}
+.dressing-trust-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-bottom:5px;
+}
+.dressing-trust-head span{
+  font-size:.76rem;
+}
+.dressing-trust-track{
+  height:8px;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+}
+.dressing-trust-track i{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,var(--danger),var(--warn),var(--accent-2));
+}
+.player-dressing-room-card .stat-rank strong{
+  text-align:right;
+}
+
+@media (max-width:1280px){
+  .dressing-groups-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:760px){
+  .dressing-summary-grid,
+  .dressing-groups-grid{grid-template-columns:1fr;}
+  .dressing-main-summary{min-height:106px;}
+}
+
+
+/* V9.25 · Jerarquía de capitán y segundo capitán */
+.dressing-leadership-card{
+  margin-bottom:14px;
+  display:grid;
+  gap:14px;
+}
+.dressing-leadership-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.dressing-leadership-head h3,
+.dressing-leadership-head p{margin:0;}
+.dressing-leadership-head p{margin-top:5px;color:var(--muted);max-width:820px;}
+.dressing-leadership-selectors{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.dressing-leadership-selectors label{display:grid;gap:6px;}
+.dressing-leadership-selectors label>span{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.dressing-leadership-selectors select{width:100%;}
+.dressing-leadership-current{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.dressing-leadership-current>div{
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--panel-2);
+  display:grid;
+  gap:4px;
+}
+.dressing-leadership-current span{color:var(--muted);font-size:.82rem;}
+.dressing-leadership-card .primary{justify-self:start;}
+.tactic-captain-exception{
+  display:grid;
+  gap:3px;
+  padding:10px 12px;
+  margin:10px 0;
+  border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);
+  border-radius:10px;
+  background:color-mix(in srgb,var(--warn) 10%,transparent);
+}
+.tactic-captain-exception span{color:var(--muted);font-size:.82rem;}
+.tactic-captain-development{margin:8px 0 0;}
+@media (max-width:760px){
+  .dressing-leadership-head{display:grid;}
+  .dressing-leadership-selectors,
+  .dressing-leadership-current{grid-template-columns:1fr;}
+}

@@ -1,0 +1,39 @@
+/* V9.34 · Ser jugador: eventos de carrera, ciclos y estrellas mundiales */
+.player-career-v932 .pc-v934-event-card{display:grid;gap:12px;margin-top:16px;padding:14px;border:1px solid #2b2e36;border-radius:15px;background:linear-gradient(155deg,#15171d,#0e1015 64%);box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.player-career-v932 .pc-v934-event-head{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:11px;align-items:start}
+.player-career-v932 .pc-v934-event-head>i{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#7d3d00,#d86e00);color:#fff}
+.player-career-v932 .pc-v934-event-head>i svg{width:23px;height:23px}
+.player-career-v932 .pc-v934-event-head small{color:#f1a45b;font-size:.63rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+.player-career-v932 .pc-v934-event-head h3{margin:2px 0 4px;font-size:1rem}
+.player-career-v932 .pc-v934-event-head p{margin:0;color:#9097a2;font-size:.72rem;line-height:1.42}
+.player-career-v932 .pc-v934-event-head>span{color:#747c87;font-size:.67rem;text-align:right;white-space:nowrap}
+.player-career-v932 .pc-v934-event-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.player-career-v932 .pc-v934-event-option{display:grid;align-content:start;gap:9px;min-height:176px;padding:11px;border:1px solid #292c34;border-radius:13px;background:#111319;color:#e9ebef;text-align:left;transition:border-color .15s ease,transform .15s ease,opacity .15s ease,box-shadow .15s ease}
+.player-career-v932 .pc-v934-event-option:hover:not(:disabled){border-color:#e77b1e;transform:translateY(-1px)}
+.player-career-v932 .pc-v934-event-option>strong{font-size:.82rem}
+.player-career-v932 .pc-v934-event-option>span{display:grid;gap:6px}
+.player-career-v932 .pc-v934-event-outcome{display:grid;grid-template-columns:17px minmax(0,1fr) 36px;align-items:center;gap:6px;padding:7px;border:1px solid #242730;border-radius:10px;background:#0c0e13;transition:filter .08s ease,border-color .08s ease,transform .08s ease,box-shadow .08s ease}
+.player-career-v932 .pc-v934-event-outcome svg{width:15px;height:15px}
+.player-career-v932 .pc-v934-event-outcome em{font-style:normal;color:#aeb4bd;font-size:.65rem;line-height:1.28}
+.player-career-v932 .pc-v934-event-outcome b{justify-self:end;padding:3px 5px;border-radius:7px;background:#20242b;font-size:.64rem}
+.player-career-v932 .pc-v934-event-outcome.positive svg,.player-career-v932 .pc-v934-event-outcome.positive b{color:#21dfa9}
+.player-career-v932 .pc-v934-event-outcome.negative svg,.player-career-v932 .pc-v934-event-outcome.negative b{color:#ee6d72}
+.player-career-v932 .pc-v934-event-option.is-selected{border-color:#f1f3f6;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+.player-career-v932 .pc-v934-event-option.is-dimmed{opacity:.34}
+.player-career-v932 .pc-v934-event-outcome.is-lit{border-color:#f59e0b;filter:brightness(1.52);transform:scale(1.012);box-shadow:0 0 0 1px rgba(245,158,11,.42),0 0 17px rgba(245,158,11,.24)}
+.player-career-v932 .pc-v934-event-outcome.is-final{border-color:#2ee6ae;filter:brightness(1.58);box-shadow:0 0 0 1px rgba(46,230,174,.6),0 0 23px rgba(46,230,174,.30)}
+.player-career-v932 .pc-v933-career-status .positive b{color:#2ee6ae}
+.player-career-v932 .pc-v933-career-status .negative b{color:#f07075}
+@keyframes pcV934EventPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.7)}}
+.player-career-v932 .pc-v934-event-outcome.is-lit{animation:pcV934EventPulse .16s linear infinite}
+.player-career-v932 .pc-v934-event-outcome.is-final{animation:none}
+@media(max-width:700px){
+  .player-career-v932 .pc-v934-event-head{grid-template-columns:38px minmax(0,1fr)}
+  .player-career-v932 .pc-v934-event-head>span{grid-column:1/-1;text-align:left}
+  .player-career-v932 .pc-v934-event-options{grid-template-columns:1fr}
+  .player-career-v932 .pc-v934-event-option{min-height:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .player-career-v932 .pc-v934-event-option,.player-career-v932 .pc-v934-event-outcome{transition:none}
+  .player-career-v932 .pc-v934-event-outcome.is-lit{animation:none}
+}

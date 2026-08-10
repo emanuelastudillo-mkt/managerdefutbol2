@@ -1,0 +1,91 @@
+/* V9.37 · Ser jugador: opciones más claras y estadísticas compactas */
+.player-career-v932 .pc-v930-left{padding:15px}
+.player-career-v932 .pc-v930-identity{grid-template-columns:62px minmax(0,1fr);gap:8px}
+.player-career-v932 .pc-v930-overall{height:67px;border-radius:12px}
+.player-career-v932 .pc-v930-overall strong{font-size:2rem}
+.player-career-v932 .pc-v930-player-card{gap:5px;padding:8px 10px;border-radius:12px}
+.player-career-v932 .pc-v930-name-row>img,
+.player-career-v932 .pc-v930-name-row>.club-badge{width:26px;height:26px}
+.player-career-v932 .pc-v930-name-row h2{font-size:1.04rem}
+.player-career-v932 .pc-v930-name-row p{font-size:.68rem}
+.player-career-v932 .pc-v930-pills span{padding:2px 6px;font-size:.58rem}
+.player-career-v932 .pc-v930-player-meta{gap:5px;padding-top:5px}
+.player-career-v932 .pc-v930-player-meta small{font-size:.54rem}
+.player-career-v932 .pc-v930-player-meta strong{font-size:.72rem}
+
+.player-career-v932 .pc-v930-main-stats{gap:6px;margin-top:7px;padding:0 0 8px;border-bottom:1px solid #23242a}
+.player-career-v932 .pc-v930-main-stats>div{justify-items:start;gap:1px;padding:7px 9px;border:1px solid #22242a;border-radius:9px;background:#101116}
+.player-career-v932 .pc-v930-main-stats>div:not(:last-child)::after{display:none}
+.player-career-v932 .pc-v930-main-stats small{font-size:.56rem}
+.player-career-v932 .pc-v930-main-stats strong{font-size:.88rem}
+
+.player-career-v932 .pc-v933-career-status{gap:5px;padding:7px 0 8px}
+.player-career-v932 .pc-v933-career-status span{gap:2px;padding:6px 7px;border-radius:8px}
+.player-career-v932 .pc-v933-career-status small{font-size:.53rem}
+.player-career-v932 .pc-v933-career-status b{font-size:.65rem}
+
+.player-career-v932 .pc-v931-trophy-strip{gap:5px;padding:8px 0 7px}
+.player-career-v932 .pc-v931-trophy-card{min-height:42px;gap:6px;padding:6px 7px;border-radius:9px}
+.player-career-v932 .pc-v931-trophy-card svg{width:18px;height:18px}
+.player-career-v932 .pc-v931-trophy-card small{font-size:.51rem}
+.player-career-v932 .pc-v931-trophy-card strong{font-size:.76rem}
+.player-career-v932 .pc-v931-trophy-card em{font-size:.53rem}
+.player-career-v932 .pc-v931-awards-summary{gap:5px;padding-top:7px}
+.player-career-v932 .pc-v931-awards-summary span{gap:4px;padding:5px 7px;font-size:.59rem}
+.player-career-v932 .pc-v931-awards-summary svg{width:13px;height:13px}
+.player-career-v932 .pc-v932-individual-history{margin-top:10px;padding:10px}
+.player-career-v932 .pc-v932-section-head{margin-bottom:7px}
+.player-career-v932 .pc-v932-award-list{gap:4px}
+.player-career-v932 .pc-v932-award-list article{grid-template-columns:27px minmax(0,1fr) auto;gap:7px;padding:5px 7px}
+.player-career-v932 .pc-v932-award-list i{width:24px;height:24px}
+.player-career-v932 .pc-v932-award-list i svg{width:14px;height:14px}
+
+/* Las alternativas se leen como botones principales y no como tarjetas pasivas. */
+.player-career-v932 .pc-v930-market-choice,
+.player-career-v932 .pc-v934-event-option,
+.player-career-shell .pc-v935-initial-club{position:relative;overflow:hidden;cursor:pointer;border-width:2px;border-color:#414651;background:linear-gradient(160deg,#1a1d24,#101218 68%);box-shadow:0 7px 18px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.045);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,filter .16s ease,opacity .16s ease}
+.player-career-v932 .pc-v930-market-choice::before,
+.player-career-v932 .pc-v934-event-option::before,
+.player-career-shell .pc-v935-initial-club::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#f08a2b,#ffb45f);opacity:.9}
+.player-career-v932 .pc-v930-market-choice::after,
+.player-career-v932 .pc-v934-event-option::after{content:"ELEGIR";display:grid;place-items:center;min-height:31px;margin-top:3px;border:1px solid #6a4020;border-radius:9px;background:linear-gradient(180deg,#f08a2b,#bd5d0b);color:#fff;font-size:.64rem;font-weight:900;letter-spacing:.08em;text-align:center;box-shadow:inset 0 1px rgba(255,255,255,.18)}
+.player-career-v932 .pc-v930-market-choice:hover:not(:disabled),
+.player-career-v932 .pc-v934-event-option:hover:not(:disabled),
+.player-career-shell .pc-v935-initial-club:hover:not(:disabled){transform:translateY(-3px);border-color:#ff9a3d;filter:brightness(1.08);box-shadow:0 13px 28px rgba(0,0,0,.34),0 0 0 1px rgba(240,138,43,.24)}
+.player-career-v932 .pc-v930-market-choice:active:not(:disabled),
+.player-career-v932 .pc-v934-event-option:active:not(:disabled),
+.player-career-shell .pc-v935-initial-club:active:not(:disabled){transform:translateY(0) scale(.985)}
+.player-career-v932 .pc-v930-market-choice:focus-visible,
+.player-career-v932 .pc-v934-event-option:focus-visible,
+.player-career-shell .pc-v935-initial-club:focus-visible{outline:3px solid rgba(255,166,78,.5);outline-offset:2px}
+.player-career-v932 .pc-v930-market-choice:disabled,
+.player-career-v932 .pc-v934-event-option:disabled{cursor:default}
+.player-career-v932 .pc-v930-market-choice.is-current-club::before{background:linear-gradient(90deg,#2ee6ae,#7ff2cc)}
+.player-career-v932 .pc-v930-market-choice.is-current-club::after{border-color:#1d7259;background:linear-gradient(180deg,#27c997,#168262)}
+.player-career-v932 .pc-v930-market-choice.is-small-club::before{background:linear-gradient(90deg,#5b98ff,#91b8ff)}
+.player-career-v932 .pc-v930-market-choice.is-small-club::after{border-color:#315c9b;background:linear-gradient(180deg,#538ff2,#3265b5)}
+.player-career-v932 .pc-v934-event-option>strong{font-size:.88rem;line-height:1.22}
+.player-career-v932 .pc-v930-choice-club strong{font-size:.88rem}
+.player-career-v932 .pc-v930-choice-detail{border:1px solid #282b34}
+.player-career-v932 .pc-v930-market-outcomes,
+.player-career-v932 .pc-v934-event-option>span{margin-top:1px}
+.player-career-v932 .pc-v930-market-choice.is-roulette-choice::after,
+.player-career-v932 .pc-v934-event-option.is-selected::after{content:"SELECCIONADO";background:linear-gradient(180deg,#eef1f4,#aeb5be);border-color:#dfe3e8;color:#121418}
+.player-career-shell .pc-v935-initial-club.is-selected{border-width:2px}
+.player-career-shell .pc-v935-initial-club.is-selected::after{content:"SELECCIONADO";position:absolute;right:8px;bottom:8px;padding:3px 6px;border-radius:999px;background:#f08a2b;color:#fff;font-size:.52rem;font-weight:900;letter-spacing:.05em}
+
+@media(max-width:620px){
+  .player-career-v932 .pc-v930-left{padding:11px}
+  .player-career-v932 .pc-v930-identity{grid-template-columns:56px minmax(0,1fr)}
+  .player-career-v932 .pc-v930-overall{height:62px}
+  .player-career-v932 .pc-v930-overall strong{font-size:1.82rem}
+  .player-career-v932 .pc-v931-trophy-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .player-career-v932 .pc-v931-trophy-card.major{grid-column:1/-1}
+  .player-career-v932 .pc-v930-market-choice::after,
+  .player-career-v932 .pc-v934-event-option::after{min-height:29px}
+}
+@media(prefers-reduced-motion:reduce){
+  .player-career-v932 .pc-v930-market-choice,
+  .player-career-v932 .pc-v934-event-option,
+  .player-career-shell .pc-v935-initial-club{transition:none}
+}

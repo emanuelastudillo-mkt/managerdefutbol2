@@ -1,0 +1,24 @@
+/* V9.53 · Vista de Copa Libertadores */
+.libertadores-view{gap:18px}
+.libertadores-view .section-title{align-items:flex-start}
+.libertadores-view .champion-card{border-color:rgba(245,196,72,.42);background:linear-gradient(135deg,rgba(245,196,72,.10),rgba(255,255,255,.02))}
+.libertadores-groups{align-items:start}
+.libertadores-stage{display:grid;gap:12px;margin-top:4px}
+.libertadores-stage>.row{justify-content:space-between;align-items:center}
+.libertadores-tie{display:grid;gap:7px;min-width:0}
+.libertadores-tie .cwc-group-result{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+.libertadores-tie .cwc-group-result span:last-child{text-align:right}
+.libertadores-view .cwc-group-card details{margin-top:10px}
+.libertadores-view .cwc-group-card summary{cursor:pointer;color:var(--muted)}
+.libertadores-view .cwc-group-result-list{display:grid;gap:6px;margin-top:10px}
+.libertadores-view .division-filter{min-width:145px}
+@media (max-width:980px){
+  .libertadores-groups,.libertadores-stage .grid.cols-2{grid-template-columns:1fr}
+}
+@media (max-width:680px){
+  .libertadores-view .grid.cols-3{grid-template-columns:1fr}
+  .libertadores-view .section-title>.row{width:100%;align-items:stretch}
+  .libertadores-view .competition-controls{overflow:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .libertadores-tie .cwc-group-result{grid-template-columns:1fr;gap:3px;text-align:left}
+  .libertadores-tie .cwc-group-result span:last-child{text-align:left}
+}

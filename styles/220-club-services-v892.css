@@ -1,0 +1,25 @@
+/* V8.92 · Convenios y servicios del club */
+.club-services-section{display:grid;gap:14px;margin-top:16px}
+.club-services-title{align-items:flex-end}
+.club-service-group{display:grid;gap:12px}
+.club-service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.club-service-grid-four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.club-service-option{display:grid;align-content:start;gap:9px;min-width:0;padding:13px;border:1px solid rgba(148,163,184,.13);background:rgba(255,255,255,.025)}
+.club-service-option.is-active{border-color:rgba(74,222,128,.45);box-shadow:inset 0 0 0 1px rgba(74,222,128,.12)}
+.club-service-option-head{align-items:flex-start;gap:8px}
+.club-service-option h4{margin:1px 0 0;font-size:14px;line-height:1.2}
+.club-service-effects{display:flex;flex-wrap:wrap;gap:5px}
+.club-service-effects span{display:inline-flex;padding:4px 7px;border-radius:999px;border:1px solid rgba(148,163,184,.14);background:rgba(148,163,184,.07);color:#cbd5e1;font-size:9px;font-weight:750;line-height:1.15}
+.club-service-option-foot{align-items:center;gap:8px;margin-top:auto;padding-top:5px;border-top:1px solid rgba(148,163,184,.10)}
+.club-service-option-foot strong{font-size:12px}
+.club-service-option-foot button{margin-left:auto}
+.club-service-blocked{margin:0;color:#fbbf24}
+@media(max-width:1280px){.club-service-grid-four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.club-service-grid,.club-service-grid-four{grid-template-columns:1fr}.club-services-title{align-items:flex-start}}
+
+/* V9.65 · Visuales para convenios e instalaciones del club. */
+.club-service-visual{position:relative;overflow:hidden;border:1px solid rgba(148,163,184,.12);border-radius:12px;aspect-ratio:16/9;background:rgba(15,23,42,.28)}
+.club-service-visual img{display:block;width:100%;height:100%;object-fit:cover}
+.club-service-option .club-service-visual{margin:-1px -1px 2px}
+.club-service-option.is-active .club-service-visual{border-color:rgba(74,222,128,.28)}
+@media(max-width:900px){.club-service-visual{aspect-ratio:21/9}}

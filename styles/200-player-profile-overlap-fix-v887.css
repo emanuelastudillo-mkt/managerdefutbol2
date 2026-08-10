@@ -1,0 +1,290 @@
+/* V8.87 · Ficha de jugador sin superposiciones */
+@media (min-width:901px){
+  .modal-panel:has(.player-modal-landscape){
+    width:min(1620px,calc(100vw - 16px));
+    height:min(96vh,900px);
+    max-height:96vh;
+    padding:10px;
+    overflow:hidden;
+  }
+  .modal-panel:has(.player-modal-landscape) .modal-close{
+    top:8px;
+    right:8px;
+    z-index:8;
+  }
+  .player-modal-landscape,
+  .player-modal-compact,
+  .player-modal-compact .player-modal-landscape-grid{
+    height:100%;
+    min-height:0;
+  }
+  .player-modal-compact .player-modal-landscape-grid{
+    display:grid;
+    grid-template-columns:minmax(280px,.82fr) minmax(520px,1.5fr) minmax(320px,1fr);
+    gap:10px;
+    align-items:start;
+  }
+  .player-modal-column,
+  .player-summary-column,
+  .player-skills-column,
+  .player-stats-column,
+  .player-landscape-actions,
+  .player-skills-card,
+  .player-statistics-landscape,
+  .player-stat-comparison,
+  .player-analysis-row,
+  .player-radar-compact,
+  .player-analysis-row .scouted-hidden-card{
+    min-height:0;
+    min-width:0;
+    box-sizing:border-box;
+  }
+  .player-summary-column,
+  .player-skills-column,
+  .player-stats-column{
+    height:100%;
+    overflow:hidden;
+  }
+  .player-summary-column{
+    display:grid;
+    grid-template-rows:auto auto minmax(0,1fr);
+    gap:10px;
+  }
+  .player-skills-column{
+    display:grid;
+    grid-template-rows:minmax(0,1fr) auto;
+    gap:10px;
+  }
+  .player-stats-column{
+    display:grid;
+    grid-template-rows:minmax(0,1fr);
+  }
+  .player-identity-landscape,
+  .player-modal-landscape .card.inner,
+  .player-profile-metrics > div,
+  .player-skill-row,
+  .player-stat-compare-row{
+    box-sizing:border-box;
+  }
+  .player-modal-landscape .card.inner{
+    padding:10px 11px;
+  }
+  .player-identity-landscape{
+    min-height:92px;
+    padding:8px 38px 8px 8px;
+    align-items:center;
+  }
+  .player-identity-landscape .player-photo-placeholder.large,
+  .player-identity-landscape img.player-photo-placeholder.large{
+    width:76px;
+    height:76px;
+    min-width:76px;
+  }
+  .player-modal-landscape .player-modal-title{
+    font-size:clamp(18px,1.6vw,24px);
+    line-height:1.08;
+  }
+  .player-modal-landscape .muted{
+    font-size:9px;
+    line-height:1.28;
+  }
+  .player-profile-card{
+    gap:8px;
+  }
+  .player-profile-metrics{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+  }
+  .player-profile-metrics > div{
+    padding:6px 7px;
+  }
+  .player-profile-metrics span,
+  .player-season-highlight span{
+    font-size:7px;
+  }
+  .player-profile-metrics strong,
+  .player-profile-metrics > div > span + span,
+  .player-season-highlight strong{
+    font-size:10px;
+  }
+  .player-season-highlight{
+    align-items:flex-start;
+  }
+  .player-landscape-actions,
+  .player-stat-comparison,
+  .player-landscape-actions .player-action-card{
+    overflow:auto;
+    scrollbar-width:thin;
+  }
+  .player-landscape-actions .player-action-card{
+    display:grid;
+    align-content:start;
+    gap:6px;
+    padding:9px 10px;
+  }
+  .player-landscape-actions .message-actions{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:5px;
+  }
+  .player-landscape-actions .message-actions button{
+    min-height:31px;
+    font-size:8.5px;
+  }
+  .player-landscape-actions .player-market-offer-row{
+    gap:5px;
+  }
+  .player-skills-card{
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr);
+    overflow:auto;
+  }
+  .player-skills-head{
+    margin-bottom:8px;
+    gap:8px;
+  }
+  .player-skills-head h3{
+    font-size:12px;
+  }
+  .player-skill-legend{
+    gap:5px;
+  }
+  .player-skill-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:5px;
+    align-content:start;
+  }
+  .player-skill-row{
+    min-height:31px;
+    padding:4px 6px;
+  }
+  .player-skill-row > span{
+    font-size:8px;
+  }
+  .player-skill-value{
+    font-size:10px;
+  }
+  .player-analysis-row{
+    display:grid;
+    grid-template-columns:minmax(160px,.78fr) minmax(0,1.22fr);
+    gap:10px;
+    align-items:stretch;
+  }
+  .player-radar-compact{
+    display:grid;
+    place-items:center;
+    padding:6px;
+  }
+  .player-radar-compact .radar{
+    width:min(100%,190px);
+    max-height:190px;
+  }
+  .player-analysis-row .scouted-hidden-card{
+    overflow:auto;
+  }
+  .player-statistics-landscape{
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr);
+    gap:8px;
+  }
+  .player-statistics-landscape > h3{
+    margin:0;
+    font-size:12px;
+  }
+  .player-stat-comparison{
+    display:grid;
+    align-content:start;
+    gap:4px;
+    padding-right:2px;
+  }
+  .player-stat-compare-head,
+  .player-stat-compare-row{
+    grid-template-columns:minmax(0,1fr) 72px 72px;
+    gap:5px;
+  }
+  .player-stat-compare-head{
+    position:sticky;
+    top:0;
+    z-index:1;
+    padding:5px 6px;
+    background:rgba(9,12,18,.96);
+    backdrop-filter:blur(4px);
+  }
+  .player-stat-compare-row{
+    min-height:28px;
+    padding:4px 6px;
+  }
+  .player-stat-compare-row span{
+    font-size:8px;
+  }
+  .player-stat-compare-row strong{
+    font-size:9px;
+  }
+  .player-stat-migration-note{
+    margin-top:6px!important;
+  }
+}
+
+@media (max-width:1320px) and (min-width:901px){
+  .modal-panel:has(.player-modal-landscape){
+    width:min(1500px,calc(100vw - 14px));
+  }
+  .player-modal-compact .player-modal-landscape-grid{
+    grid-template-columns:minmax(260px,.8fr) minmax(430px,1.38fr) minmax(300px,.98fr);
+  }
+  .player-skill-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media (max-width:1160px) and (min-width:901px){
+  .modal-panel:has(.player-modal-landscape){
+    height:min(97vh,920px);
+    padding:8px;
+  }
+  .player-modal-compact .player-modal-landscape-grid{
+    grid-template-columns:minmax(240px,.78fr) minmax(390px,1.24fr) minmax(270px,.95fr);
+    gap:8px;
+  }
+  .player-summary-column{
+    gap:8px;
+  }
+  .player-skills-column{
+    gap:8px;
+  }
+  .player-modal-landscape .card.inner{
+    padding:8px 9px;
+  }
+  .player-analysis-row{
+    grid-template-columns:1fr;
+  }
+  .player-radar-compact .radar{
+    width:min(100%,160px);
+    max-height:160px;
+  }
+  .player-stat-compare-head,
+  .player-stat-compare-row{
+    grid-template-columns:minmax(0,1fr) 60px 60px;
+  }
+}
+
+@media (max-width:900px){
+  .modal-panel:has(.player-modal-landscape){
+    overflow:auto;
+  }
+  .player-modal-compact .player-modal-landscape-grid,
+  .player-summary-column,
+  .player-skills-column,
+  .player-stats-column,
+  .player-analysis-row{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    min-height:auto;
+  }
+  .player-skills-card,
+  .player-statistics-landscape,
+  .player-landscape-actions .player-action-card{
+    overflow:visible;
+  }
+}

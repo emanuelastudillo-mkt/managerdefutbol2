@@ -1,0 +1,44 @@
+/* V8.94 · Lectura clara de gastos mensuales. */
+.finance-monthly-overview{
+  margin-top:14px;
+  padding:16px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
+}
+.finance-monthly-title{align-items:flex-start;gap:14px}
+.finance-monthly-title h3{margin:2px 0 4px}
+.finance-monthly-metrics{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+.finance-monthly-metrics .card{min-height:112px}
+.finance-monthly-metrics strong{display:block;margin-top:6px;font-size:1.08rem}
+.finance-monthly-metrics span{display:block;margin-top:6px;color:var(--muted);font-size:.82rem}
+.finance-monthly-total{border-color:rgba(244,63,94,.4)!important}
+.finance-monthly-table-wrap{margin-top:14px}
+.finance-monthly-table td:first-child strong,.finance-monthly-table td:first-child span{display:block}
+.finance-monthly-table td:first-child span{margin-top:3px;color:var(--muted);font-size:.82rem;line-height:1.35}
+.finance-monthly-table .finance-monthly-amount{font-weight:700;white-space:nowrap}
+.finance-monthly-group th{
+  padding-top:14px;
+  padding-bottom:8px;
+  color:var(--text);
+  background:rgba(255,255,255,.025);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  font-size:.76rem;
+}
+.finance-monthly-note{margin:12px 2px 0}
+@media (max-width:1100px){
+  .finance-monthly-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:620px){
+  .finance-monthly-overview{padding:12px}
+  .finance-monthly-title{display:block}
+  .finance-monthly-title>.pill{display:inline-flex;margin-top:10px}
+  .finance-monthly-metrics{grid-template-columns:1fr}
+  .finance-monthly-table th:nth-child(4),.finance-monthly-table td:nth-child(4){display:none}
+}

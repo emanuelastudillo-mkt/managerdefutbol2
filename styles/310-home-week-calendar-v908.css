@@ -1,0 +1,396 @@
+/* V9.08/V9.09 · Calendario semanal compacto en la pantalla Inicio. */
+
+html[data-interface="modern"] .home-week-calendar{
+  margin:0 0 14px;
+  padding:12px;
+  overflow:hidden;
+  border-color:#30323a;
+  background:#18191e;
+}
+html[data-interface="modern"] .home-week-calendar-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+html[data-interface="modern"] .home-week-calendar-title h3{
+  margin:2px 0 0;
+  font-size:14px;
+}
+html[data-interface="modern"] .home-week-calendar-title .label{margin:0}
+html[data-interface="modern"] .home-week-calendar-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:7px;
+  min-width:0;
+}
+html[data-interface="modern"] .home-week-calendar-day{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:146px;
+  padding:9px 8px 8px;
+  overflow:hidden;
+  border:1px solid #2d2f37;
+  border-radius:4px;
+  background:#1d1e24;
+}
+html[data-interface="modern"] .home-week-calendar-day::before{
+  content:"";
+  position:absolute;
+  top:0;
+  right:0;
+  left:0;
+  height:2px;
+  background:#383a43;
+}
+html[data-interface="modern"] .home-week-calendar-day.is-yesterday{
+  opacity:.76;
+  background:#191a1f;
+}
+html[data-interface="modern"] .home-week-calendar-day.is-today{
+  border-color:rgba(var(--modern-accent-rgb),.72);
+  background:linear-gradient(180deg,rgba(var(--modern-accent-rgb),.10),#1d1e24 42%);
+  box-shadow:0 0 0 1px rgba(var(--modern-accent-rgb),.10) inset;
+}
+html[data-interface="modern"] .home-week-calendar-day.is-today::before,
+html[data-interface="modern"] .home-week-calendar-day.has-match::before{background:var(--modern-accent)}
+html[data-interface="modern"] .home-week-calendar-day-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:5px;
+  min-height:16px;
+  margin-bottom:3px;
+}
+html[data-interface="modern"] .home-week-calendar-day-head>span{
+  min-width:0;
+  overflow:hidden;
+  color:#8f919c;
+  font-size:8px;
+  font-weight:850;
+  letter-spacing:.08em;
+  text-overflow:ellipsis;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+html[data-interface="modern"] .home-week-calendar-day.is-today .home-week-calendar-day-head>span{color:#fdba74}
+html[data-interface="modern"] .home-week-calendar-day-head>b{
+  flex:0 0 auto;
+  color:#fb923c;
+  font-size:11px;
+  line-height:1;
+}
+html[data-interface="modern"] .home-week-calendar-day-head>b.no-match{color:#555761}
+html[data-interface="modern"] .home-week-calendar-weekday{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  color:#f4f4f5;
+  font-size:12px;
+  line-height:1.15;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+html[data-interface="modern"] .home-week-calendar-day>time{
+  display:block;
+  margin-top:2px;
+  color:#777985;
+  font-size:8px;
+  font-weight:700;
+  line-height:1.2;
+  white-space:nowrap;
+}
+html[data-interface="modern"] .home-week-calendar-events{
+  display:grid;
+  align-content:start;
+  gap:5px;
+  min-height:0;
+  margin-top:8px;
+}
+html[data-interface="modern"] .home-week-calendar-event{
+  display:grid;
+  width:100%;
+  min-width:0;
+  padding:6px;
+  gap:2px;
+  text-align:left;
+  border:1px solid #33353e;
+  border-radius:3px;
+  background:#22232a;
+  color:#f4f4f5;
+  box-shadow:none;
+}
+html[data-interface="modern"] .home-week-calendar-event:hover{
+  border-color:rgba(var(--modern-accent-rgb),.72);
+  background:#282930;
+  transform:none;
+}
+html[data-interface="modern"] .home-week-calendar-event:focus-visible{
+  outline:2px solid var(--modern-accent);
+  outline-offset:1px;
+}
+html[data-interface="modern"] .home-week-calendar-competition{
+  min-width:0;
+  overflow:hidden;
+  color:#fb923c;
+  font-size:7px;
+  font-weight:850;
+  letter-spacing:.035em;
+  line-height:1.18;
+  text-overflow:ellipsis;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+html[data-interface="modern"] .home-week-calendar-event strong{
+  min-width:0;
+  overflow:hidden;
+  color:#f4f4f5;
+  font-size:9px;
+  line-height:1.2;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+html[data-interface="modern"] .home-week-calendar-event small{
+  min-width:0;
+  overflow:hidden;
+  color:#8f919c;
+  font-size:7px;
+  line-height:1.2;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+html[data-interface="modern"] .home-week-calendar-event.win{
+  border-color:rgba(34,197,94,.36);
+  background:rgba(34,197,94,.08);
+}
+html[data-interface="modern"] .home-week-calendar-event.win strong{color:#86efac}
+html[data-interface="modern"] .home-week-calendar-event.loss{
+  border-color:rgba(239,68,68,.34);
+  background:rgba(239,68,68,.07);
+}
+html[data-interface="modern"] .home-week-calendar-event.loss strong{color:#fca5a5}
+html[data-interface="modern"] .home-week-calendar-event.draw{
+  border-color:rgba(245,158,11,.34);
+  background:rgba(245,158,11,.07);
+}
+html[data-interface="modern"] .home-week-calendar-event.draw strong{color:#fcd34d}
+html[data-interface="modern"] .home-week-calendar-empty{
+  display:grid;
+  align-content:center;
+  min-height:48px;
+  padding:6px;
+  border:1px dashed #30323a;
+  border-radius:3px;
+  background:#1a1b20;
+}
+html[data-interface="modern"] .home-week-calendar-empty span{
+  color:#8f919c;
+  font-size:9px;
+  font-weight:750;
+}
+html[data-interface="modern"] .home-week-calendar-empty small{
+  margin-top:2px;
+  color:#62646e;
+  font-size:7px;
+  line-height:1.2;
+}
+html[data-interface="modern"] .home-week-calendar-more{
+  color:#8f919c;
+  font-size:7px;
+  font-weight:750;
+  text-align:center;
+}
+
+@media (max-width:1180px) and (min-width:761px){
+  html[data-interface="modern"] .home-week-calendar{padding:10px}
+  html[data-interface="modern"] .home-week-calendar-grid{gap:5px}
+  html[data-interface="modern"] .home-week-calendar-day{
+    min-height:138px;
+    padding:8px 6px 7px;
+  }
+  html[data-interface="modern"] .home-week-calendar-title .pill{display:none}
+}
+
+@media (max-width:760px){
+  html[data-interface="modern"] .home-week-calendar{
+    padding:10px;
+    overflow:visible;
+  }
+  html[data-interface="modern"] .home-week-calendar-title{align-items:flex-start}
+  html[data-interface="modern"] .home-week-calendar-title .pill{display:none}
+  html[data-interface="modern"] .home-week-calendar-grid{
+    grid-template-columns:repeat(7,126px);
+    gap:7px;
+    padding:0 0 5px;
+    overflow-x:auto;
+    overscroll-behavior-inline:contain;
+    scroll-snap-type:x proximity;
+  }
+  html[data-interface="modern"] .home-week-calendar-day{
+    min-height:142px;
+    scroll-snap-align:start;
+  }
+}
+
+/* V9.18 · Tonos por competencia, estado del mercado y movimientos de plantel. */
+html[data-interface="modern"] .home-week-calendar-day{
+  --home-calendar-tone-rgb:72,74,84;
+  min-height:174px;
+  border-color:rgba(var(--home-calendar-tone-rgb),.42);
+  background:linear-gradient(180deg,rgba(var(--home-calendar-tone-rgb),.15),#1d1e24 48%);
+}
+html[data-interface="modern"] .home-week-calendar-day::before{
+  background:rgb(var(--home-calendar-tone-rgb));
+}
+html[data-interface="modern"] .home-week-calendar-day.tone-league{--home-calendar-tone-rgb:59,130,246}
+html[data-interface="modern"] .home-week-calendar-day.tone-cup{--home-calendar-tone-rgb:245,158,11}
+html[data-interface="modern"] .home-week-calendar-day.tone-international{--home-calendar-tone-rgb:168,85,247}
+html[data-interface="modern"] .home-week-calendar-day.tone-friendly{--home-calendar-tone-rgb:20,184,166}
+html[data-interface="modern"] .home-week-calendar-day.tone-transfer{--home-calendar-tone-rgb:34,197,94}
+html[data-interface="modern"] .home-week-calendar-day.tone-market-open{--home-calendar-tone-rgb:22,163,74}
+html[data-interface="modern"] .home-week-calendar-day.tone-market-closed{--home-calendar-tone-rgb:72,74,84}
+html[data-interface="modern"] .home-week-calendar-day.is-yesterday{
+  background:linear-gradient(180deg,rgba(var(--home-calendar-tone-rgb),.10),#191a1f 48%);
+}
+html[data-interface="modern"] .home-week-calendar-day.is-today{
+  border-color:rgba(var(--modern-accent-rgb),.82);
+  background:linear-gradient(180deg,rgba(var(--home-calendar-tone-rgb),.20),#1d1e24 50%);
+  box-shadow:0 0 0 1px rgba(var(--modern-accent-rgb),.32) inset;
+}
+html[data-interface="modern"] .home-week-calendar-day.is-today::before,
+html[data-interface="modern"] .home-week-calendar-day.has-match::before{
+  background:rgb(var(--home-calendar-tone-rgb));
+}
+html[data-interface="modern"] .home-week-calendar-day-head>b,
+html[data-interface="modern"] .home-week-calendar-competition{
+  color:rgb(var(--home-calendar-tone-rgb));
+}
+html[data-interface="modern"] .home-week-calendar-meta{
+  display:grid;
+  align-content:start;
+  gap:3px;
+  min-height:18px;
+  margin-top:6px;
+}
+html[data-interface="modern"] .home-week-calendar-market,
+html[data-interface="modern"] .home-week-calendar-transfer{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  padding:3px 4px;
+  border:1px solid #353740;
+  border-radius:3px;
+  font-size:7px;
+  font-weight:850;
+  letter-spacing:.025em;
+  line-height:1.15;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+html[data-interface="modern"] .home-week-calendar-market.is-open{
+  color:#86efac;
+  border-color:rgba(34,197,94,.34);
+  background:rgba(34,197,94,.09);
+}
+html[data-interface="modern"] .home-week-calendar-market.is-closed{
+  color:#8f919c;
+  border-color:#34363e;
+  background:rgba(82,82,91,.12);
+}
+html[data-interface="modern"] .home-week-calendar-transfer.is-incoming{
+  color:#bbf7d0;
+  border-color:rgba(34,197,94,.32);
+  background:rgba(34,197,94,.08);
+}
+html[data-interface="modern"] .home-week-calendar-transfer.is-outgoing{
+  color:#fecaca;
+  border-color:rgba(239,68,68,.30);
+  background:rgba(239,68,68,.07);
+}
+html[data-interface="modern"] .home-week-calendar-events{margin-top:6px}
+
+@media (max-width:1180px) and (min-width:761px){
+  html[data-interface="modern"] .home-week-calendar-day{min-height:168px}
+  html[data-interface="modern"] .home-week-calendar-market,
+  html[data-interface="modern"] .home-week-calendar-transfer{padding:3px;font-size:6.5px}
+}
+@media (max-width:760px){
+  html[data-interface="modern"] .home-week-calendar-day{min-height:170px}
+}
+
+
+/* V9.52 · Escudo del rival y estabilidad visual durante los avances. */
+html[data-interface="modern"] .home-week-calendar-event{
+  grid-template-columns:28px minmax(0,1fr);
+  align-items:center;
+  column-gap:6px;
+}
+html[data-interface="modern"] .home-week-calendar-rival-badge{
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:32px;
+  min-width:28px;
+}
+html[data-interface="modern"] .home-week-calendar-rival-badge .club-badge-placeholder{
+  width:27px;
+  min-width:27px;
+  height:27px;
+  flex-basis:27px;
+  border-radius:8px;
+  background:rgba(255,255,255,.055);
+}
+html[data-interface="modern"] .home-week-calendar-rival-badge .club-badge-placeholder img{
+  padding:2px!important;
+}
+html[data-interface="modern"] .home-week-calendar-event-copy{
+  display:grid;
+  min-width:0;
+  gap:2px;
+}
+@media (max-width:1180px){
+  html[data-interface="modern"] .home-week-calendar-event{
+    grid-template-columns:25px minmax(0,1fr);
+    column-gap:4px;
+    padding:5px;
+  }
+  html[data-interface="modern"] .home-week-calendar-rival-badge,
+  html[data-interface="modern"] .home-week-calendar-rival-badge .club-badge-placeholder{
+    width:24px;
+    min-width:24px;
+    height:24px;
+    flex-basis:24px;
+  }
+}
+
+/* V9.65 · Logos de competición en calendario semanal y próximo partido. */
+html[data-interface="modern"] .home-week-calendar-competition-line,
+.next-match-competition-line{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+html[data-interface="modern"] .home-week-calendar-competition-line .home-week-calendar-competition,
+.next-match-competition-line span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.competition-logo{display:block;object-fit:contain;flex:0 0 auto}
+.competition-logo-small{width:15px;height:15px}
+.competition-logo-large{width:22px;height:22px}
+.next-match-competition-line{
+  grid-column:1 / -1;
+  margin:-2px 0 4px;
+  color:#cbd5e1;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+html[data-interface="modern"] .next-match-competition-line span{color:#e5e7eb}

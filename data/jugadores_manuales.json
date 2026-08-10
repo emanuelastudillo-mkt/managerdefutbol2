@@ -1,0 +1,5048 @@
+{
+  "metadata": {
+    "nombre": "jugadores_manuales",
+    "version": "V8.50",
+    "appVersion": "V8.50",
+    "proyecto": "manager_de_futbol",
+    "descripcion": "100 jugadores especiales con nombres ficticios reconocibles, media bloqueada y economía al 150% del valor normal.",
+    "moneda": "ARS",
+    "unidadSueldo": "anual",
+    "playersCount": 100
+  },
+  "uso": {
+    "cargaAutomatica": true,
+    "mezclarConBaseGenerada": true,
+    "preservarIdsSemanticosV8_06": true,
+    "aplicaANuevasPartidas": true,
+    "sincronizaPartidasExistentes": true
+  },
+  "reglas": {
+    "economia": "Sueldo al 150% y cláusula calculada con la fórmula V8.50 de compresión de extremos, manteniendo el 150% sobre el valor normal.",
+    "multiplicadorEconomico": 1.5,
+    "clausulaBloqueada": true,
+    "valorMercadoIgualClausula": true,
+    "idsReservados": "910001 en adelante para jugadores manuales activos",
+    "reapareceAlRetirarse": true,
+    "mediaBloqueada": true,
+    "mediaRobertoLewanInferida": 90,
+    "formulaClausula": "Mover 50% hacia 16 sueldos anuales; jugadores especiales conservan prima 1.50."
+  },
+  "habilidadesRequeridas": [
+    "ataque",
+    "defensa",
+    "tiro",
+    "pase",
+    "velocidad",
+    "cabezazo",
+    "resistencia",
+    "agresividad",
+    "genetica",
+    "factorSorpresa",
+    "potencial",
+    "liderazgo",
+    "disciplina",
+    "trabajoEquipo"
+  ],
+  "jugadores": [
+    {
+      "id": 910008,
+      "nombre": "León Massis",
+      "edad": 23,
+      "posicion": "ED",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 99,
+      "habilidades": {
+        "ataque": 99,
+        "defensa": 80,
+        "tiro": 99,
+        "pase": 99,
+        "velocidad": 99,
+        "cabezazo": 91,
+        "resistencia": 99,
+        "liderazgo": 98,
+        "disciplina": 99,
+        "trabajoEquipo": 99,
+        "potencial": 99,
+        "genetica": 99,
+        "factorSorpresa": 18,
+        "agresividad": 45
+      },
+      "economia": {
+        "sueldo": 44550000,
+        "clausula": 957825000,
+        "valor": 957825000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 29700000,
+        "clausulaNormalReferencia": 638550000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 1
+      }
+    },
+    {
+      "id": 910009,
+      "nombre": "Cristian Renaldo",
+      "edad": 27,
+      "posicion": "EI",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Portugal",
+      "media": 98,
+      "habilidades": {
+        "ataque": 99,
+        "defensa": 79,
+        "tiro": 99,
+        "pase": 98,
+        "velocidad": 99,
+        "cabezazo": 91,
+        "resistencia": 97,
+        "liderazgo": 99,
+        "disciplina": 98,
+        "trabajoEquipo": 99,
+        "potencial": 98,
+        "genetica": 96,
+        "factorSorpresa": 18,
+        "agresividad": 42
+      },
+      "economia": {
+        "sueldo": 44100000,
+        "clausula": 859950000,
+        "valor": 859950000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 29400000,
+        "clausulaNormalReferencia": 573300000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 2
+      }
+    },
+    {
+      "id": 910005,
+      "nombre": "Deiko Madarona",
+      "edad": 23,
+      "posicion": "MCO",
+      "equipo": "Boca Juniors",
+      "clubId": 1,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 98,
+      "habilidades": {
+        "ataque": 99,
+        "defensa": 81,
+        "tiro": 99,
+        "pase": 99,
+        "velocidad": 99,
+        "cabezazo": 91,
+        "resistencia": 97,
+        "liderazgo": 97,
+        "disciplina": 99,
+        "trabajoEquipo": 99,
+        "potencial": 99,
+        "genetica": 98,
+        "factorSorpresa": 11,
+        "agresividad": 63
+      },
+      "economia": {
+        "sueldo": 44100000,
+        "clausula": 948150000,
+        "valor": 948150000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 29400000,
+        "clausulaNormalReferencia": 632100000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 3
+      }
+    },
+    {
+      "id": 910007,
+      "nombre": "Pelón Rei",
+      "edad": 27,
+      "posicion": "DC",
+      "equipo": "Santos",
+      "clubId": 77,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 98,
+      "habilidades": {
+        "ataque": 99,
+        "defensa": 77,
+        "tiro": 99,
+        "pase": 94,
+        "velocidad": 99,
+        "cabezazo": 99,
+        "resistencia": 98,
+        "liderazgo": 99,
+        "disciplina": 99,
+        "trabajoEquipo": 98,
+        "potencial": 98,
+        "genetica": 98,
+        "factorSorpresa": 18,
+        "agresividad": 43
+      },
+      "economia": {
+        "sueldo": 44100000,
+        "clausula": 859950000,
+        "valor": 859950000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 29400000,
+        "clausulaNormalReferencia": 573300000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 4
+      }
+    },
+    {
+      "id": 910006,
+      "nombre": "Zinedo Zidan",
+      "edad": 25,
+      "posicion": "MCO",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Francia",
+      "media": 96,
+      "habilidades": {
+        "ataque": 99,
+        "defensa": 80,
+        "tiro": 96,
+        "pase": 99,
+        "velocidad": 96,
+        "cabezazo": 89,
+        "resistencia": 95,
+        "liderazgo": 97,
+        "disciplina": 94,
+        "trabajoEquipo": 97,
+        "potencial": 97,
+        "genetica": 98,
+        "factorSorpresa": 2,
+        "agresividad": 65
+      },
+      "economia": {
+        "sueldo": 43200000,
+        "clausula": 885600000,
+        "valor": 885600000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 28800000,
+        "clausulaNormalReferencia": 590400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 5
+      }
+    },
+    {
+      "id": 910010,
+      "nombre": "Ronal Názaro",
+      "edad": 19,
+      "posicion": "DC",
+      "equipo": "Inter",
+      "clubId": 128,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 96,
+      "habilidades": {
+        "ataque": 99,
+        "defensa": 74,
+        "tiro": 99,
+        "pase": 93,
+        "velocidad": 99,
+        "cabezazo": 97,
+        "resistencia": 97,
+        "liderazgo": 96,
+        "disciplina": 96,
+        "trabajoEquipo": 94,
+        "potencial": 99,
+        "genetica": 94,
+        "factorSorpresa": 18,
+        "agresividad": 60
+      },
+      "economia": {
+        "sueldo": 43200000,
+        "clausula": 1015200000,
+        "valor": 1015200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 28800000,
+        "clausulaNormalReferencia": 676800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 6
+      }
+    },
+    {
+      "id": 910001,
+      "nombre": "Ronaldinho Gaúlez",
+      "edad": 23,
+      "posicion": "EI",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 95,
+      "habilidades": {
+        "ataque": 99,
+        "defensa": 76,
+        "tiro": 98,
+        "pase": 95,
+        "velocidad": 99,
+        "cabezazo": 87,
+        "resistencia": 94,
+        "liderazgo": 94,
+        "disciplina": 93,
+        "trabajoEquipo": 96,
+        "potencial": 98,
+        "genetica": 95,
+        "factorSorpresa": 5,
+        "agresividad": 64
+      },
+      "economia": {
+        "sueldo": 42750000,
+        "clausula": 919125000,
+        "valor": 919125000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 28500000,
+        "clausulaNormalReferencia": 612750000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 7
+      }
+    },
+    {
+      "id": 910011,
+      "nombre": "Johan Cruyves",
+      "edad": 25,
+      "posicion": "MCO",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Países Bajos",
+      "media": 95,
+      "habilidades": {
+        "ataque": 97,
+        "defensa": 78,
+        "tiro": 96,
+        "pase": 99,
+        "velocidad": 94,
+        "cabezazo": 89,
+        "resistencia": 93,
+        "liderazgo": 97,
+        "disciplina": 97,
+        "trabajoEquipo": 98,
+        "potencial": 96,
+        "genetica": 94,
+        "factorSorpresa": 18,
+        "agresividad": 48
+      },
+      "economia": {
+        "sueldo": 42750000,
+        "clausula": 876375000,
+        "valor": 876375000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 28500000,
+        "clausulaNormalReferencia": 584250000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 8
+      }
+    },
+    {
+      "id": 910012,
+      "nombre": "Franz Beckbauer",
+      "edad": 27,
+      "posicion": "DFC",
+      "equipo": "Juventus",
+      "clubId": 127,
+      "jugadorLibre": false,
+      "nacionalidad": "Alemania",
+      "media": 95,
+      "habilidades": {
+        "ataque": 81,
+        "defensa": 99,
+        "tiro": 79,
+        "pase": 92,
+        "velocidad": 96,
+        "cabezazo": 96,
+        "resistencia": 98,
+        "liderazgo": 96,
+        "disciplina": 97,
+        "trabajoEquipo": 95,
+        "potencial": 97,
+        "genetica": 95,
+        "factorSorpresa": 6,
+        "agresividad": 34
+      },
+      "economia": {
+        "sueldo": 42750000,
+        "clausula": 833625000,
+        "valor": 833625000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 28500000,
+        "clausulaNormalReferencia": 555750000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 9
+      }
+    },
+    {
+      "id": 910013,
+      "nombre": "Kylio Mbapé",
+      "edad": 21,
+      "posicion": "EI",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Francia",
+      "media": 94,
+      "habilidades": {
+        "ataque": 97,
+        "defensa": 76,
+        "tiro": 98,
+        "pase": 94,
+        "velocidad": 98,
+        "cabezazo": 86,
+        "resistencia": 92,
+        "liderazgo": 94,
+        "disciplina": 93,
+        "trabajoEquipo": 94,
+        "potencial": 99,
+        "genetica": 92,
+        "factorSorpresa": 11,
+        "agresividad": 61
+      },
+      "economia": {
+        "sueldo": 42300000,
+        "clausula": 951750000,
+        "valor": 951750000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 28200000,
+        "clausulaNormalReferencia": 634500000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 10
+      }
+    },
+    {
+      "id": 910014,
+      "nombre": "Ney Martins",
+      "edad": 22,
+      "posicion": "EI",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 93,
+      "habilidades": {
+        "ataque": 95,
+        "defensa": 71,
+        "tiro": 95,
+        "pase": 93,
+        "velocidad": 99,
+        "cabezazo": 85,
+        "resistencia": 94,
+        "liderazgo": 91,
+        "disciplina": 95,
+        "trabajoEquipo": 96,
+        "potencial": 97,
+        "genetica": 92,
+        "factorSorpresa": 15,
+        "agresividad": 53
+      },
+      "economia": {
+        "sueldo": 41850000,
+        "clausula": 920700000,
+        "valor": 920700000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27900000,
+        "clausulaNormalReferencia": 613800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 11
+      }
+    },
+    {
+      "id": 910015,
+      "nombre": "Andrés Iniestra",
+      "edad": 24,
+      "posicion": "MC",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 93,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 88,
+        "tiro": 92,
+        "pase": 97,
+        "velocidad": 91,
+        "cabezazo": 90,
+        "resistencia": 95,
+        "liderazgo": 95,
+        "disciplina": 96,
+        "trabajoEquipo": 96,
+        "potencial": 96,
+        "genetica": 92,
+        "factorSorpresa": 18,
+        "agresividad": 66
+      },
+      "economia": {
+        "sueldo": 41850000,
+        "clausula": 878850000,
+        "valor": 878850000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27900000,
+        "clausulaNormalReferencia": 585900000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 12
+      }
+    },
+    {
+      "id": 910016,
+      "nombre": "Xavi Hernal",
+      "edad": 28,
+      "posicion": "MC",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 93,
+      "habilidades": {
+        "ataque": 93,
+        "defensa": 92,
+        "tiro": 91,
+        "pase": 97,
+        "velocidad": 94,
+        "cabezazo": 91,
+        "resistencia": 97,
+        "liderazgo": 94,
+        "disciplina": 94,
+        "trabajoEquipo": 95,
+        "potencial": 94,
+        "genetica": 92,
+        "factorSorpresa": 11,
+        "agresividad": 62
+      },
+      "economia": {
+        "sueldo": 41850000,
+        "clausula": 795150000,
+        "valor": 795150000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27900000,
+        "clausulaNormalReferencia": 530100000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 13
+      }
+    },
+    {
+      "id": 910017,
+      "nombre": "Luka Modrik",
+      "edad": 30,
+      "posicion": "MC",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Croacia",
+      "media": 92,
+      "habilidades": {
+        "ataque": 93,
+        "defensa": 87,
+        "tiro": 92,
+        "pase": 94,
+        "velocidad": 90,
+        "cabezazo": 87,
+        "resistencia": 94,
+        "liderazgo": 94,
+        "disciplina": 91,
+        "trabajoEquipo": 95,
+        "potencial": 92,
+        "genetica": 93,
+        "factorSorpresa": 18,
+        "agresividad": 47
+      },
+      "economia": {
+        "sueldo": 41400000,
+        "clausula": 745200000,
+        "valor": 745200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27600000,
+        "clausulaNormalReferencia": 496800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 14
+      }
+    },
+    {
+      "id": 910004,
+      "nombre": "Paolo Maldino",
+      "edad": 24,
+      "posicion": "LI",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Italia",
+      "media": 92,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 96,
+        "tiro": 82,
+        "pase": 93,
+        "velocidad": 96,
+        "cabezazo": 86,
+        "resistencia": 97,
+        "liderazgo": 92,
+        "disciplina": 95,
+        "trabajoEquipo": 94,
+        "potencial": 94,
+        "genetica": 94,
+        "factorSorpresa": 6,
+        "agresividad": 42
+      },
+      "economia": {
+        "sueldo": 41400000,
+        "clausula": 869400000,
+        "valor": 869400000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27600000,
+        "clausulaNormalReferencia": 579600000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 15
+      }
+    },
+    {
+      "id": 910002,
+      "nombre": "Gigi Bufón",
+      "edad": 26,
+      "posicion": "POR",
+      "equipo": "Juventus",
+      "clubId": 127,
+      "jugadorLibre": false,
+      "nacionalidad": "Italia",
+      "media": 92,
+      "habilidades": {
+        "ataque": 89,
+        "defensa": 95,
+        "tiro": 89,
+        "pase": 89,
+        "velocidad": 94,
+        "cabezazo": 96,
+        "resistencia": 91,
+        "liderazgo": 95,
+        "disciplina": 95,
+        "trabajoEquipo": 91,
+        "potencial": 93,
+        "genetica": 91,
+        "factorSorpresa": 2,
+        "agresividad": 65
+      },
+      "economia": {
+        "sueldo": 41400000,
+        "clausula": 828000000,
+        "valor": 828000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27600000,
+        "clausulaNormalReferencia": 552000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 16
+      }
+    },
+    {
+      "id": 910018,
+      "nombre": "Manuel Neura",
+      "edad": 26,
+      "posicion": "POR",
+      "equipo": "Manchester City",
+      "clubId": 91,
+      "jugadorLibre": false,
+      "nacionalidad": "Alemania",
+      "media": 91,
+      "habilidades": {
+        "ataque": 89,
+        "defensa": 96,
+        "tiro": 90,
+        "pase": 88,
+        "velocidad": 91,
+        "cabezazo": 96,
+        "resistencia": 86,
+        "liderazgo": 91,
+        "disciplina": 94,
+        "trabajoEquipo": 94,
+        "potencial": 92,
+        "genetica": 90,
+        "factorSorpresa": 2,
+        "agresividad": 48
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 819000000,
+        "valor": 819000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 546000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 17
+      }
+    },
+    {
+      "id": 910019,
+      "nombre": "Sergio Ramoz",
+      "edad": 26,
+      "posicion": "DFC",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 91,
+      "habilidades": {
+        "ataque": 75,
+        "defensa": 97,
+        "tiro": 74,
+        "pase": 85,
+        "velocidad": 91,
+        "cabezazo": 96,
+        "resistencia": 91,
+        "liderazgo": 94,
+        "disciplina": 92,
+        "trabajoEquipo": 95,
+        "potencial": 94,
+        "genetica": 90,
+        "factorSorpresa": 3,
+        "agresividad": 33
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 819000000,
+        "valor": 819000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 546000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 18
+      }
+    },
+    {
+      "id": 910020,
+      "nombre": "Thierry Enri",
+      "edad": 24,
+      "posicion": "DC",
+      "equipo": "Arsenal",
+      "clubId": 94,
+      "jugadorLibre": false,
+      "nacionalidad": "Francia",
+      "media": 91,
+      "habilidades": {
+        "ataque": 96,
+        "defensa": 69,
+        "tiro": 97,
+        "pase": 87,
+        "velocidad": 95,
+        "cabezazo": 94,
+        "resistencia": 91,
+        "liderazgo": 92,
+        "disciplina": 92,
+        "trabajoEquipo": 89,
+        "potencial": 94,
+        "genetica": 90,
+        "factorSorpresa": 15,
+        "agresividad": 38
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 859950000,
+        "valor": 859950000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 573300000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 19
+      }
+    },
+    {
+      "id": 910021,
+      "nombre": "Ricardo Kakao",
+      "edad": 23,
+      "posicion": "MCO",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 91,
+      "habilidades": {
+        "ataque": 94,
+        "defensa": 74,
+        "tiro": 91,
+        "pase": 96,
+        "velocidad": 94,
+        "cabezazo": 83,
+        "resistencia": 92,
+        "liderazgo": 90,
+        "disciplina": 92,
+        "trabajoEquipo": 94,
+        "potencial": 93,
+        "genetica": 90,
+        "factorSorpresa": 10,
+        "agresividad": 35
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 880425000,
+        "valor": 880425000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 586950000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 20
+      }
+    },
+    {
+      "id": 910022,
+      "nombre": "Luis Suáres",
+      "edad": 26,
+      "posicion": "DC",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Uruguay",
+      "media": 90,
+      "habilidades": {
+        "ataque": 95,
+        "defensa": 70,
+        "tiro": 97,
+        "pase": 88,
+        "velocidad": 93,
+        "cabezazo": 93,
+        "resistencia": 91,
+        "liderazgo": 89,
+        "disciplina": 91,
+        "trabajoEquipo": 89,
+        "potencial": 92,
+        "genetica": 88,
+        "factorSorpresa": 2,
+        "agresividad": 35
+      },
+      "economia": {
+        "sueldo": 40500000,
+        "clausula": 810000000,
+        "valor": 810000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27000000,
+        "clausulaNormalReferencia": 540000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 21
+      }
+    },
+    {
+      "id": 910023,
+      "nombre": "Roberto Lewan",
+      "edad": 30,
+      "posicion": "DC",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Polonia",
+      "media": 90,
+      "habilidades": {
+        "ataque": 97,
+        "defensa": 69,
+        "tiro": 95,
+        "pase": 87,
+        "velocidad": 91,
+        "cabezazo": 92,
+        "resistencia": 92,
+        "liderazgo": 90,
+        "disciplina": 90,
+        "trabajoEquipo": 88,
+        "potencial": 91,
+        "genetica": 88,
+        "factorSorpresa": 4,
+        "agresividad": 32
+      },
+      "economia": {
+        "sueldo": 40500000,
+        "clausula": 729000000,
+        "valor": 729000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27000000,
+        "clausulaNormalReferencia": 486000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 22
+      }
+    },
+    {
+      "id": 910024,
+      "nombre": "Erling Halán",
+      "edad": 20,
+      "posicion": "DC",
+      "equipo": "Manchester City",
+      "clubId": 91,
+      "jugadorLibre": false,
+      "nacionalidad": "Noruega",
+      "media": 90,
+      "habilidades": {
+        "ataque": 96,
+        "defensa": 66,
+        "tiro": 95,
+        "pase": 84,
+        "velocidad": 92,
+        "cabezazo": 92,
+        "resistencia": 89,
+        "liderazgo": 89,
+        "disciplina": 88,
+        "trabajoEquipo": 92,
+        "potencial": 94,
+        "genetica": 88,
+        "factorSorpresa": 2,
+        "agresividad": 42
+      },
+      "economia": {
+        "sueldo": 40500000,
+        "clausula": 931500000,
+        "valor": 931500000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27000000,
+        "clausulaNormalReferencia": 621000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 23
+      }
+    },
+    {
+      "id": 910025,
+      "nombre": "Zlatan Ibra",
+      "edad": 29,
+      "posicion": "DC",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Suecia",
+      "media": 89,
+      "habilidades": {
+        "ataque": 94,
+        "defensa": 66,
+        "tiro": 93,
+        "pase": 84,
+        "velocidad": 92,
+        "cabezazo": 90,
+        "resistencia": 89,
+        "liderazgo": 91,
+        "disciplina": 87,
+        "trabajoEquipo": 87,
+        "potencial": 89,
+        "genetica": 90,
+        "factorSorpresa": 3,
+        "agresividad": 63
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 740925000,
+        "valor": 740925000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 493950000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 24
+      }
+    },
+    {
+      "id": 910003,
+      "nombre": "David Beckman",
+      "edad": 22,
+      "posicion": "MD",
+      "equipo": "Manchester United",
+      "clubId": 93,
+      "jugadorLibre": false,
+      "nacionalidad": "Inglaterra",
+      "media": 88,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 78,
+        "tiro": 87,
+        "pase": 89,
+        "velocidad": 89,
+        "cabezazo": 80,
+        "resistencia": 89,
+        "liderazgo": 89,
+        "disciplina": 88,
+        "trabajoEquipo": 88,
+        "potencial": 91,
+        "genetica": 89,
+        "factorSorpresa": 13,
+        "agresividad": 37
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 871200000,
+        "valor": 871200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 580800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 25
+      }
+    },
+    {
+      "id": 910026,
+      "nombre": "Roberto Carlós",
+      "edad": 27,
+      "posicion": "LI",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 88,
+      "habilidades": {
+        "ataque": 86,
+        "defensa": 92,
+        "tiro": 78,
+        "pase": 90,
+        "velocidad": 93,
+        "cabezazo": 85,
+        "resistencia": 92,
+        "liderazgo": 87,
+        "disciplina": 90,
+        "trabajoEquipo": 91,
+        "potencial": 88,
+        "genetica": 88,
+        "factorSorpresa": 7,
+        "agresividad": 44
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 772200000,
+        "valor": 772200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 514800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 26
+      }
+    },
+    {
+      "id": 910027,
+      "nombre": "Dani Alvez",
+      "edad": 26,
+      "posicion": "LD",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 88,
+      "habilidades": {
+        "ataque": 86,
+        "defensa": 91,
+        "tiro": 79,
+        "pase": 87,
+        "velocidad": 92,
+        "cabezazo": 83,
+        "resistencia": 91,
+        "liderazgo": 90,
+        "disciplina": 87,
+        "trabajoEquipo": 90,
+        "potencial": 90,
+        "genetica": 90,
+        "factorSorpresa": 7,
+        "agresividad": 48
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 792000000,
+        "valor": 792000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 528000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 27
+      }
+    },
+    {
+      "id": 910028,
+      "nombre": "Andrea Pirloz",
+      "edad": 29,
+      "posicion": "MCD",
+      "equipo": "Juventus",
+      "clubId": 127,
+      "jugadorLibre": false,
+      "nacionalidad": "Italia",
+      "media": 88,
+      "habilidades": {
+        "ataque": 85,
+        "defensa": 89,
+        "tiro": 81,
+        "pase": 90,
+        "velocidad": 85,
+        "cabezazo": 86,
+        "resistencia": 89,
+        "liderazgo": 89,
+        "disciplina": 88,
+        "trabajoEquipo": 92,
+        "potencial": 89,
+        "genetica": 86,
+        "factorSorpresa": 9,
+        "agresividad": 49
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 732600000,
+        "valor": 732600000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 488400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 28
+      }
+    },
+    {
+      "id": 910029,
+      "nombre": "Íker Castilla",
+      "edad": 27,
+      "posicion": "POR",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 88,
+      "habilidades": {
+        "ataque": 89,
+        "defensa": 94,
+        "tiro": 84,
+        "pase": 81,
+        "velocidad": 88,
+        "cabezazo": 90,
+        "resistencia": 87,
+        "liderazgo": 91,
+        "disciplina": 91,
+        "trabajoEquipo": 90,
+        "potencial": 89,
+        "genetica": 90,
+        "factorSorpresa": 15,
+        "agresividad": 35
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 772200000,
+        "valor": 772200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 514800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 29
+      }
+    },
+    {
+      "id": 910030,
+      "nombre": "Alfredo Distefano",
+      "edad": 29,
+      "posicion": "DC",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 94,
+      "habilidades": {
+        "ataque": 99,
+        "defensa": 74,
+        "tiro": 97,
+        "pase": 90,
+        "velocidad": 95,
+        "cabezazo": 95,
+        "resistencia": 96,
+        "liderazgo": 95,
+        "disciplina": 95,
+        "trabajoEquipo": 93,
+        "potencial": 95,
+        "genetica": 94,
+        "factorSorpresa": 13,
+        "agresividad": 49
+      },
+      "economia": {
+        "sueldo": 42300000,
+        "clausula": 782550000,
+        "valor": 782550000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 28200000,
+        "clausulaNormalReferencia": 521700000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 30
+      }
+    },
+    {
+      "id": 910031,
+      "nombre": "Marco Van Basco",
+      "edad": 24,
+      "posicion": "DC",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Países Bajos",
+      "media": 93,
+      "habilidades": {
+        "ataque": 97,
+        "defensa": 73,
+        "tiro": 99,
+        "pase": 89,
+        "velocidad": 97,
+        "cabezazo": 94,
+        "resistencia": 93,
+        "liderazgo": 96,
+        "disciplina": 92,
+        "trabajoEquipo": 94,
+        "potencial": 97,
+        "genetica": 93,
+        "factorSorpresa": 12,
+        "agresividad": 51
+      },
+      "economia": {
+        "sueldo": 41850000,
+        "clausula": 878850000,
+        "valor": 878850000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27900000,
+        "clausulaNormalReferencia": 585900000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 31
+      }
+    },
+    {
+      "id": 910032,
+      "nombre": "Ruud Gullid",
+      "edad": 25,
+      "posicion": "MCO",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Países Bajos",
+      "media": 92,
+      "habilidades": {
+        "ataque": 93,
+        "defensa": 74,
+        "tiro": 91,
+        "pase": 94,
+        "velocidad": 92,
+        "cabezazo": 83,
+        "resistencia": 93,
+        "liderazgo": 92,
+        "disciplina": 93,
+        "trabajoEquipo": 93,
+        "potencial": 94,
+        "genetica": 92,
+        "factorSorpresa": 12,
+        "agresividad": 61
+      },
+      "economia": {
+        "sueldo": 41400000,
+        "clausula": 848700000,
+        "valor": 848700000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27600000,
+        "clausulaNormalReferencia": 565800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 32
+      }
+    },
+    {
+      "id": 910033,
+      "nombre": "Frank Rijka",
+      "edad": 26,
+      "posicion": "MCD",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Países Bajos",
+      "media": 91,
+      "habilidades": {
+        "ataque": 86,
+        "defensa": 96,
+        "tiro": 84,
+        "pase": 93,
+        "velocidad": 91,
+        "cabezazo": 91,
+        "resistencia": 92,
+        "liderazgo": 92,
+        "disciplina": 90,
+        "trabajoEquipo": 92,
+        "potencial": 94,
+        "genetica": 93,
+        "factorSorpresa": 15,
+        "agresividad": 65
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 819000000,
+        "valor": 819000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 546000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 33
+      }
+    },
+    {
+      "id": 910034,
+      "nombre": "Roberto Bagio",
+      "edad": 25,
+      "posicion": "MCO",
+      "equipo": "Juventus",
+      "clubId": 127,
+      "jugadorLibre": false,
+      "nacionalidad": "Italia",
+      "media": 91,
+      "habilidades": {
+        "ataque": 94,
+        "defensa": 72,
+        "tiro": 94,
+        "pase": 96,
+        "velocidad": 92,
+        "cabezazo": 85,
+        "resistencia": 90,
+        "liderazgo": 92,
+        "disciplina": 91,
+        "trabajoEquipo": 91,
+        "potencial": 92,
+        "genetica": 91,
+        "factorSorpresa": 9,
+        "agresividad": 37
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 839475000,
+        "valor": 839475000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 559650000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 34
+      }
+    },
+    {
+      "id": 910035,
+      "nombre": "Alex Del Pieroz",
+      "edad": 22,
+      "posicion": "DC",
+      "equipo": "Juventus",
+      "clubId": 127,
+      "jugadorLibre": false,
+      "nacionalidad": "Italia",
+      "media": 89,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 68,
+        "tiro": 92,
+        "pase": 83,
+        "velocidad": 93,
+        "cabezazo": 94,
+        "resistencia": 92,
+        "liderazgo": 89,
+        "disciplina": 87,
+        "trabajoEquipo": 91,
+        "potencial": 94,
+        "genetica": 88,
+        "factorSorpresa": 16,
+        "agresividad": 34
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 881100000,
+        "valor": 881100000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 587400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 35
+      }
+    },
+    {
+      "id": 910036,
+      "nombre": "Francesco Totto",
+      "edad": 26,
+      "posicion": "MCO",
+      "equipo": "Roma",
+      "clubId": 131,
+      "jugadorLibre": false,
+      "nacionalidad": "Italia",
+      "media": 89,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 71,
+        "tiro": 88,
+        "pase": 91,
+        "velocidad": 90,
+        "cabezazo": 81,
+        "resistencia": 88,
+        "liderazgo": 90,
+        "disciplina": 88,
+        "trabajoEquipo": 91,
+        "potencial": 90,
+        "genetica": 87,
+        "factorSorpresa": 3,
+        "agresividad": 38
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 801000000,
+        "valor": 801000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 534000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 36
+      }
+    },
+    {
+      "id": 910037,
+      "nombre": "Fabio Canna",
+      "edad": 29,
+      "posicion": "DFC",
+      "equipo": "Juventus",
+      "clubId": 127,
+      "jugadorLibre": false,
+      "nacionalidad": "Italia",
+      "media": 90,
+      "habilidades": {
+        "ataque": 77,
+        "defensa": 96,
+        "tiro": 73,
+        "pase": 84,
+        "velocidad": 87,
+        "cabezazo": 93,
+        "resistencia": 93,
+        "liderazgo": 90,
+        "disciplina": 89,
+        "trabajoEquipo": 92,
+        "potencial": 91,
+        "genetica": 92,
+        "factorSorpresa": 4,
+        "agresividad": 51
+      },
+      "economia": {
+        "sueldo": 40500000,
+        "clausula": 749250000,
+        "valor": 749250000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27000000,
+        "clausulaNormalReferencia": 499500000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 37
+      }
+    },
+    {
+      "id": 910038,
+      "nombre": "Alessandro Nesto",
+      "edad": 26,
+      "posicion": "DFC",
+      "equipo": "Lazio",
+      "clubId": 132,
+      "jugadorLibre": false,
+      "nacionalidad": "Italia",
+      "media": 89,
+      "habilidades": {
+        "ataque": 73,
+        "defensa": 96,
+        "tiro": 72,
+        "pase": 82,
+        "velocidad": 86,
+        "cabezazo": 94,
+        "resistencia": 89,
+        "liderazgo": 90,
+        "disciplina": 92,
+        "trabajoEquipo": 92,
+        "potencial": 91,
+        "genetica": 87,
+        "factorSorpresa": 13,
+        "agresividad": 49
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 801000000,
+        "valor": 801000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 534000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 38
+      }
+    },
+    {
+      "id": 910039,
+      "nombre": "Marcos Cafuz",
+      "edad": 28,
+      "posicion": "LD",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 89,
+      "habilidades": {
+        "ataque": 85,
+        "defensa": 93,
+        "tiro": 80,
+        "pase": 91,
+        "velocidad": 91,
+        "cabezazo": 85,
+        "resistencia": 94,
+        "liderazgo": 90,
+        "disciplina": 88,
+        "trabajoEquipo": 91,
+        "potencial": 91,
+        "genetica": 88,
+        "factorSorpresa": 12,
+        "agresividad": 45
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 760950000,
+        "valor": 760950000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 507300000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 39
+      }
+    },
+    {
+      "id": 910040,
+      "nombre": "Rivaldo Viera",
+      "edad": 26,
+      "posicion": "MCO",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 91,
+      "habilidades": {
+        "ataque": 95,
+        "defensa": 74,
+        "tiro": 90,
+        "pase": 97,
+        "velocidad": 92,
+        "cabezazo": 84,
+        "resistencia": 89,
+        "liderazgo": 93,
+        "disciplina": 92,
+        "trabajoEquipo": 94,
+        "potencial": 92,
+        "genetica": 90,
+        "factorSorpresa": 8,
+        "agresividad": 31
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 819000000,
+        "valor": 819000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 546000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 40
+      }
+    },
+    {
+      "id": 910041,
+      "nombre": "Romário Souza",
+      "edad": 26,
+      "posicion": "DC",
+      "equipo": "Flamengo",
+      "clubId": 73,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 91,
+      "habilidades": {
+        "ataque": 96,
+        "defensa": 67,
+        "tiro": 97,
+        "pase": 87,
+        "velocidad": 95,
+        "cabezazo": 93,
+        "resistencia": 90,
+        "liderazgo": 91,
+        "disciplina": 92,
+        "trabajoEquipo": 93,
+        "potencial": 92,
+        "genetica": 90,
+        "factorSorpresa": 4,
+        "agresividad": 31
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 819000000,
+        "valor": 819000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 546000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 41
+      }
+    },
+    {
+      "id": 910042,
+      "nombre": "Ziko Artur",
+      "edad": 25,
+      "posicion": "MCO",
+      "equipo": "Flamengo",
+      "clubId": 73,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 92,
+      "habilidades": {
+        "ataque": 94,
+        "defensa": 74,
+        "tiro": 91,
+        "pase": 96,
+        "velocidad": 93,
+        "cabezazo": 87,
+        "resistencia": 91,
+        "liderazgo": 94,
+        "disciplina": 92,
+        "trabajoEquipo": 93,
+        "potencial": 94,
+        "genetica": 93,
+        "factorSorpresa": 15,
+        "agresividad": 39
+      },
+      "economia": {
+        "sueldo": 41400000,
+        "clausula": 848700000,
+        "valor": 848700000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27600000,
+        "clausulaNormalReferencia": 565800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 42
+      }
+    },
+    {
+      "id": 910043,
+      "nombre": "Sócrates Brasilis",
+      "edad": 26,
+      "posicion": "MCO",
+      "equipo": "Corinthians",
+      "clubId": 75,
+      "jugadorLibre": false,
+      "nacionalidad": "Brasil",
+      "media": 89,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 71,
+        "tiro": 89,
+        "pase": 95,
+        "velocidad": 89,
+        "cabezazo": 80,
+        "resistencia": 87,
+        "liderazgo": 90,
+        "disciplina": 91,
+        "trabajoEquipo": 92,
+        "potencial": 90,
+        "genetica": 91,
+        "factorSorpresa": 2,
+        "agresividad": 31
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 801000000,
+        "valor": 801000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 534000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 43
+      }
+    },
+    {
+      "id": 910044,
+      "nombre": "Luís Figal",
+      "edad": 26,
+      "posicion": "ED",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Portugal",
+      "media": 90,
+      "habilidades": {
+        "ataque": 94,
+        "defensa": 71,
+        "tiro": 94,
+        "pase": 91,
+        "velocidad": 95,
+        "cabezazo": 84,
+        "resistencia": 92,
+        "liderazgo": 90,
+        "disciplina": 90,
+        "trabajoEquipo": 89,
+        "potencial": 93,
+        "genetica": 90,
+        "factorSorpresa": 3,
+        "agresividad": 41
+      },
+      "economia": {
+        "sueldo": 40500000,
+        "clausula": 810000000,
+        "valor": 810000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27000000,
+        "clausulaNormalReferencia": 540000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 44
+      }
+    },
+    {
+      "id": 910045,
+      "nombre": "Eusébio Silva",
+      "edad": 23,
+      "posicion": "DC",
+      "equipo": "Inter",
+      "clubId": 128,
+      "jugadorLibre": false,
+      "nacionalidad": "Portugal",
+      "media": 92,
+      "habilidades": {
+        "ataque": 96,
+        "defensa": 72,
+        "tiro": 97,
+        "pase": 90,
+        "velocidad": 95,
+        "cabezazo": 93,
+        "resistencia": 92,
+        "liderazgo": 95,
+        "disciplina": 91,
+        "trabajoEquipo": 92,
+        "potencial": 94,
+        "genetica": 92,
+        "factorSorpresa": 6,
+        "agresividad": 39
+      },
+      "economia": {
+        "sueldo": 41400000,
+        "clausula": 890100000,
+        "valor": 890100000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27600000,
+        "clausulaNormalReferencia": 593400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 45
+      }
+    },
+    {
+      "id": 910046,
+      "nombre": "Raúl Blanco",
+      "edad": 23,
+      "posicion": "DC",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 88,
+      "habilidades": {
+        "ataque": 95,
+        "defensa": 66,
+        "tiro": 93,
+        "pase": 83,
+        "velocidad": 92,
+        "cabezazo": 89,
+        "resistencia": 91,
+        "liderazgo": 91,
+        "disciplina": 88,
+        "trabajoEquipo": 87,
+        "potencial": 90,
+        "genetica": 86,
+        "factorSorpresa": 10,
+        "agresividad": 33
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 851400000,
+        "valor": 851400000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 567600000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 46
+      }
+    },
+    {
+      "id": 910047,
+      "nombre": "Fernando Torreón",
+      "edad": 22,
+      "posicion": "DC",
+      "equipo": "Atlético Madrid",
+      "clubId": 111,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 86,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 66,
+        "tiro": 92,
+        "pase": 80,
+        "velocidad": 87,
+        "cabezazo": 88,
+        "resistencia": 86,
+        "liderazgo": 88,
+        "disciplina": 88,
+        "trabajoEquipo": 88,
+        "potencial": 89,
+        "genetica": 85,
+        "factorSorpresa": 2,
+        "agresividad": 53
+      },
+      "economia": {
+        "sueldo": 12900000,
+        "clausula": 283800000,
+        "valor": 283800000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8600000,
+        "clausulaNormalReferencia": 189200000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 47
+      }
+    },
+    {
+      "id": 910048,
+      "nombre": "David Vila",
+      "edad": 26,
+      "posicion": "DC",
+      "equipo": "Valencia",
+      "clubId": 113,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 88,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 68,
+        "tiro": 93,
+        "pase": 82,
+        "velocidad": 90,
+        "cabezazo": 90,
+        "resistencia": 87,
+        "liderazgo": 91,
+        "disciplina": 87,
+        "trabajoEquipo": 90,
+        "potencial": 90,
+        "genetica": 89,
+        "factorSorpresa": 16,
+        "agresividad": 59
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 792000000,
+        "valor": 792000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 528000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 48
+      }
+    },
+    {
+      "id": 910049,
+      "nombre": "Gerd Miller",
+      "edad": 23,
+      "posicion": "DC",
+      "equipo": "Juventus",
+      "clubId": 127,
+      "jugadorLibre": false,
+      "nacionalidad": "Alemania",
+      "media": 92,
+      "habilidades": {
+        "ataque": 98,
+        "defensa": 71,
+        "tiro": 96,
+        "pase": 90,
+        "velocidad": 93,
+        "cabezazo": 97,
+        "resistencia": 94,
+        "liderazgo": 91,
+        "disciplina": 91,
+        "trabajoEquipo": 94,
+        "potencial": 95,
+        "genetica": 92,
+        "factorSorpresa": 3,
+        "agresividad": 54
+      },
+      "economia": {
+        "sueldo": 41400000,
+        "clausula": 890100000,
+        "valor": 890100000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27600000,
+        "clausulaNormalReferencia": 593400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 49
+      }
+    },
+    {
+      "id": 910050,
+      "nombre": "Lothar Mateuz",
+      "edad": 28,
+      "posicion": "MC",
+      "equipo": "Inter",
+      "clubId": 128,
+      "jugadorLibre": false,
+      "nacionalidad": "Alemania",
+      "media": 91,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 88,
+        "tiro": 89,
+        "pase": 97,
+        "velocidad": 90,
+        "cabezazo": 85,
+        "resistencia": 93,
+        "liderazgo": 92,
+        "disciplina": 94,
+        "trabajoEquipo": 94,
+        "potencial": 92,
+        "genetica": 90,
+        "factorSorpresa": 13,
+        "agresividad": 64
+      },
+      "economia": {
+        "sueldo": 40950000,
+        "clausula": 778050000,
+        "valor": 778050000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27300000,
+        "clausulaNormalReferencia": 518700000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 50
+      }
+    },
+    {
+      "id": 910051,
+      "nombre": "Miroslav Kloz",
+      "edad": 30,
+      "posicion": "DC",
+      "equipo": "Lazio",
+      "clubId": 132,
+      "jugadorLibre": false,
+      "nacionalidad": "Alemania",
+      "media": 87,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 63,
+        "tiro": 90,
+        "pase": 81,
+        "velocidad": 88,
+        "cabezazo": 90,
+        "resistencia": 87,
+        "liderazgo": 86,
+        "disciplina": 86,
+        "trabajoEquipo": 88,
+        "potencial": 88,
+        "genetica": 89,
+        "factorSorpresa": 14,
+        "agresividad": 47
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 234900000,
+        "valor": 234900000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 156600000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 51
+      }
+    },
+    {
+      "id": 910052,
+      "nombre": "Jürgen Klinz",
+      "edad": 26,
+      "posicion": "DC",
+      "equipo": "Tottenham",
+      "clubId": 96,
+      "jugadorLibre": false,
+      "nacionalidad": "Alemania",
+      "media": 87,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 67,
+        "tiro": 91,
+        "pase": 84,
+        "velocidad": 88,
+        "cabezazo": 92,
+        "resistencia": 90,
+        "liderazgo": 90,
+        "disciplina": 88,
+        "trabajoEquipo": 87,
+        "potencial": 89,
+        "genetica": 86,
+        "factorSorpresa": 10,
+        "agresividad": 31
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 261000000,
+        "valor": 261000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 174000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 52
+      }
+    },
+    {
+      "id": 910053,
+      "nombre": "Paul Scholesy",
+      "edad": 26,
+      "posicion": "MC",
+      "equipo": "Manchester United",
+      "clubId": 93,
+      "jugadorLibre": false,
+      "nacionalidad": "Inglaterra",
+      "media": 88,
+      "habilidades": {
+        "ataque": 88,
+        "defensa": 85,
+        "tiro": 87,
+        "pase": 94,
+        "velocidad": 87,
+        "cabezazo": 83,
+        "resistencia": 89,
+        "liderazgo": 89,
+        "disciplina": 91,
+        "trabajoEquipo": 91,
+        "potencial": 90,
+        "genetica": 86,
+        "factorSorpresa": 2,
+        "agresividad": 30
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 792000000,
+        "valor": 792000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 528000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 53
+      }
+    },
+    {
+      "id": 910054,
+      "nombre": "Steven Gerraz",
+      "edad": 25,
+      "posicion": "MC",
+      "equipo": "Liverpool",
+      "clubId": 92,
+      "jugadorLibre": false,
+      "nacionalidad": "Inglaterra",
+      "media": 89,
+      "habilidades": {
+        "ataque": 87,
+        "defensa": 87,
+        "tiro": 86,
+        "pase": 91,
+        "velocidad": 90,
+        "cabezazo": 86,
+        "resistencia": 91,
+        "liderazgo": 90,
+        "disciplina": 90,
+        "trabajoEquipo": 91,
+        "potencial": 92,
+        "genetica": 87,
+        "factorSorpresa": 13,
+        "agresividad": 43
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 821025000,
+        "valor": 821025000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 547350000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 54
+      }
+    },
+    {
+      "id": 910055,
+      "nombre": "Frank Lampo",
+      "edad": 27,
+      "posicion": "MC",
+      "equipo": "Chelsea",
+      "clubId": 95,
+      "jugadorLibre": false,
+      "nacionalidad": "Inglaterra",
+      "media": 88,
+      "habilidades": {
+        "ataque": 89,
+        "defensa": 84,
+        "tiro": 88,
+        "pase": 92,
+        "velocidad": 87,
+        "cabezazo": 82,
+        "resistencia": 89,
+        "liderazgo": 90,
+        "disciplina": 88,
+        "trabajoEquipo": 91,
+        "potencial": 89,
+        "genetica": 88,
+        "factorSorpresa": 16,
+        "agresividad": 38
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 772200000,
+        "valor": 772200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 514800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 55
+      }
+    },
+    {
+      "id": 910056,
+      "nombre": "Wayne Roon",
+      "edad": 22,
+      "posicion": "DC",
+      "equipo": "Manchester United",
+      "clubId": 93,
+      "jugadorLibre": false,
+      "nacionalidad": "Inglaterra",
+      "media": 88,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 68,
+        "tiro": 94,
+        "pase": 85,
+        "velocidad": 91,
+        "cabezazo": 89,
+        "resistencia": 89,
+        "liderazgo": 91,
+        "disciplina": 87,
+        "trabajoEquipo": 89,
+        "potencial": 92,
+        "genetica": 87,
+        "factorSorpresa": 17,
+        "agresividad": 58
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 871200000,
+        "valor": 871200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 580800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 56
+      }
+    },
+    {
+      "id": 910057,
+      "nombre": "Alan Shear",
+      "edad": 25,
+      "posicion": "DC",
+      "equipo": "Liverpool",
+      "clubId": 92,
+      "jugadorLibre": false,
+      "nacionalidad": "Inglaterra",
+      "media": 87,
+      "habilidades": {
+        "ataque": 93,
+        "defensa": 63,
+        "tiro": 91,
+        "pase": 83,
+        "velocidad": 90,
+        "cabezazo": 92,
+        "resistencia": 89,
+        "liderazgo": 88,
+        "disciplina": 86,
+        "trabajoEquipo": 86,
+        "potencial": 88,
+        "genetica": 85,
+        "factorSorpresa": 15,
+        "agresividad": 43
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 267525000,
+        "valor": 267525000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 178350000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 57
+      }
+    },
+    {
+      "id": 910058,
+      "nombre": "John Terri",
+      "edad": 26,
+      "posicion": "DFC",
+      "equipo": "Chelsea",
+      "clubId": 95,
+      "jugadorLibre": false,
+      "nacionalidad": "Inglaterra",
+      "media": 87,
+      "habilidades": {
+        "ataque": 70,
+        "defensa": 92,
+        "tiro": 69,
+        "pase": 83,
+        "velocidad": 84,
+        "cabezazo": 90,
+        "resistencia": 88,
+        "liderazgo": 91,
+        "disciplina": 86,
+        "trabajoEquipo": 89,
+        "potencial": 89,
+        "genetica": 88,
+        "factorSorpresa": 6,
+        "agresividad": 64
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 261000000,
+        "valor": 261000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 174000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 58
+      }
+    },
+    {
+      "id": 910059,
+      "nombre": "Rio Ferna",
+      "edad": 26,
+      "posicion": "DFC",
+      "equipo": "Manchester United",
+      "clubId": 93,
+      "jugadorLibre": false,
+      "nacionalidad": "Inglaterra",
+      "media": 87,
+      "habilidades": {
+        "ataque": 74,
+        "defensa": 93,
+        "tiro": 71,
+        "pase": 80,
+        "velocidad": 86,
+        "cabezazo": 90,
+        "resistencia": 90,
+        "liderazgo": 90,
+        "disciplina": 90,
+        "trabajoEquipo": 87,
+        "potencial": 90,
+        "genetica": 87,
+        "factorSorpresa": 2,
+        "agresividad": 60
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 261000000,
+        "valor": 261000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 174000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 59
+      }
+    },
+    {
+      "id": 910060,
+      "nombre": "Virgil Van Deik",
+      "edad": 26,
+      "posicion": "DFC",
+      "equipo": "Liverpool",
+      "clubId": 92,
+      "jugadorLibre": false,
+      "nacionalidad": "Países Bajos",
+      "media": 89,
+      "habilidades": {
+        "ataque": 73,
+        "defensa": 93,
+        "tiro": 70,
+        "pase": 85,
+        "velocidad": 90,
+        "cabezazo": 91,
+        "resistencia": 91,
+        "liderazgo": 89,
+        "disciplina": 92,
+        "trabajoEquipo": 93,
+        "potencial": 91,
+        "genetica": 87,
+        "factorSorpresa": 7,
+        "agresividad": 45
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 801000000,
+        "valor": 801000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 534000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 60
+      }
+    },
+    {
+      "id": 910061,
+      "nombre": "Mohamed Salla",
+      "edad": 25,
+      "posicion": "ED",
+      "equipo": "Liverpool",
+      "clubId": 92,
+      "jugadorLibre": false,
+      "nacionalidad": "Egipto",
+      "media": 90,
+      "habilidades": {
+        "ataque": 94,
+        "defensa": 68,
+        "tiro": 94,
+        "pase": 93,
+        "velocidad": 93,
+        "cabezazo": 83,
+        "resistencia": 88,
+        "liderazgo": 89,
+        "disciplina": 92,
+        "trabajoEquipo": 93,
+        "potencial": 93,
+        "genetica": 88,
+        "factorSorpresa": 14,
+        "agresividad": 40
+      },
+      "economia": {
+        "sueldo": 40500000,
+        "clausula": 830250000,
+        "valor": 830250000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27000000,
+        "clausulaNormalReferencia": 553500000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 61
+      }
+    },
+    {
+      "id": 910062,
+      "nombre": "Sadio Manéz",
+      "edad": 25,
+      "posicion": "EI",
+      "equipo": "Liverpool",
+      "clubId": 92,
+      "jugadorLibre": false,
+      "nacionalidad": "Senegal",
+      "media": 88,
+      "habilidades": {
+        "ataque": 94,
+        "defensa": 69,
+        "tiro": 89,
+        "pase": 90,
+        "velocidad": 94,
+        "cabezazo": 79,
+        "resistencia": 88,
+        "liderazgo": 88,
+        "disciplina": 89,
+        "trabajoEquipo": 87,
+        "potencial": 90,
+        "genetica": 89,
+        "factorSorpresa": 9,
+        "agresividad": 40
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 811800000,
+        "valor": 811800000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 541200000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 62
+      }
+    },
+    {
+      "id": 910063,
+      "nombre": "Didier Drogbar",
+      "edad": 28,
+      "posicion": "DC",
+      "equipo": "Chelsea",
+      "clubId": 95,
+      "jugadorLibre": false,
+      "nacionalidad": "Costa de Marfil",
+      "media": 88,
+      "habilidades": {
+        "ataque": 95,
+        "defensa": 64,
+        "tiro": 92,
+        "pase": 83,
+        "velocidad": 92,
+        "cabezazo": 93,
+        "resistencia": 89,
+        "liderazgo": 87,
+        "disciplina": 90,
+        "trabajoEquipo": 86,
+        "potencial": 89,
+        "genetica": 89,
+        "factorSorpresa": 2,
+        "agresividad": 33
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 752400000,
+        "valor": 752400000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 501600000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 63
+      }
+    },
+    {
+      "id": 910064,
+      "nombre": "Samuel Etómez",
+      "edad": 25,
+      "posicion": "DC",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Camerún",
+      "media": 89,
+      "habilidades": {
+        "ataque": 96,
+        "defensa": 66,
+        "tiro": 94,
+        "pase": 86,
+        "velocidad": 90,
+        "cabezazo": 94,
+        "resistencia": 88,
+        "liderazgo": 88,
+        "disciplina": 88,
+        "trabajoEquipo": 88,
+        "potencial": 90,
+        "genetica": 87,
+        "factorSorpresa": 8,
+        "agresividad": 41
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 821025000,
+        "valor": 821025000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 547350000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 64
+      }
+    },
+    {
+      "id": 910065,
+      "nombre": "Yaya Turéz",
+      "edad": 27,
+      "posicion": "MC",
+      "equipo": "Manchester City",
+      "clubId": 91,
+      "jugadorLibre": false,
+      "nacionalidad": "Costa de Marfil",
+      "media": 87,
+      "habilidades": {
+        "ataque": 87,
+        "defensa": 82,
+        "tiro": 87,
+        "pase": 89,
+        "velocidad": 86,
+        "cabezazo": 81,
+        "resistencia": 92,
+        "liderazgo": 90,
+        "disciplina": 90,
+        "trabajoEquipo": 90,
+        "potencial": 87,
+        "genetica": 87,
+        "factorSorpresa": 8,
+        "agresividad": 51
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 254475000,
+        "valor": 254475000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 169650000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 65
+      }
+    },
+    {
+      "id": 910066,
+      "nombre": "George Weal",
+      "edad": 26,
+      "posicion": "DC",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Liberia",
+      "media": 89,
+      "habilidades": {
+        "ataque": 93,
+        "defensa": 69,
+        "tiro": 93,
+        "pase": 83,
+        "velocidad": 91,
+        "cabezazo": 91,
+        "resistencia": 92,
+        "liderazgo": 90,
+        "disciplina": 89,
+        "trabajoEquipo": 91,
+        "potencial": 90,
+        "genetica": 89,
+        "factorSorpresa": 17,
+        "agresividad": 49
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 801000000,
+        "valor": 801000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 534000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 66
+      }
+    },
+    {
+      "id": 910067,
+      "nombre": "Jay Okocho",
+      "edad": 25,
+      "posicion": "MCO",
+      "equipo": "Tottenham",
+      "clubId": 96,
+      "jugadorLibre": false,
+      "nacionalidad": "Nigeria",
+      "media": 85,
+      "habilidades": {
+        "ataque": 90,
+        "defensa": 69,
+        "tiro": 84,
+        "pase": 90,
+        "velocidad": 86,
+        "cabezazo": 78,
+        "resistencia": 84,
+        "liderazgo": 86,
+        "disciplina": 84,
+        "trabajoEquipo": 85,
+        "potencial": 87,
+        "genetica": 85,
+        "factorSorpresa": 7,
+        "agresividad": 65
+      },
+      "economia": {
+        "sueldo": 12750000,
+        "clausula": 261375000,
+        "valor": 261375000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8500000,
+        "clausulaNormalReferencia": 174250000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 67
+      }
+    },
+    {
+      "id": 910068,
+      "nombre": "Roger Milán",
+      "edad": 30,
+      "posicion": "DC",
+      "equipo": "Palmeiras",
+      "clubId": 74,
+      "jugadorLibre": false,
+      "nacionalidad": "Camerún",
+      "media": 84,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 62,
+        "tiro": 88,
+        "pase": 79,
+        "velocidad": 88,
+        "cabezazo": 85,
+        "resistencia": 87,
+        "liderazgo": 84,
+        "disciplina": 85,
+        "trabajoEquipo": 86,
+        "potencial": 85,
+        "genetica": 83,
+        "factorSorpresa": 10,
+        "agresividad": 62
+      },
+      "economia": {
+        "sueldo": 12600000,
+        "clausula": 226800000,
+        "valor": 226800000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8400000,
+        "clausulaNormalReferencia": 151200000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 68
+      }
+    },
+    {
+      "id": 910069,
+      "nombre": "Heung Sonaldo",
+      "edad": 27,
+      "posicion": "EI",
+      "equipo": "Tottenham",
+      "clubId": 96,
+      "jugadorLibre": false,
+      "nacionalidad": "Corea del Sur",
+      "media": 88,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 70,
+        "tiro": 92,
+        "pase": 91,
+        "velocidad": 91,
+        "cabezazo": 82,
+        "resistencia": 88,
+        "liderazgo": 87,
+        "disciplina": 90,
+        "trabajoEquipo": 87,
+        "potencial": 90,
+        "genetica": 90,
+        "factorSorpresa": 14,
+        "agresividad": 36
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 772200000,
+        "valor": 772200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 514800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 69
+      }
+    },
+    {
+      "id": 910070,
+      "nombre": "Hidetoshi Nakar",
+      "edad": 23,
+      "posicion": "MC",
+      "equipo": "Roma",
+      "clubId": 131,
+      "jugadorLibre": false,
+      "nacionalidad": "Japón",
+      "media": 84,
+      "habilidades": {
+        "ataque": 86,
+        "defensa": 82,
+        "tiro": 80,
+        "pase": 89,
+        "velocidad": 82,
+        "cabezazo": 79,
+        "resistencia": 86,
+        "liderazgo": 86,
+        "disciplina": 85,
+        "trabajoEquipo": 86,
+        "potencial": 87,
+        "genetica": 86,
+        "factorSorpresa": 7,
+        "agresividad": 32
+      },
+      "economia": {
+        "sueldo": 12600000,
+        "clausula": 270900000,
+        "valor": 270900000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8400000,
+        "clausulaNormalReferencia": 180600000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 70
+      }
+    },
+    {
+      "id": 910071,
+      "nombre": "Park Ji-Sungo",
+      "edad": 26,
+      "posicion": "MI",
+      "equipo": "Manchester United",
+      "clubId": 93,
+      "jugadorLibre": false,
+      "nacionalidad": "Corea del Sur",
+      "media": 84,
+      "habilidades": {
+        "ataque": 84,
+        "defensa": 74,
+        "tiro": 82,
+        "pase": 85,
+        "velocidad": 87,
+        "cabezazo": 77,
+        "resistencia": 87,
+        "liderazgo": 84,
+        "disciplina": 85,
+        "trabajoEquipo": 88,
+        "potencial": 86,
+        "genetica": 86,
+        "factorSorpresa": 12,
+        "agresividad": 44
+      },
+      "economia": {
+        "sueldo": 12600000,
+        "clausula": 252000000,
+        "valor": 252000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8400000,
+        "clausulaNormalReferencia": 168000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 71
+      }
+    },
+    {
+      "id": 910072,
+      "nombre": "Shinji Kagowa",
+      "edad": 21,
+      "posicion": "MCO",
+      "equipo": "Manchester United",
+      "clubId": 93,
+      "jugadorLibre": false,
+      "nacionalidad": "Japón",
+      "media": 84,
+      "habilidades": {
+        "ataque": 87,
+        "defensa": 65,
+        "tiro": 86,
+        "pase": 90,
+        "velocidad": 84,
+        "cabezazo": 76,
+        "resistencia": 86,
+        "liderazgo": 83,
+        "disciplina": 85,
+        "trabajoEquipo": 86,
+        "potencial": 88,
+        "genetica": 83,
+        "factorSorpresa": 11,
+        "agresividad": 58
+      },
+      "economia": {
+        "sueldo": 12600000,
+        "clausula": 283500000,
+        "valor": 283500000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8400000,
+        "clausulaNormalReferencia": 189000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 72
+      }
+    },
+    {
+      "id": 910073,
+      "nombre": "Keisuke Hondar",
+      "edad": 24,
+      "posicion": "MCO",
+      "equipo": "Milan",
+      "clubId": 129,
+      "jugadorLibre": false,
+      "nacionalidad": "Japón",
+      "media": 83,
+      "habilidades": {
+        "ataque": 86,
+        "defensa": 67,
+        "tiro": 84,
+        "pase": 89,
+        "velocidad": 82,
+        "cabezazo": 77,
+        "resistencia": 82,
+        "liderazgo": 82,
+        "disciplina": 85,
+        "trabajoEquipo": 86,
+        "potencial": 85,
+        "genetica": 83,
+        "factorSorpresa": 8,
+        "agresividad": 57
+      },
+      "economia": {
+        "sueldo": 12450000,
+        "clausula": 261450000,
+        "valor": 261450000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8300000,
+        "clausulaNormalReferencia": 174300000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 73
+      }
+    },
+    {
+      "id": 910074,
+      "nombre": "Tim Cahilson",
+      "edad": 27,
+      "posicion": "MCO",
+      "equipo": "Chelsea",
+      "clubId": 95,
+      "jugadorLibre": false,
+      "nacionalidad": "Australia",
+      "media": 82,
+      "habilidades": {
+        "ataque": 85,
+        "defensa": 65,
+        "tiro": 84,
+        "pase": 85,
+        "velocidad": 85,
+        "cabezazo": 75,
+        "resistencia": 84,
+        "liderazgo": 82,
+        "disciplina": 81,
+        "trabajoEquipo": 86,
+        "potencial": 83,
+        "genetica": 84,
+        "factorSorpresa": 16,
+        "agresividad": 54
+      },
+      "economia": {
+        "sueldo": 12300000,
+        "clausula": 239850000,
+        "valor": 239850000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8200000,
+        "clausulaNormalReferencia": 159900000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 74
+      }
+    },
+    {
+      "id": 910075,
+      "nombre": "Javier Hernal",
+      "edad": 22,
+      "posicion": "DC",
+      "equipo": "Manchester United",
+      "clubId": 93,
+      "jugadorLibre": false,
+      "nacionalidad": "México",
+      "media": 82,
+      "habilidades": {
+        "ataque": 87,
+        "defensa": 58,
+        "tiro": 87,
+        "pase": 80,
+        "velocidad": 86,
+        "cabezazo": 83,
+        "resistencia": 84,
+        "liderazgo": 83,
+        "disciplina": 83,
+        "trabajoEquipo": 80,
+        "potencial": 85,
+        "genetica": 82,
+        "factorSorpresa": 11,
+        "agresividad": 57
+      },
+      "economia": {
+        "sueldo": 12300000,
+        "clausula": 270600000,
+        "valor": 270600000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8200000,
+        "clausulaNormalReferencia": 180400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 75
+      }
+    },
+    {
+      "id": 910076,
+      "nombre": "Memo Ochoga",
+      "edad": 28,
+      "posicion": "POR",
+      "equipo": "Valencia",
+      "clubId": 113,
+      "jugadorLibre": false,
+      "nacionalidad": "México",
+      "media": 82,
+      "habilidades": {
+        "ataque": 82,
+        "defensa": 85,
+        "tiro": 82,
+        "pase": 79,
+        "velocidad": 86,
+        "cabezazo": 87,
+        "resistencia": 77,
+        "liderazgo": 82,
+        "disciplina": 84,
+        "trabajoEquipo": 84,
+        "potencial": 83,
+        "genetica": 82,
+        "factorSorpresa": 11,
+        "agresividad": 38
+      },
+      "economia": {
+        "sueldo": 12300000,
+        "clausula": 233700000,
+        "valor": 233700000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8200000,
+        "clausulaNormalReferencia": 155800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 76
+      }
+    },
+    {
+      "id": 910077,
+      "nombre": "Carlos Valde",
+      "edad": 29,
+      "posicion": "MCO",
+      "equipo": "Palmeiras",
+      "clubId": 74,
+      "jugadorLibre": false,
+      "nacionalidad": "Colombia",
+      "media": 84,
+      "habilidades": {
+        "ataque": 86,
+        "defensa": 68,
+        "tiro": 83,
+        "pase": 88,
+        "velocidad": 84,
+        "cabezazo": 79,
+        "resistencia": 85,
+        "liderazgo": 86,
+        "disciplina": 83,
+        "trabajoEquipo": 88,
+        "potencial": 84,
+        "genetica": 83,
+        "factorSorpresa": 11,
+        "agresividad": 32
+      },
+      "economia": {
+        "sueldo": 12600000,
+        "clausula": 233100000,
+        "valor": 233100000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8400000,
+        "clausulaNormalReferencia": 155400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 77
+      }
+    },
+    {
+      "id": 910078,
+      "nombre": "Rene Higuero",
+      "edad": 25,
+      "posicion": "POR",
+      "equipo": "São Paulo",
+      "clubId": 76,
+      "jugadorLibre": false,
+      "nacionalidad": "Colombia",
+      "media": 83,
+      "habilidades": {
+        "ataque": 84,
+        "defensa": 90,
+        "tiro": 81,
+        "pase": 77,
+        "velocidad": 84,
+        "cabezazo": 88,
+        "resistencia": 80,
+        "liderazgo": 86,
+        "disciplina": 86,
+        "trabajoEquipo": 86,
+        "potencial": 85,
+        "genetica": 82,
+        "factorSorpresa": 11,
+        "agresividad": 50
+      },
+      "economia": {
+        "sueldo": 12450000,
+        "clausula": 255225000,
+        "valor": 255225000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8300000,
+        "clausulaNormalReferencia": 170150000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 78
+      }
+    },
+    {
+      "id": 910079,
+      "nombre": "Carlitos Tevar",
+      "edad": 22,
+      "posicion": "DC",
+      "equipo": "Boca Juniors",
+      "clubId": 1,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 88,
+      "habilidades": {
+        "ataque": 95,
+        "defensa": 67,
+        "tiro": 92,
+        "pase": 82,
+        "velocidad": 91,
+        "cabezazo": 91,
+        "resistencia": 89,
+        "liderazgo": 87,
+        "disciplina": 86,
+        "trabajoEquipo": 88,
+        "potencial": 93,
+        "genetica": 86,
+        "factorSorpresa": 2,
+        "agresividad": 57
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 871200000,
+        "valor": 871200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 580800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 79
+      }
+    },
+    {
+      "id": 910080,
+      "nombre": "Sergio Agüez",
+      "edad": 24,
+      "posicion": "DC",
+      "equipo": "Manchester City",
+      "clubId": 91,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 89,
+      "habilidades": {
+        "ataque": 93,
+        "defensa": 67,
+        "tiro": 93,
+        "pase": 86,
+        "velocidad": 92,
+        "cabezazo": 94,
+        "resistencia": 90,
+        "liderazgo": 88,
+        "disciplina": 90,
+        "trabajoEquipo": 91,
+        "potencial": 93,
+        "genetica": 87,
+        "factorSorpresa": 17,
+        "agresividad": 48
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 841050000,
+        "valor": 841050000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 560700000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 80
+      }
+    },
+    {
+      "id": 910081,
+      "nombre": "Juan Riqelme",
+      "edad": 26,
+      "posicion": "MCO",
+      "equipo": "Boca Juniors",
+      "clubId": 1,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 89,
+      "habilidades": {
+        "ataque": 90,
+        "defensa": 72,
+        "tiro": 91,
+        "pase": 91,
+        "velocidad": 91,
+        "cabezazo": 84,
+        "resistencia": 91,
+        "liderazgo": 91,
+        "disciplina": 90,
+        "trabajoEquipo": 89,
+        "potencial": 92,
+        "genetica": 87,
+        "factorSorpresa": 10,
+        "agresividad": 39
+      },
+      "economia": {
+        "sueldo": 40050000,
+        "clausula": 801000000,
+        "valor": 801000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26700000,
+        "clausulaNormalReferencia": 534000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 81
+      }
+    },
+    {
+      "id": 910082,
+      "nombre": "Gabriel Batigolz",
+      "edad": 26,
+      "posicion": "DC",
+      "equipo": "Fiorentina",
+      "clubId": 134,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 90,
+      "habilidades": {
+        "ataque": 97,
+        "defensa": 69,
+        "tiro": 94,
+        "pase": 86,
+        "velocidad": 93,
+        "cabezazo": 94,
+        "resistencia": 93,
+        "liderazgo": 91,
+        "disciplina": 89,
+        "trabajoEquipo": 92,
+        "potencial": 91,
+        "genetica": 92,
+        "factorSorpresa": 5,
+        "agresividad": 54
+      },
+      "economia": {
+        "sueldo": 40500000,
+        "clausula": 810000000,
+        "valor": 810000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 27000000,
+        "clausulaNormalReferencia": 540000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 82
+      }
+    },
+    {
+      "id": 910083,
+      "nombre": "Hernán Crespi",
+      "edad": 25,
+      "posicion": "DC",
+      "equipo": "Inter",
+      "clubId": 128,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 87,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 64,
+        "tiro": 92,
+        "pase": 81,
+        "velocidad": 91,
+        "cabezazo": 88,
+        "resistencia": 88,
+        "liderazgo": 90,
+        "disciplina": 85,
+        "trabajoEquipo": 87,
+        "potencial": 90,
+        "genetica": 86,
+        "factorSorpresa": 16,
+        "agresividad": 42
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 267525000,
+        "valor": 267525000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 178350000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 83
+      }
+    },
+    {
+      "id": 910084,
+      "nombre": "Javier Zanetto",
+      "edad": 28,
+      "posicion": "LD",
+      "equipo": "Inter",
+      "clubId": 128,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 88,
+      "habilidades": {
+        "ataque": 83,
+        "defensa": 89,
+        "tiro": 80,
+        "pase": 88,
+        "velocidad": 93,
+        "cabezazo": 83,
+        "resistencia": 93,
+        "liderazgo": 88,
+        "disciplina": 88,
+        "trabajoEquipo": 91,
+        "potencial": 88,
+        "genetica": 87,
+        "factorSorpresa": 2,
+        "agresividad": 45
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 752400000,
+        "valor": 752400000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 501600000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 84
+      }
+    },
+    {
+      "id": 910085,
+      "nombre": "Jefe Mascher",
+      "edad": 25,
+      "posicion": "MCD",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 87,
+      "habilidades": {
+        "ataque": 84,
+        "defensa": 89,
+        "tiro": 79,
+        "pase": 92,
+        "velocidad": 83,
+        "cabezazo": 89,
+        "resistencia": 88,
+        "liderazgo": 88,
+        "disciplina": 86,
+        "trabajoEquipo": 90,
+        "potencial": 90,
+        "genetica": 86,
+        "factorSorpresa": 12,
+        "agresividad": 54
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 267525000,
+        "valor": 267525000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 178350000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 85
+      }
+    },
+    {
+      "id": 910086,
+      "nombre": "Radamel Falca",
+      "edad": 25,
+      "posicion": "DC",
+      "equipo": "Atlético Madrid",
+      "clubId": 111,
+      "jugadorLibre": false,
+      "nacionalidad": "Colombia",
+      "media": 87,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 66,
+        "tiro": 90,
+        "pase": 85,
+        "velocidad": 87,
+        "cabezazo": 92,
+        "resistencia": 90,
+        "liderazgo": 87,
+        "disciplina": 85,
+        "trabajoEquipo": 88,
+        "potencial": 89,
+        "genetica": 88,
+        "factorSorpresa": 13,
+        "agresividad": 52
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 267525000,
+        "valor": 267525000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 178350000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 86
+      }
+    },
+    {
+      "id": 910087,
+      "nombre": "Jaime Rodíguez",
+      "edad": 23,
+      "posicion": "MCO",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Colombia",
+      "media": 86,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 70,
+        "tiro": 87,
+        "pase": 92,
+        "velocidad": 87,
+        "cabezazo": 81,
+        "resistencia": 86,
+        "liderazgo": 88,
+        "disciplina": 86,
+        "trabajoEquipo": 89,
+        "potencial": 88,
+        "genetica": 85,
+        "factorSorpresa": 9,
+        "agresividad": 62
+      },
+      "economia": {
+        "sueldo": 12900000,
+        "clausula": 277350000,
+        "valor": 277350000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8600000,
+        "clausulaNormalReferencia": 184900000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 87
+      }
+    },
+    {
+      "id": 910088,
+      "nombre": "Edinson Cavan",
+      "edad": 27,
+      "posicion": "DC",
+      "equipo": "Napoli",
+      "clubId": 130,
+      "jugadorLibre": false,
+      "nacionalidad": "Uruguay",
+      "media": 87,
+      "habilidades": {
+        "ataque": 93,
+        "defensa": 63,
+        "tiro": 93,
+        "pase": 83,
+        "velocidad": 88,
+        "cabezazo": 88,
+        "resistencia": 87,
+        "liderazgo": 88,
+        "disciplina": 89,
+        "trabajoEquipo": 89,
+        "potencial": 89,
+        "genetica": 85,
+        "factorSorpresa": 8,
+        "agresividad": 31
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 254475000,
+        "valor": 254475000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 169650000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 88
+      }
+    },
+    {
+      "id": 910089,
+      "nombre": "Diego Forlón",
+      "edad": 29,
+      "posicion": "DC",
+      "equipo": "Atlético Madrid",
+      "clubId": 111,
+      "jugadorLibre": false,
+      "nacionalidad": "Uruguay",
+      "media": 86,
+      "habilidades": {
+        "ataque": 93,
+        "defensa": 62,
+        "tiro": 89,
+        "pase": 84,
+        "velocidad": 87,
+        "cabezazo": 87,
+        "resistencia": 85,
+        "liderazgo": 85,
+        "disciplina": 85,
+        "trabajoEquipo": 85,
+        "potencial": 86,
+        "genetica": 88,
+        "factorSorpresa": 18,
+        "agresividad": 62
+      },
+      "economia": {
+        "sueldo": 12900000,
+        "clausula": 238650000,
+        "valor": 238650000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8600000,
+        "clausulaNormalReferencia": 159100000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 89
+      }
+    },
+    {
+      "id": 910090,
+      "nombre": "Enzo Francescoli",
+      "edad": 26,
+      "posicion": "MCO",
+      "equipo": "River Plate",
+      "clubId": 2,
+      "jugadorLibre": false,
+      "nacionalidad": "Uruguay",
+      "media": 86,
+      "habilidades": {
+        "ataque": 89,
+        "defensa": 68,
+        "tiro": 89,
+        "pase": 92,
+        "velocidad": 87,
+        "cabezazo": 80,
+        "resistencia": 84,
+        "liderazgo": 87,
+        "disciplina": 84,
+        "trabajoEquipo": 87,
+        "potencial": 88,
+        "genetica": 84,
+        "factorSorpresa": 3,
+        "agresividad": 42
+      },
+      "economia": {
+        "sueldo": 12900000,
+        "clausula": 258000000,
+        "valor": 258000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8600000,
+        "clausulaNormalReferencia": 172000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 90
+      }
+    },
+    {
+      "id": 910091,
+      "nombre": "Álvaro Recobo",
+      "edad": 23,
+      "posicion": "MCO",
+      "equipo": "Inter",
+      "clubId": 128,
+      "jugadorLibre": false,
+      "nacionalidad": "Uruguay",
+      "media": 84,
+      "habilidades": {
+        "ataque": 87,
+        "defensa": 64,
+        "tiro": 86,
+        "pase": 86,
+        "velocidad": 85,
+        "cabezazo": 75,
+        "resistencia": 85,
+        "liderazgo": 87,
+        "disciplina": 84,
+        "trabajoEquipo": 88,
+        "potencial": 86,
+        "genetica": 86,
+        "factorSorpresa": 11,
+        "agresividad": 61
+      },
+      "economia": {
+        "sueldo": 12600000,
+        "clausula": 270900000,
+        "valor": 270900000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8400000,
+        "clausulaNormalReferencia": 180600000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 91
+      }
+    },
+    {
+      "id": 910092,
+      "nombre": "Alexis Sancho",
+      "edad": 25,
+      "posicion": "ED",
+      "equipo": "Arsenal",
+      "clubId": 94,
+      "jugadorLibre": false,
+      "nacionalidad": "Chile",
+      "media": 87,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 68,
+        "tiro": 88,
+        "pase": 89,
+        "velocidad": 93,
+        "cabezazo": 77,
+        "resistencia": 87,
+        "liderazgo": 87,
+        "disciplina": 89,
+        "trabajoEquipo": 90,
+        "potencial": 89,
+        "genetica": 86,
+        "factorSorpresa": 3,
+        "agresividad": 58
+      },
+      "economia": {
+        "sueldo": 13050000,
+        "clausula": 267525000,
+        "valor": 267525000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8700000,
+        "clausulaNormalReferencia": 178350000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 92
+      }
+    },
+    {
+      "id": 910093,
+      "nombre": "Arturo Videl",
+      "edad": 27,
+      "posicion": "MC",
+      "equipo": "Juventus",
+      "clubId": 127,
+      "jugadorLibre": false,
+      "nacionalidad": "Chile",
+      "media": 86,
+      "habilidades": {
+        "ataque": 85,
+        "defensa": 81,
+        "tiro": 84,
+        "pase": 89,
+        "velocidad": 87,
+        "cabezazo": 83,
+        "resistencia": 88,
+        "liderazgo": 87,
+        "disciplina": 89,
+        "trabajoEquipo": 88,
+        "potencial": 86,
+        "genetica": 86,
+        "factorSorpresa": 10,
+        "agresividad": 47
+      },
+      "economia": {
+        "sueldo": 12900000,
+        "clausula": 251550000,
+        "valor": 251550000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8600000,
+        "clausulaNormalReferencia": 167700000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 93
+      }
+    },
+    {
+      "id": 910094,
+      "nombre": "Marcelo Salaz",
+      "edad": 22,
+      "posicion": "DC",
+      "equipo": "Universidad de Chile",
+      "clubId": 56,
+      "jugadorLibre": false,
+      "nacionalidad": "Chile",
+      "media": 85,
+      "habilidades": {
+        "ataque": 89,
+        "defensa": 65,
+        "tiro": 89,
+        "pase": 83,
+        "velocidad": 87,
+        "cabezazo": 87,
+        "resistencia": 88,
+        "liderazgo": 85,
+        "disciplina": 87,
+        "trabajoEquipo": 85,
+        "potencial": 88,
+        "genetica": 84,
+        "factorSorpresa": 10,
+        "agresividad": 57
+      },
+      "economia": {
+        "sueldo": 12750000,
+        "clausula": 280500000,
+        "valor": 280500000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8500000,
+        "clausulaNormalReferencia": 187000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 94
+      }
+    },
+    {
+      "id": 910095,
+      "nombre": "Iván Zamorán",
+      "edad": 27,
+      "posicion": "DC",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "Chile",
+      "media": 85,
+      "habilidades": {
+        "ataque": 92,
+        "defensa": 61,
+        "tiro": 92,
+        "pase": 79,
+        "velocidad": 88,
+        "cabezazo": 87,
+        "resistencia": 87,
+        "liderazgo": 88,
+        "disciplina": 87,
+        "trabajoEquipo": 85,
+        "potencial": 86,
+        "genetica": 83,
+        "factorSorpresa": 8,
+        "agresividad": 63
+      },
+      "economia": {
+        "sueldo": 12750000,
+        "clausula": 248625000,
+        "valor": 248625000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8500000,
+        "clausulaNormalReferencia": 165750000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 95
+      }
+    },
+    {
+      "id": 910096,
+      "nombre": "José Chilaver",
+      "edad": 29,
+      "posicion": "POR",
+      "equipo": "San Lorenzo",
+      "clubId": 5,
+      "jugadorLibre": false,
+      "nacionalidad": "Paraguay",
+      "media": 84,
+      "habilidades": {
+        "ataque": 85,
+        "defensa": 87,
+        "tiro": 80,
+        "pase": 78,
+        "velocidad": 88,
+        "cabezazo": 89,
+        "resistencia": 81,
+        "liderazgo": 85,
+        "disciplina": 85,
+        "trabajoEquipo": 84,
+        "potencial": 85,
+        "genetica": 83,
+        "factorSorpresa": 17,
+        "agresividad": 60
+      },
+      "economia": {
+        "sueldo": 12600000,
+        "clausula": 233100000,
+        "valor": 233100000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8400000,
+        "clausulaNormalReferencia": 155400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 96
+      }
+    },
+    {
+      "id": 910097,
+      "nombre": "Hugo Sanchis",
+      "edad": 26,
+      "posicion": "DC",
+      "equipo": "Real Madrid",
+      "clubId": 109,
+      "jugadorLibre": false,
+      "nacionalidad": "México",
+      "media": 86,
+      "habilidades": {
+        "ataque": 91,
+        "defensa": 65,
+        "tiro": 91,
+        "pase": 84,
+        "velocidad": 90,
+        "cabezazo": 89,
+        "resistencia": 85,
+        "liderazgo": 85,
+        "disciplina": 85,
+        "trabajoEquipo": 85,
+        "potencial": 89,
+        "genetica": 88,
+        "factorSorpresa": 12,
+        "agresividad": 58
+      },
+      "economia": {
+        "sueldo": 12900000,
+        "clausula": 258000000,
+        "valor": 258000000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8600000,
+        "clausulaNormalReferencia": 172000000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 97
+      }
+    },
+    {
+      "id": 910098,
+      "nombre": "Rafa Marqués",
+      "edad": 27,
+      "posicion": "DFC",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "México",
+      "media": 85,
+      "habilidades": {
+        "ataque": 69,
+        "defensa": 91,
+        "tiro": 66,
+        "pase": 80,
+        "velocidad": 82,
+        "cabezazo": 88,
+        "resistencia": 85,
+        "liderazgo": 85,
+        "disciplina": 85,
+        "trabajoEquipo": 87,
+        "potencial": 86,
+        "genetica": 87,
+        "factorSorpresa": 18,
+        "agresividad": 41
+      },
+      "economia": {
+        "sueldo": 12750000,
+        "clausula": 248625000,
+        "valor": 248625000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 8500000,
+        "clausulaNormalReferencia": 165750000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 98
+      }
+    },
+    {
+      "id": 910099,
+      "nombre": "Carlo Puyal",
+      "edad": 27,
+      "posicion": "DFC",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 88,
+      "habilidades": {
+        "ataque": 71,
+        "defensa": 93,
+        "tiro": 70,
+        "pase": 81,
+        "velocidad": 87,
+        "cabezazo": 93,
+        "resistencia": 88,
+        "liderazgo": 90,
+        "disciplina": 88,
+        "trabajoEquipo": 88,
+        "potencial": 90,
+        "genetica": 86,
+        "factorSorpresa": 13,
+        "agresividad": 46
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 772200000,
+        "valor": 772200000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 514800000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 99
+      }
+    },
+    {
+      "id": 910100,
+      "nombre": "Sergio Busquetz",
+      "edad": 24,
+      "posicion": "MCD",
+      "equipo": "Barcelona",
+      "clubId": 110,
+      "jugadorLibre": false,
+      "nacionalidad": "España",
+      "media": 88,
+      "habilidades": {
+        "ataque": 83,
+        "defensa": 92,
+        "tiro": 79,
+        "pase": 92,
+        "velocidad": 87,
+        "cabezazo": 88,
+        "resistencia": 93,
+        "liderazgo": 91,
+        "disciplina": 88,
+        "trabajoEquipo": 93,
+        "potencial": 91,
+        "genetica": 88,
+        "factorSorpresa": 5,
+        "agresividad": 34
+      },
+      "economia": {
+        "sueldo": 39600000,
+        "clausula": 831600000,
+        "valor": 831600000,
+        "clausulaBloqueada": true,
+        "multiplicadorSobreValorNormal": 1.5,
+        "sueldoNormalReferencia": 26400000,
+        "clausulaNormalReferencia": 554400000,
+        "formulaClausula": "V8.50-compresion-extremos-50"
+      },
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manuales.json",
+        "rulesVersion": "V8.50-clausulas-equilibradas-especiales-150",
+        "tipo": "manual_activo",
+        "ordenLista": 100
+      }
+    }
+  ]
+}

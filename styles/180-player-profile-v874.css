@@ -1,0 +1,406 @@
+/* V8.74 · Ficha horizontal del jugador */
+@media (min-width:901px){
+  .modal-panel:has(.player-modal-landscape){
+    width:min(1540px,calc(100vw - 18px));
+    height:min(94vh,860px);
+    max-height:none;
+    padding:10px;
+    overflow:hidden;
+    border-radius:17px;
+  }
+  .modal-panel:has(.player-modal-landscape) .modal-close{
+    position:absolute;
+    z-index:5;
+    top:8px;
+    right:8px;
+    width:29px;
+    height:29px;
+    font-size:17px;
+  }
+  .player-modal-landscape{
+    clear:both;
+    height:100%;
+    min-height:0;
+  }
+  .player-modal-compact .player-modal-landscape-grid{
+    height:100%;
+    min-height:0;
+    display:grid;
+    grid-template-columns:minmax(220px,.72fr) minmax(430px,1.42fr) minmax(280px,.9fr);
+    gap:8px;
+  }
+  .player-modal-column{
+    min-width:0;
+    min-height:0;
+  }
+  .player-summary-column{
+    display:grid;
+    grid-template-rows:auto auto minmax(0,1fr);
+    align-content:start;
+    gap:8px;
+  }
+  .player-skills-column{
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr);
+    gap:8px;
+  }
+  .player-stats-column{
+    display:grid;
+    min-height:0;
+  }
+  .player-modal-landscape .card.inner{
+    padding:9px 10px;
+    border-radius:12px;
+  }
+  .player-modal-landscape .card.inner h3{
+    margin:0 0 6px;
+    font-size:12px;
+  }
+  .player-identity-landscape{
+    min-height:86px;
+    padding:7px 34px 7px 7px;
+    gap:9px;
+    flex-wrap:nowrap;
+    border:1px solid rgba(148,163,184,.13);
+    border-radius:13px;
+    background:rgba(255,255,255,.025);
+  }
+  .player-identity-landscape .player-photo-placeholder.large,
+  .player-identity-landscape img.player-photo-placeholder.large{
+    width:72px;
+    height:72px;
+    min-width:72px;
+    border-radius:14px;
+    font-size:25px;
+  }
+  .player-identity-copy{
+    min-width:0;
+  }
+  .player-identity-copy .label{
+    margin-bottom:2px;
+    font-size:7px;
+  }
+  .player-modal-landscape .player-modal-title{
+    margin:0 0 3px;
+    font-size:clamp(16px,1.65vw,24px);
+    line-height:1.02;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .player-modal-landscape .muted{
+    margin:1px 0;
+    font-size:8.5px;
+    line-height:1.22;
+  }
+  .player-profile-card{
+    display:grid;
+    gap:6px;
+  }
+  .player-profile-metrics{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:4px;
+  }
+  .player-profile-metrics>div{
+    min-width:0;
+    display:grid;
+    gap:1px;
+    padding:5px 6px;
+    border-radius:9px;
+    border:1px solid rgba(148,163,184,.10);
+    background:rgba(255,255,255,.025);
+  }
+  .player-profile-metrics span,
+  .player-season-highlight span{
+    color:#9fb0c9;
+    font-size:7px;
+    font-weight:800;
+    letter-spacing:.035em;
+    text-transform:uppercase;
+  }
+  .player-profile-metrics strong,
+  .player-profile-metrics>div>span+span,
+  .player-season-highlight strong{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:10px;
+  }
+  .player-profile-card .profile-bar-wrap{
+    margin:0;
+  }
+  .player-season-highlight{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    align-items:center;
+    padding-top:4px;
+    border-top:1px solid rgba(148,163,184,.10);
+  }
+  .player-profile-card .small-copy{
+    display:-webkit-box;
+    margin:0;
+    overflow:hidden;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+  }
+  .player-landscape-actions{
+    min-height:0;
+  }
+  .player-landscape-actions .player-action-card{
+    height:100%;
+    min-height:0;
+    padding:8px 9px;
+    display:grid;
+    align-content:start;
+    gap:4px;
+  }
+  .player-landscape-actions .player-action-card h3{
+    margin:0;
+    font-size:11px;
+  }
+  .player-landscape-actions .transfer-toggle-row{
+    margin:0;
+    font-size:8.5px;
+    line-height:1.15;
+  }
+  .player-landscape-actions .muted.small{
+    margin:0;
+    font-size:7.5px;
+    line-height:1.2;
+  }
+  .player-landscape-actions .message-actions{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:4px;
+    margin:2px 0 0;
+  }
+  .player-landscape-actions .message-actions button{
+    min-width:0;
+    min-height:29px;
+    padding:5px 6px;
+    font-size:8px;
+    line-height:1.05;
+  }
+  .player-landscape-actions .player-market-offer-row{
+    grid-template-columns:minmax(0,1fr) auto auto;
+    align-items:center;
+  }
+  .player-landscape-actions .player-modal-clause-value{
+    min-width:0;
+    padding:4px 6px;
+  }
+  .player-landscape-actions .player-modal-clause-value span{
+    font-size:6px;
+  }
+  .player-landscape-actions .player-modal-clause-value strong{
+    font-size:9px;
+  }
+  .player-skills-card{
+    min-height:0;
+  }
+  .player-skill-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:4px;
+  }
+  .player-skill-row{
+    --skill-tone:#94a3b8;
+    min-width:0;
+    min-height:28px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:5px;
+    padding:4px 6px;
+    border:1px solid color-mix(in srgb,var(--skill-tone) 25%,transparent);
+    border-left:3px solid var(--skill-tone);
+    border-radius:8px;
+    background:color-mix(in srgb,var(--skill-tone) 8%,rgba(255,255,255,.018));
+  }
+  .player-skill-row>span{
+    min-width:0;
+    overflow:hidden;
+    color:#cbd5e1;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:8px;
+    font-weight:750;
+  }
+  .player-skill-value{
+    color:var(--skill-tone);
+    font-size:10px;
+    font-weight:950;
+    white-space:nowrap;
+  }
+  .player-skill-row.skill-rating-poor{--skill-tone:#f87171}
+  .player-skill-row.skill-rating-weak{--skill-tone:#fb923c}
+  .player-skill-row.skill-rating-solid{--skill-tone:#facc15}
+  .player-skill-row.skill-rating-strong{--skill-tone:#4ade80}
+  .player-skill-row.skill-rating-elite{--skill-tone:#38bdf8}
+  .player-skill-row.skill-rating-unknown{--skill-tone:#64748b}
+  .player-skill-value .skill-base-value{
+    color:var(--skill-tone);
+  }
+  .player-skill-note{
+    margin:5px 0 0!important;
+    font-size:7px!important;
+    line-height:1.15!important;
+  }
+  .player-analysis-row{
+    min-height:0;
+    display:grid;
+    grid-template-columns:minmax(160px,.8fr) minmax(0,1.2fr);
+    gap:8px;
+    align-items:stretch;
+  }
+  .player-analysis-row>.radar-wrap:only-child{
+    grid-column:1/-1;
+  }
+  .player-radar-compact{
+    min-height:0;
+    margin:0;
+    padding:4px;
+    border-radius:12px;
+  }
+  .player-radar-compact .radar{
+    width:min(100%,205px);
+    max-height:205px;
+  }
+  .player-analysis-row .scouted-hidden-card{
+    min-width:0;
+    min-height:0;
+    align-self:stretch;
+  }
+  .player-analysis-row .scouted-hidden-card .label{
+    margin:0 0 2px;
+    font-size:6.5px;
+  }
+  .player-hidden-skill-grid{
+    display:grid;
+    gap:4px;
+  }
+  .player-statistics-landscape{
+    min-height:0;
+    height:100%;
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr) auto;
+  }
+  .player-stat-comparison{
+    min-height:0;
+    display:grid;
+    align-content:start;
+    gap:3px;
+  }
+  .player-stat-compare-head,
+  .player-stat-compare-row{
+    min-width:0;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 64px 64px;
+    align-items:center;
+    gap:4px;
+  }
+  .player-stat-compare-head{
+    padding:4px 5px;
+    border-bottom:1px solid rgba(148,163,184,.15);
+    color:#9fb0c9;
+    font-size:6.5px;
+    text-transform:uppercase;
+    letter-spacing:.035em;
+  }
+  .player-stat-compare-head strong,
+  .player-stat-compare-row strong{
+    text-align:center;
+  }
+  .player-stat-compare-row{
+    min-height:26px;
+    padding:3px 5px;
+    border-radius:7px;
+    background:rgba(255,255,255,.022);
+    border:1px solid rgba(148,163,184,.075);
+  }
+  .player-stat-compare-row span{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:#cbd5e1;
+    font-size:8px;
+  }
+  .player-stat-compare-row strong{
+    font-size:9px;
+  }
+  .player-stat-compare-row strong:last-child{
+    color:#93c5fd;
+  }
+  .player-stat-migration-note{
+    margin:5px 0 0!important;
+    font-size:6.5px!important;
+    line-height:1.1!important;
+  }
+}
+
+@media (min-width:901px) and (max-height:760px){
+  .modal-panel:has(.player-modal-landscape){height:97vh;padding:7px}
+  .player-modal-compact .player-modal-landscape-grid{gap:6px}
+  .player-summary-column,.player-skills-column{gap:6px}
+  .player-modal-landscape .card.inner{padding:7px 8px}
+  .player-identity-landscape{min-height:72px;padding:5px 32px 5px 5px}
+  .player-identity-landscape .player-photo-placeholder.large,
+  .player-identity-landscape img.player-photo-placeholder.large{width:60px;height:60px;min-width:60px}
+  .player-modal-landscape .player-modal-title{font-size:16px}
+  .player-profile-metrics>div{padding:3px 5px}
+  .player-landscape-actions .muted.small{display:-webkit-box;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .player-skill-grid{gap:3px}
+  .player-skill-row{min-height:24px;padding:3px 5px}
+  .player-skill-note{font-size:6.5px!important}
+  .player-analysis-row{gap:6px}
+  .player-radar-compact .radar{max-height:165px;width:min(100%,165px)}
+  .player-stat-comparison{gap:2px}
+  .player-stat-compare-row{min-height:22px;padding:2px 5px}
+  .player-stat-migration-note{display:none}
+}
+
+@media (max-width:1100px) and (min-width:901px){
+  .player-modal-compact .player-modal-landscape-grid{
+    grid-template-columns:minmax(205px,.7fr) minmax(395px,1.38fr) minmax(270px,.92fr);
+  }
+  .player-skill-row>span{font-size:7.5px}
+  .player-stat-compare-head,.player-stat-compare-row{grid-template-columns:minmax(0,1fr) 55px 55px}
+}
+
+@media (max-width:900px){
+  .modal-panel:has(.player-modal-landscape){overflow:auto}
+  .player-modal-compact .player-modal-landscape-grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .player-summary-column,.player-skills-column,.player-stats-column{display:grid;gap:10px}
+  .player-skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+  .player-skill-row{--skill-tone:#94a3b8;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:7px 8px;border-left:3px solid var(--skill-tone);border-radius:9px;background:rgba(255,255,255,.025)}
+  .player-skill-row.skill-rating-poor{--skill-tone:#f87171}.player-skill-row.skill-rating-weak{--skill-tone:#fb923c}.player-skill-row.skill-rating-solid{--skill-tone:#facc15}.player-skill-row.skill-rating-strong{--skill-tone:#4ade80}.player-skill-row.skill-rating-elite{--skill-tone:#38bdf8}.player-skill-row.skill-rating-unknown{--skill-tone:#64748b}
+  .player-skill-value{color:var(--skill-tone)}
+  .player-analysis-row{display:grid;gap:10px}
+  .player-stat-compare-head,.player-stat-compare-row{display:grid;grid-template-columns:minmax(0,1fr) 74px 74px;gap:6px;padding:6px 7px}
+  .player-stat-compare-head strong,.player-stat-compare-row strong{text-align:center}
+}
+
+@media (max-width:560px){
+  .player-skill-grid{grid-template-columns:1fr}
+  .player-stat-compare-head,.player-stat-compare-row{grid-template-columns:minmax(0,1fr) 62px 62px}
+}
+
+@media (min-width:901px){
+  .player-skills-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .player-skills-head h3{margin:0!important;white-space:nowrap}
+  .player-skill-legend{display:flex;align-items:center;justify-content:flex-end;gap:4px;min-width:0;flex-wrap:wrap}
+  .player-skill-legend span{--legend-tone:#94a3b8;display:inline-flex;align-items:center;gap:2px;color:#aebdd1;font-size:6px;font-weight:800;white-space:nowrap}
+  .player-skill-legend span:before{content:"";width:5px;height:5px;border-radius:999px;background:var(--legend-tone)}
+  .player-skill-legend .skill-rating-poor{--legend-tone:#f87171}.player-skill-legend .skill-rating-weak{--legend-tone:#fb923c}.player-skill-legend .skill-rating-solid{--legend-tone:#facc15}.player-skill-legend .skill-rating-strong{--legend-tone:#4ade80}.player-skill-legend .skill-rating-elite{--legend-tone:#38bdf8}
+}
+@media (max-width:900px){
+  .player-skills-head{display:grid;gap:7px;margin-bottom:8px}
+  .player-skill-legend{display:flex;gap:7px;flex-wrap:wrap}
+  .player-skill-legend span{--legend-tone:#94a3b8;display:inline-flex;align-items:center;gap:3px;font-size:8px}
+  .player-skill-legend span:before{content:"";width:7px;height:7px;border-radius:999px;background:var(--legend-tone)}
+  .player-skill-legend .skill-rating-poor{--legend-tone:#f87171}.player-skill-legend .skill-rating-weak{--legend-tone:#fb923c}.player-skill-legend .skill-rating-solid{--legend-tone:#facc15}.player-skill-legend .skill-rating-strong{--legend-tone:#4ade80}.player-skill-legend .skill-rating-elite{--legend-tone:#38bdf8}
+}

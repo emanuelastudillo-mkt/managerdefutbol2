@@ -1,0 +1,148 @@
+{
+  "metadata": {
+    "nombre": "retos_manager",
+    "version": "V7.45",
+    "descripcion": "Presets ejecutables para partidas con escenarios especiales.",
+    "estado": "activo"
+  },
+  "retos": [
+    {
+      "id": "campo_destruido",
+      "activo": true,
+      "nombre": "Campo destruido",
+      "dificultad": "Muy alta",
+      "clubesSeleccionables": [
+        "River Plate",
+        "Boca Juniors",
+        "Estudiantes",
+        "San Lorenzo",
+        "Racing Club",
+        "Independiente"
+      ],
+      "calendario": {
+        "mesInicio": 10,
+        "diaInicio": 18,
+        "partidos": 5,
+        "diasEntrePartidos": 7,
+        "turnoGlobalInicial": 290,
+        "tituloFecha": "Reto · Fecha",
+        "fechaLigaInicial": 30,
+        "fechaLigaFinal": 34,
+        "calendarioCompletoPrimera": true
+      },
+      "condicionesIniciales": {
+        "campoPropio": 15,
+        "reduccionMediaPlantel": 10,
+        "cohesionPropia": 55,
+        "plantelPropio": {
+          "condicionMin": 45,
+          "condicionMax": 72,
+          "moralMin": 45,
+          "moralMax": 75
+        },
+        "rivales": {
+          "cohesionMinima": 78,
+          "condicionMinima": 82,
+          "moralMinima": 78
+        },
+        "jugadorEspecial": {
+          "nombresBusqueda": [
+            "Diego Maradona",
+            "Maradona"
+          ],
+          "nombreFallback": "Diego Maradona",
+          "diasLesion": 21,
+          "lesionadoHastaFecha": 2,
+          "condicionInicial": 88,
+          "moralInicial": 90,
+          "vuelveParaUltimosPartidos": 2,
+          "etiquetaLesion": "Recuperación programada del reto"
+        },
+        "tablaInicial": {
+          "lideres": [
+            {
+              "pj": 29,
+              "pg": 21,
+              "pe": 5,
+              "pp": 3,
+              "gf": 60,
+              "gc": 22,
+              "pts": 68
+            },
+            {
+              "pj": 29,
+              "pg": 20,
+              "pe": 7,
+              "pp": 2,
+              "gf": 57,
+              "gc": 20,
+              "pts": 67
+            }
+          ],
+          "clubSeleccionado": {
+            "pj": 29,
+            "pg": 20,
+            "pe": 6,
+            "pp": 3,
+            "gf": 55,
+            "gc": 19,
+            "pts": 66
+          },
+          "contendiente": {
+            "pj": 29,
+            "pgBase": 18,
+            "pe": 6,
+            "ppBase": 5,
+            "gfBase": 48,
+            "gcBase": 27,
+            "ptsBase": 60,
+            "variacionMaxima": 3
+          },
+          "resto": {
+            "pj": 29,
+            "pg": 11,
+            "pe": 7,
+            "pp": 11,
+            "gfBase": 36,
+            "gfVariacion": 7,
+            "gcBase": 34,
+            "gcVariacion": 9,
+            "ptsBase": 40,
+            "ptsVariacion": 9
+          }
+        }
+      },
+      "bloqueos": {
+        "fieldMaintenance": true,
+        "staff": true,
+        "players": true,
+        "resultOnly": true
+      },
+      "objetivo": {
+        "descripcion": "Terminar primero en la tabla de la Primera División por puntos y diferencia de gol.",
+        "primeroTabla": true,
+        "criterios": [
+          "puntos",
+          "diferencia_gol"
+        ]
+      },
+      "notas": [
+        "Campo propio en 15/100",
+        "No se puede replantar ni reparar",
+        "No se pueden contratar empleados ni jugadores",
+        "Ver resultado bloqueado: hay que dirigir todos los partidos",
+        "Las últimas 5 fechas incluyen un calendario completo para los 18 clubes de Primera División"
+      ],
+      "textos": {
+        "descripcionModal": "Campo propio en 15/100. No se puede replantar ni reparar. Quedan 5 fechas completas de la Primera División argentina: vos dirigís tus partidos y los otros 16 clubes también juegan y suman puntos. Maradona está lesionado y vuelve para los últimos 2 partidos.",
+        "reglasModal": "No se pueden contratar empleados ni jugadores. Es obligatorio dirigir tus cinco partidos. El resto de la Primera División disputa un cierre realista simulado. Si terminás primero por puntos y diferencia de gol recibís 10.000 puntos de habilidad únicamente la primera vez que superás el reto; luego el desafío termina.",
+        "descripcionTarjeta": "Campo propio 15/100, sin mantenimiento, fichajes ni empleados. Cinco fechas completas de Primera División y premio único de 10.000 puntos de habilidad la primera vez que terminás primero.",
+        "descripcionClub": "Elegí tu club. Jugará contra los otros cinco grandes mientras los 18 equipos de Primera completan las últimas cinco fechas."
+      },
+      "recompensas": {
+        "puntosHabilidadPrimerPuesto": 10000,
+        "soloPrimeraVez": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "metadata": {
+    "nombre": "jugadores_manual_ejemplo",
+    "version": "V5.39",
+    "appVersion": "V5.39",
+    "proyecto": "manager_de_futbol",
+    "descripcion": "Jugadores manuales con fotos WEBP, actualización de foto en partidas existentes y reaparición opcional como libres.",
+    "moneda": "ARS",
+    "unidadSueldo": "anual",
+    "rutaFotosSugerida": "img/jugadores/manual/",
+    "campoFotoPersonalizada": "foto"
+  },
+  "uso": {
+    "estado": "plantilla_de_referencia",
+    "cargaAutomatica": false,
+    "nota": "Este archivo no se carga automaticamente. En una version futura, el importador deberia leer el arreglo jugadores, validar ids unicos, posiciones, clubId y habilidades completas, y convertir estos nombres visibles al modelo interno del juego.",
+    "fotoPersonalizada": "Agregar las imágenes en img/jugadores/manual/ usando extensión .webp y los nombres declarados en cada jugador. La partida actualiza photoPath desde este JSON al cargar.",
+    "formatosFotoRecomendados": [
+      "webp"
+    ],
+    "retiro": "Los jugadores manuales con reapareceAlRetirarse true vuelven al mercado libre con 20 años al retirarse."
+  },
+  "camposNecesarios": {
+    "id": "Numero unico. Recomendado para manuales: 900001 en adelante para evitar choque con jugadores generados.",
+    "nombre": "Nombre visible del jugador.",
+    "edad": "Edad en anos. Recomendado: 16 a 40.",
+    "posicion": "Posicion principal. Valores validos: POR, DFC, LI, LD, MCD, MC, MCO, MD, MI, DC, EI, ED.",
+    "clubId": "Id del club destino. Usar null si es jugador libre.",
+    "jugadorLibre": "true si el jugador empieza libre; false si pertenece a un club.",
+    "nacionalidad": "Nacionalidad visible y usada para fallback de rostro.",
+    "media": "Media general visible del 1 al 99.",
+    "habilidades": "Bloque de atributos editables con nombres visibles del juego.",
+    "economia": "Sueldo anual, clausula y valor de mercado en ARS.",
+    "foto": "Ruta personalizada de foto. Ejemplo: img/jugadores/manual/mateo_rojas.webp",
+    "mercado": "Estados iniciales para transferible, intransferible, vendido, retirado y reapareceAlRetirarse.",
+    "origen": "Bloque informativo para saber que el jugador fue creado manualmente."
+  },
+  "habilidadesRequeridas": [
+    "ataque",
+    "defensa",
+    "tiro",
+    "pase",
+    "velocidad",
+    "cabezazo",
+    "resistencia",
+    "agresividad",
+    "genetica",
+    "factorSorpresa",
+    "potencial",
+    "liderazgo",
+    "disciplina",
+    "trabajoEquipo"
+  ],
+  "reglasHabilidades": {
+    "rangoGeneral": "1 a 99",
+    "factorSorpresa": "0 a 20",
+    "descripcion": {
+      "ataque": "Capacidad ofensiva general. Para POR se interpreta como Salto.",
+      "defensa": "Marca, entradas, ubicacion defensiva o seguridad del arquero.",
+      "tiro": "Remate y definicion. Para POR se interpreta como Potencia.",
+      "pase": "Pase corto, pase largo y vision.",
+      "velocidad": "Velocidad y aceleracion. Para POR se interpreta como Reflejos.",
+      "cabezazo": "Juego aereo. Para POR se interpreta como Mando del area.",
+      "resistencia": "Capacidad fisica sostenida.",
+      "agresividad": "Tendencia al roce, faltas y disputa intensa.",
+      "genetica": "Base fisica/natural oculta para desarrollo futuro.",
+      "factorSorpresa": "Pequeno modificador oculto de rendimiento. Usar 0 a 20.",
+      "potencial": "Techo aproximado de crecimiento.",
+      "liderazgo": "Influencia dentro del equipo.",
+      "disciplina": "Orden tactico y menor tendencia a sanciones.",
+      "trabajoEquipo": "Compatibilidad colectiva y colaboracion."
+    }
+  },
+  "equivalenciasPortero": {
+    "ataque": "Salto",
+    "defensa": "Defensa",
+    "tiro": "Potencia",
+    "pase": "Pase",
+    "velocidad": "Reflejos",
+    "cabezazo": "Mando",
+    "resistencia": "Resistencia"
+  },
+  "posicionesValidas": [
+    "POR",
+    "DFC",
+    "LI",
+    "LD",
+    "MCD",
+    "MC",
+    "MCO",
+    "MD",
+    "MI",
+    "DC",
+    "EI",
+    "ED"
+  ],
+  "jugadores": [
+    {
+      "id": 900001,
+      "nombre": "Mateo Rojas",
+      "edad": 22,
+      "posicion": "MC",
+      "clubId": 1,
+      "jugadorLibre": false,
+      "nacionalidad": "Argentina",
+      "media": 74,
+      "habilidades": {
+        "ataque": 72,
+        "defensa": 71,
+        "tiro": 61,
+        "pase": 76,
+        "velocidad": 70,
+        "cabezazo": 58,
+        "resistencia": 80,
+        "agresividad": 40,
+        "genetica": 78,
+        "factorSorpresa": 8,
+        "potencial": 82,
+        "liderazgo": 65,
+        "disciplina": 78,
+        "trabajoEquipo": 82
+      },
+      "economia": {
+        "sueldo": 22200000,
+        "clausula": 666000000,
+        "valor": 666000000
+      },
+      "foto": "img/jugadores/manual/mateo_rojas.webp",
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manual_ejemplo.json",
+        "rulesVersion": "V5.39-manual-webp-respawn-free-agent",
+        "tipo": "manual",
+        "grupoPosicion": "MID",
+        "pais": "Argentina",
+        "divisionNombre": "Liga Profesional",
+        "divisionOrden": 1
+      }
+    },
+    {
+      "id": 900002,
+      "nombre": "Bruno Ferreira",
+      "edad": 19,
+      "posicion": "DC",
+      "clubId": null,
+      "jugadorLibre": true,
+      "nacionalidad": "Brasil",
+      "media": 66,
+      "habilidades": {
+        "ataque": 70,
+        "defensa": 51,
+        "tiro": 72,
+        "pase": 59,
+        "velocidad": 74,
+        "cabezazo": 70,
+        "resistencia": 69,
+        "agresividad": 47,
+        "genetica": 83,
+        "factorSorpresa": 11,
+        "potencial": 79,
+        "liderazgo": 48,
+        "disciplina": 60,
+        "trabajoEquipo": 63
+      },
+      "economia": {
+        "sueldo": 9900000,
+        "clausula": 198000000,
+        "valor": 198000000
+      },
+      "foto": "img/jugadores/manual/bruno_ferreira.webp",
+      "mercado": {
+        "transferible": false,
+        "intransferible": false,
+        "vendido": false,
+        "retirado": false,
+        "reapareceAlRetirarse": true
+      },
+      "origen": {
+        "source": "data/jugadores_manual_ejemplo.json",
+        "rulesVersion": "V5.39-manual-webp-respawn-free-agent",
+        "tipo": "manual",
+        "grupoPosicion": "DEL",
+        "pais": "Brasil",
+        "divisionNombre": "Libre",
+        "divisionOrden": null
+      }
+    }
+  ]
+}

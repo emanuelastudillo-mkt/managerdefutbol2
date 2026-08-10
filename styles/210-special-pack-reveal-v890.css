@@ -1,0 +1,94 @@
+/* V8.90 · Apertura manual de sobres */
+.special-opened.opening{
+  border-color:rgba(148,163,184,.34);
+  background:
+    radial-gradient(circle at top right,rgba(148,163,184,.12),transparent 38%),
+    rgba(255,255,255,.035);
+}
+.special-opening-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:14px;
+}
+.special-opening-slot{
+  min-width:0;
+  min-height:210px;
+}
+.special-opening-slot>.special-card{
+  height:100%;
+}
+.special-opening-slot.revealed{
+  animation:specialManualCardReveal .42s ease both;
+}
+.special-card.special-card-concealed{
+  min-height:210px;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  background:
+    linear-gradient(145deg,rgba(107,114,128,.96),rgba(55,65,81,.98))!important;
+  border-color:rgba(203,213,225,.28)!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.08),
+    0 18px 40px rgba(0,0,0,.24)!important;
+  color:#f8fafc!important;
+}
+.special-card.special-card-concealed:before{
+  height:6px!important;
+  background:linear-gradient(90deg,#6b7280,#d1d5db,#6b7280)!important;
+}
+.special-card.special-card-concealed .label,
+.special-card.special-card-concealed h3,
+.special-card.special-card-concealed p{
+  color:#f8fafc!important;
+}
+.special-card.special-card-concealed p{
+  max-width:210px;
+  opacity:.78;
+}
+.special-card-back-symbol{
+  display:grid;
+  place-items:center;
+  width:72px;
+  height:72px;
+  margin:4px auto 2px;
+  border:2px solid rgba(255,255,255,.45);
+  border-radius:50%;
+  background:rgba(15,23,42,.24);
+  color:#fff;
+  font-size:2.15rem;
+  font-weight:950;
+  line-height:1;
+  box-shadow:inset 0 0 18px rgba(255,255,255,.08);
+}
+.special-card.special-card-concealed .special-card-actions{
+  width:100%;
+  margin-top:auto;
+}
+.special-card.special-card-concealed [data-special-reveal]{
+  width:100%;
+  min-height:38px;
+  font-weight:900;
+}
+.special-opened.opening .special-reveal-progress{
+  height:10px;
+  background:rgba(15,23,42,.35);
+}
+.special-opened.opening .special-reveal-progress>div{
+  background:linear-gradient(90deg,#94a3b8,#f8fafc);
+}
+@keyframes specialManualCardReveal{
+  0%{opacity:.25;transform:rotateY(72deg) scale(.94)}
+  100%{opacity:1;transform:rotateY(0) scale(1)}
+}
+@media (max-width:1100px){
+  .special-opening-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:650px){
+  .special-opening-grid{grid-template-columns:1fr}
+  .special-opening-slot{min-height:190px}
+  .special-card.special-card-concealed{min-height:190px}
+}
+@media (prefers-reduced-motion:reduce){
+  .special-opening-slot.revealed{animation:none}
+}

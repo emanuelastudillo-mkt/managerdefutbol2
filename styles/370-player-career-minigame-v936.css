@@ -1,0 +1,12 @@
+/* V9.36 · Ser jugador: eventos ampliados, renovaciones y mercado veterano */
+.player-career-v932 .pc-v934-event-options{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.player-career-v932 .pc-v934-event-option{min-height:188px}
+.player-career-v932 .pc-v934-event-option>span{align-content:start}
+.player-career-v932 .pc-v936-choice-zone .pc-v930-choice-heading p{max-width:560px}
+.player-career-v932 .pc-v930-market-choice.is-current-club{border-color:rgba(46,230,174,.38);background:linear-gradient(155deg,rgba(20,74,58,.28),#111217 58%)}
+.player-career-v932 .pc-v930-market-choice.is-current-club .pc-v930-choice-club>em{background:rgba(46,230,174,.12);color:#4ff0bd}
+.player-career-v932 .pc-v930-market-choice.is-small-club{border-color:rgba(91,152,255,.34)}
+@media(max-width:700px){
+  .player-career-v932 .pc-v934-event-options{grid-template-columns:1fr}
+  .player-career-v932 .pc-v934-event-option{min-height:0}
+}
