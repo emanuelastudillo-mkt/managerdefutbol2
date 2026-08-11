@@ -1,13 +1,12 @@
-# Una Vida de Mánager · V9.81
+# Una Vida de Mánager · V9.82
 
-## Simulador vivo · ritmo, relato ampliable y posesión prolongada
+## Administración · banco de simulación de 10 partidos
 
-- El avance visual del partido vuelve a duplicar su duración: `simulacionVivaAutoMs` pasa de 1680 ms a 3360 ms por minuto simulado.
-- El reloj continúa avanzando segundo a segundo y las 540 fases internas siguen representando 10 segundos cada una.
-- El bloque `Relato en vivo` limita cada fila a dos líneas en la vista normal para evitar tarjetas visualmente demasiado altas.
-- Se agrega `Pantalla completa` para ampliar únicamente el historial de relatos. La vista ampliada conserva scroll, jugadores clickeables, escudos e iconos finales.
-- El motor incorpora control de posesión prolongada. La cantidad de pases que un equipo intenta encadenar antes de acelerar depende de calidad de pase, visión, serenidad, superioridad técnica, cantidad real de jugadores en zona media y estilo/instrucciones.
-- `Posesión`, `Cuidar el resultado` y el planteo de bajar ritmo favorecen secuencias largas; no conceden precisión automática.
-- Los equipos de baja calidad siguen expuestos a errores técnicos, presión, intercepciones y robos. Elegir una instrucción conservadora por sí sola no garantiza dominar la pelota.
-- La posesión visible puede llegar a 92% en diferencias extremas de capacidad y control, permitiendo defenderse con balón cuando el contexto lo justifica.
-- No se modifican las 540 fases, el volumen ofensivo base de V9.79, cansancio, tarjetas, lesiones, ventaja local ni Worker/API/D1.
+- Se agrega un apartado **Simulación** dentro de la vista privada de Administración.
+- Permite seleccionar club local y visitante y ejecutar el mismo cruce 10 veces consecutivas con el motor vigente.
+- La prueba usa las tácticas, planteles, condición, moral, cohesión, instrucciones y configuración actual del juego.
+- Muestra las 10 corridas individuales y un resumen de victorias/empates, goles, ataques, tiros, tiros al arco, pases completos, posesión y xG promedio.
+- Las corridas administrativas son un sandbox: generan tarjetas, lesiones y sustituciones como parte del resultado de prueba, pero no las escriben en el guardado ni modifican tablas, estadísticas, sanciones, condición o cohesión.
+- La herramienta es de solo lectura, no requiere activar el modo de revisión y no bloquea el ranking online.
+- No se modifica Worker, API ni D1.
+- El motor de 540 fases y el balance de V9.81 permanecen sin cambios.

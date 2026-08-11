@@ -8,7 +8,12 @@ const privateManagerToolsState = {
   revealHidden:false,
   skipAdvanceCooldown:false,
   busy:false,
-  backupCreated:false
+  backupCreated:false,
+  simulationBusy:false,
+  simulationProgress:0,
+  simulationHomeId:0,
+  simulationAwayId:0,
+  simulationResults:null
 };
 
 function privateManagerToolsConfirmedUsername(){
@@ -245,6 +250,171 @@ function privateManagerToolsLogMarkup(){
 function privateManagerToolsSwitchMarkup(key, label, description, checked, disabled=false){
   return `<label class="private-tools-switch ${disabled ? 'is-disabled' : ''}"><span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(description)}</small></span><input type="checkbox" data-private-tools-toggle="${escapeHtml(key)}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}></label>`;
 }
+
+function privateManagerToolsSimulationClubs(){
+  if(!Array.isArray(seed?.clubs)) return [];
+  return seed.clubs
+    .filter(club => Number(club?.id || 0) > 0)
+    .filter(club => typeof playersByClub !== 'function' || playersByClub(club.id).length >= 11)
+    .slice()
+    .sort((a,b)=>String(a.name || '').localeCompare(String(b.name || ''), 'es'));
+}
+function privateManagerToolsSimulationDefaultOpponent(homeId){
+  const home = Number(homeId || game?.selectedClubId || 0);
+  const fixtures = Array.isArray(game?.fixtures) ? game.fixtures : [];
+  const next = fixtures
+    .filter(match => !match?.played && (Number(match?.homeId) === home || Number(match?.awayId) === home))
+    .sort((a,b)=>String(a?.date || '').localeCompare(String(b?.date || '')))[0];
+  if(next) return Number(next.homeId) === home ? Number(next.awayId) : Number(next.homeId);
+  const homeClub = seed?.clubs?.find(club => Number(club.id) === home);
+  const sameDivision = privateManagerToolsSimulationClubs().find(club => Number(club.id) !== home && String(club.divisionId || '') === String(homeClub?.divisionId || ''));
+  return Number(sameDivision?.id || privateManagerToolsSimulationClubs().find(club => Number(club.id) !== home)?.id || 0);
+}
+function privateManagerToolsSimulationEnsureSelection(){
+  const clubs = privateManagerToolsSimulationClubs();
+  const valid = new Set(clubs.map(club => Number(club.id)));
+  let homeId = Number(privateManagerToolsState.simulationHomeId || game?.selectedClubId || clubs[0]?.id || 0);
+  if(!valid.has(homeId)) homeId = Number(game?.selectedClubId || clubs[0]?.id || 0);
+  let awayId = Number(privateManagerToolsState.simulationAwayId || privateManagerToolsSimulationDefaultOpponent(homeId));
+  if(!valid.has(awayId) || awayId === homeId) awayId = Number(clubs.find(club => Number(club.id) !== homeId)?.id || 0);
+  privateManagerToolsState.simulationHomeId = homeId;
+  privateManagerToolsState.simulationAwayId = awayId;
+  return { homeId, awayId, clubs };
+}
+function privateManagerToolsSimulationClubOptions(clubs, selectedId){
+  return (clubs || []).map(club => {
+    const division = String(club?.divisionId || '').trim();
+    return `<option value="${Number(club.id)}" ${Number(club.id) === Number(selectedId) ? 'selected' : ''}>${escapeHtml(club.name || `Club ${club.id}`)}${division ? ` · ${escapeHtml(division)}` : ''}</option>`;
+  }).join('');
+}
+function privateManagerToolsSimulationRound(value, decimals=1){
+  const number = Number(value || 0);
+  const pow = 10 ** Math.max(0, decimals);
+  return Math.round(number * pow) / pow;
+}
+function privateManagerToolsSimulationSummary(batch){
+  const rows = Array.isArray(batch?.runs) ? batch.runs : [];
+  if(!rows.length) return null;
+  const sum = (key, side='home') => rows.reduce((total,row)=>total + Number(row?.[side]?.[key] || 0),0);
+  const avgValue = (key, side='home', decimals=1) => privateManagerToolsSimulationRound(sum(key,side) / rows.length, decimals);
+  let homeWins=0, draws=0, awayWins=0;
+  rows.forEach(row => {
+    if(Number(row.homeGoals) > Number(row.awayGoals)) homeWins += 1;
+    else if(Number(row.homeGoals) < Number(row.awayGoals)) awayWins += 1;
+    else draws += 1;
+  });
+  return {
+    homeWins, draws, awayWins,
+    homeGoals:privateManagerToolsSimulationRound(rows.reduce((n,row)=>n+Number(row.homeGoals||0),0)/rows.length,2),
+    awayGoals:privateManagerToolsSimulationRound(rows.reduce((n,row)=>n+Number(row.awayGoals||0),0)/rows.length,2),
+    homeAttacks:avgValue('attacks','home',1), awayAttacks:avgValue('attacks','away',1),
+    homeShots:avgValue('shots','home',1), awayShots:avgValue('shots','away',1),
+    homeOnTarget:avgValue('shotsOnTarget','home',1), awayOnTarget:avgValue('shotsOnTarget','away',1),
+    homePossession:avgValue('possession','home',1), awayPossession:avgValue('possession','away',1),
+    homePasses:avgValue('passesCompleted','home',1), awayPasses:avgValue('passesCompleted','away',1),
+    homeXg:avgValue('xg','home',2), awayXg:avgValue('xg','away',2)
+  };
+}
+function privateManagerToolsSimulationResultsMarkup(){
+  const batch = privateManagerToolsState.simulationResults;
+  if(!batch?.runs?.length){
+    return '<div class="private-tools-simulation-empty"><p class="muted small">Elegí local y visitante. Se ejecutarán 10 partidos independientes con la configuración actual del motor, sin modificar la partida.</p></div>';
+  }
+  const summary = privateManagerToolsSimulationSummary(batch);
+  const homeName = escapeHtml(batch.homeName || clubName(batch.homeId));
+  const awayName = escapeHtml(batch.awayName || clubName(batch.awayId));
+  const rows = batch.runs.map((row,index)=>`<tr>
+    <td>${index + 1}</td><td><strong>${Number(row.homeGoals)}–${Number(row.awayGoals)}</strong></td>
+    <td>${Number(row.home?.attacks || 0)}–${Number(row.away?.attacks || 0)}</td>
+    <td>${Number(row.home?.shots || 0)}–${Number(row.away?.shots || 0)}</td>
+    <td>${Number(row.home?.shotsOnTarget || 0)}–${Number(row.away?.shotsOnTarget || 0)}</td>
+    <td>${Number(row.home?.passesCompleted || 0)}–${Number(row.away?.passesCompleted || 0)}</td>
+    <td>${Number(row.home?.possession || 0)}%–${Number(row.away?.possession || 0)}%</td>
+    <td>${Number(row.home?.xg || 0).toFixed(2)}–${Number(row.away?.xg || 0).toFixed(2)}</td>
+  </tr>`).join('');
+  return `<div class="private-tools-simulation-results">
+    <div class="private-tools-simulation-scoreline"><strong>${homeName}</strong><span>10 simulaciones</span><strong>${awayName}</strong></div>
+    <div class="private-tools-simulation-metrics">
+      <div><span>Victorias</span><strong>${summary.homeWins} · ${summary.draws} · ${summary.awayWins}</strong><small>Local · Empates · Visitante</small></div>
+      <div><span>Goles prom.</span><strong>${summary.homeGoals} – ${summary.awayGoals}</strong></div>
+      <div><span>Ataques prom.</span><strong>${summary.homeAttacks} – ${summary.awayAttacks}</strong></div>
+      <div><span>Tiros prom.</span><strong>${summary.homeShots} – ${summary.awayShots}</strong></div>
+      <div><span>Al arco prom.</span><strong>${summary.homeOnTarget} – ${summary.awayOnTarget}</strong></div>
+      <div><span>Posesión prom.</span><strong>${summary.homePossession}% – ${summary.awayPossession}%</strong></div>
+      <div><span>Pases completos</span><strong>${summary.homePasses} – ${summary.awayPasses}</strong></div>
+      <div><span>xG prom.</span><strong>${summary.homeXg} – ${summary.awayXg}</strong></div>
+    </div>
+    <div class="private-tools-simulation-table-wrap"><table class="private-tools-simulation-table"><thead><tr><th>#</th><th>Resultado</th><th>Ataques</th><th>Tiros</th><th>Al arco</th><th>Pases</th><th>Posesión</th><th>xG</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="muted small">Las 10 corridas son de diagnóstico. No se escriben resultados, sanciones, lesiones, condición, cohesión ni estadísticas en el guardado.</p>
+  </div>`;
+}
+function privateManagerToolsSimulationMarkup(enabled){
+  const { homeId, awayId, clubs } = privateManagerToolsSimulationEnsureSelection();
+  const engineReady = Boolean(window.Simulator20?.simulateMatch);
+  const busy = Boolean(privateManagerToolsState.simulationBusy);
+  return `<div class="card private-tools-simulation-card">
+    <div class="private-tools-simulation-heading"><div><p class="label">Simulación</p><h3>Banco de prueba · 10 partidos</h3><p class="muted small">Repite el mismo cruce 10 veces con el motor actual. Sirve para comparar ajustes de goles, ataques, tiros, pases y posesión.</p></div><span class="pill ${engineReady ? 'ok' : ''}">${engineReady ? 'Motor listo' : 'Motor no disponible'}</span></div>
+    <div class="private-tools-simulation-controls">
+      <label><span>Local</span><select id="privateToolsSimulationHome" ${busy ? 'disabled' : ''}>${privateManagerToolsSimulationClubOptions(clubs,homeId)}</select></label>
+      <label><span>Visitante</span><select id="privateToolsSimulationAway" ${busy ? 'disabled' : ''}>${privateManagerToolsSimulationClubOptions(clubs,awayId)}</select></label>
+      <button class="primary" data-private-tool-action="simulate-10" ${game && engineReady && !busy ? '' : 'disabled'}>${busy ? `Simulando ${Number(privateManagerToolsState.simulationProgress || 0)}/10…` : 'Simular 10 veces'}</button>
+    </div>
+    <p class="small ok">Herramienta de solo lectura: no requiere activar el modo de revisión y no bloquea el ranking.</p>
+    ${privateManagerToolsSimulationResultsMarkup()}
+  </div>`;
+}
+async function privateManagerToolsRunSimulationBatch(){
+  if(!privateManagerToolsAuthorized() || !game || privateManagerToolsState.simulationBusy) return false;
+  if(!window.Simulator20?.simulateMatch){ showNotice('El motor del simulador no está disponible.'); return false; }
+  const homeId = Number(document.getElementById('privateToolsSimulationHome')?.value || privateManagerToolsState.simulationHomeId || 0);
+  const awayId = Number(document.getElementById('privateToolsSimulationAway')?.value || privateManagerToolsState.simulationAwayId || 0);
+  if(!homeId || !awayId || homeId === awayId){ showNotice('Elegí dos clubes diferentes para la prueba.'); return false; }
+  privateManagerToolsState.simulationHomeId = homeId;
+  privateManagerToolsState.simulationAwayId = awayId;
+  privateManagerToolsState.simulationBusy = true;
+  privateManagerToolsState.simulationProgress = 0;
+  privateManagerToolsState.simulationResults = null;
+  renderAdminTools();
+  const runs = [];
+  try{
+    for(let index=1; index<=10; index++){
+      const testMatch = {
+        id:`admin-sandbox-v982-${homeId}-${awayId}-${index}`,
+        date:String(game.currentDate || ''),
+        homeId, awayId,
+        played:false,
+        friendly:false,
+        adminSimulation:true,
+        adminSimulationRun:index
+      };
+      const result = window.Simulator20.simulateMatch(testMatch);
+      if(!result) throw new Error(`La simulación ${index} no devolvió resultado.`);
+      const home = result.matchStats?.home || {};
+      const away = result.matchStats?.away || {};
+      runs.push({
+        run:index, homeGoals:Number(result.homeGoals || 0), awayGoals:Number(result.awayGoals || 0),
+        home:{ attacks:Number(home.attacks || 0), shots:Number(home.shots || 0), shotsOnTarget:Number(home.shotsOnTarget || home.chances || 0), possession:Number(home.possession || 0), passesCompleted:Number(home.passesCompleted || 0), xg:Number(home.xg || 0) },
+        away:{ attacks:Number(away.attacks || 0), shots:Number(away.shots || 0), shotsOnTarget:Number(away.shotsOnTarget || away.chances || 0), possession:Number(away.possession || 0), passesCompleted:Number(away.passesCompleted || 0), xg:Number(away.xg || 0) }
+      });
+      privateManagerToolsState.simulationProgress = index;
+      const button = document.querySelector('[data-private-tool-action="simulate-10"]');
+      if(button) button.textContent = `Simulando ${index}/10…`;
+      await new Promise(resolve => setTimeout(resolve,0));
+    }
+    privateManagerToolsState.simulationResults = { homeId, awayId, homeName:clubName(homeId), awayName:clubName(awayId), runs, at:new Date().toISOString() };
+    showNotice(`Prueba completada: ${clubName(homeId)} vs ${clubName(awayId)} · 10 simulaciones.`);
+    return true;
+  }catch(error){
+    console.error('Simulación administrativa falló', error);
+    showNotice(error?.message || 'No se pudo completar la prueba de 10 partidos.');
+    return false;
+  }finally{
+    privateManagerToolsState.simulationBusy = false;
+    privateManagerToolsState.simulationProgress = 0;
+    if(typeof activeTab !== 'undefined') activeTab = 'admin';
+    renderAdminTools();
+  }
+}
 function renderAdminTools(){
   if(!privateManagerToolsAuthorized()){
     privateManagerToolsRemoveNavigation();
@@ -261,6 +431,7 @@ function renderAdminTools(){
       ${privateManagerToolsSwitchMarkup('enabled','Modo de revisión','Habilita controles especiales. Al apagarlo, la carrera vuelve a comportarse normalmente.', enabled)}
       ${modified ? '<p class="small warn"><strong>Partida modificada:</strong> el ranking online quedó bloqueado para este guardado.</p>' : '<p class="small ok">La partida todavía no fue modificada. Las herramientas visuales no bloquean el ranking.</p>'}
     </div>
+    ${privateManagerToolsSimulationMarkup(enabled)}
     <div class="grid cols-2 private-tools-layout">
       <div class="card"><p class="label">Visualización</p><h3>Información interna</h3>
         ${privateManagerToolsSwitchMarkup('revealHidden','Revelar información oculta','Muestra habilidades, potencial, físico y moral sin depender del ojeo.', privateManagerToolsState.revealHidden, !enabled)}
@@ -316,6 +487,7 @@ function privateManagerToolsReadNumber(id){
   return Number.isFinite(value) ? Math.round(value) : 0;
 }
 async function privateManagerToolsAction(action){
+  if(action === 'simulate-10') return privateManagerToolsRunSimulationBatch();
   if(action === 'restore') return privateManagerToolsRestoreBackup();
   if(action === 'advance-day'){
     return privateManagerToolsMutation('Día avanzado desde Administración', 'Avance manual del calendario', async()=>{
@@ -435,6 +607,16 @@ async function privateManagerToolsAction(action){
 function bindPrivateManagerToolsView(){
   document.querySelectorAll('[data-private-tools-toggle]').forEach(input => input.addEventListener('change', () => privateManagerToolsToggle(input.dataset.privateToolsToggle, input.checked)));
   document.querySelectorAll('[data-private-tool-action]').forEach(button => button.addEventListener('click', () => privateManagerToolsAction(button.dataset.privateToolAction)));
+  document.getElementById('privateToolsSimulationHome')?.addEventListener('change', event => {
+    privateManagerToolsState.simulationHomeId = Number(event.target.value || 0);
+    if(Number(privateManagerToolsState.simulationAwayId) === Number(privateManagerToolsState.simulationHomeId)) privateManagerToolsState.simulationAwayId = privateManagerToolsSimulationDefaultOpponent(privateManagerToolsState.simulationHomeId);
+    privateManagerToolsState.simulationResults = null;
+    renderAdminTools();
+  });
+  document.getElementById('privateToolsSimulationAway')?.addEventListener('change', event => {
+    privateManagerToolsState.simulationAwayId = Number(event.target.value || 0);
+    privateManagerToolsState.simulationResults = null;
+  });
 }
 
 /* La revelación es visual y no modifica el guardado. */

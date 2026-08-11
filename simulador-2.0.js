@@ -2428,8 +2428,10 @@
     const homeTactic = ensureLiveTacticShape(getTacticForClubV2(match.homeId, match.awayId), match.homeId);
     const awayTactic = ensureLiveTacticShape(getTacticForClubV2(match.awayId, match.homeId), match.awayId);
     const botConditionRepair = normalizeLiveBotConditionsForMatch(match, homeTactic, awayTactic);
-    applyTacticCohesionPenalty(match.homeId, homeTactic);
-    applyTacticCohesionPenalty(match.awayId, awayTactic);
+    if(!isAdminSimulationSandboxV982(match)){
+      applyTacticCohesionPenalty(match.homeId, homeTactic);
+      applyTacticCohesionPenalty(match.awayId, awayTactic);
+    }
     const matchContext = makeMatchContextV2(match);
     const powers = livePowerPair({ match, homeTactic, awayTactic, matchContext });
     const session = {
@@ -2843,11 +2845,14 @@
     session.result = finalResult;
     return finalResult;
   }
+  function isAdminSimulationSandboxV982(match){ return Boolean(match?.adminSimulation); }
   function simulateMatchLegacyV973(match){
     const homeTactic = getTacticForClubV2(match.homeId, match.awayId);
     const awayTactic = getTacticForClubV2(match.awayId, match.homeId);
-    applyTacticCohesionPenalty(match.homeId, homeTactic);
-    applyTacticCohesionPenalty(match.awayId, awayTactic);
+    if(!isAdminSimulationSandboxV982(match)){
+      applyTacticCohesionPenalty(match.homeId, homeTactic);
+      applyTacticCohesionPenalty(match.awayId, awayTactic);
+    }
     const matchContext = makeMatchContextV2(match);
     let home = teamPowerV2(match.homeId, homeTactic, { crowdBonus:matchContext.homeCrowdBonus || 0 });
     let away = teamPowerV2(match.awayId, awayTactic, { crowdBonus:0 });
@@ -2908,7 +2913,7 @@
     const starterIdsAway = away.lineup.map(p=>p.id);
     const playedIdsHome = [...new Set(starterIdsHome.concat(substitutions.filter(s=>s.clubId===match.homeId).map(s=>s.inId)))];
     const playedIdsAway = [...new Set(starterIdsAway.concat(substitutions.filter(s=>s.clubId===match.awayId).map(s=>s.inId)))];
-    if(!match.friendly){
+    if(!match.friendly && !isAdminSimulationSandboxV982(match)){
       applyMatchCohesionResult(match, substitutions, cards);
       applyResultToTables(match, homeGoals, awayGoals);
       const playerStatsResult = { ...match, played:true, homeGoals, awayGoals, goals, cards, injuries, substitutions, keySaves:incidents.keySaves, errors:incidents.errors, starterIdsHome, starterIdsAway, playedIdsHome, playedIdsAway };
@@ -2949,8 +2954,10 @@
   function simulateMatchContinuousV974(match){
     const homeTactic = ensureLiveTacticShape(getTacticForClubV2(match.homeId, match.awayId), match.homeId);
     const awayTactic = ensureLiveTacticShape(getTacticForClubV2(match.awayId, match.homeId), match.awayId);
-    applyTacticCohesionPenalty(match.homeId, homeTactic);
-    applyTacticCohesionPenalty(match.awayId, awayTactic);
+    if(!isAdminSimulationSandboxV982(match)){
+      applyTacticCohesionPenalty(match.homeId, homeTactic);
+      applyTacticCohesionPenalty(match.awayId, awayTactic);
+    }
     const matchContext = makeMatchContextV2(match);
     let home = teamPowerV2(match.homeId, homeTactic, { crowdBonus:matchContext.homeCrowdBonus || 0 });
     let away = teamPowerV2(match.awayId, awayTactic, { crowdBonus:0 });
@@ -3008,7 +3015,7 @@
     const playedIdsHome = [...new Set(starterIdsHome.concat(substitutions.filter(item=>Number(item.clubId)===Number(match.homeId)).map(item=>item.inId)))];
     const playedIdsAway = [...new Set(starterIdsAway.concat(substitutions.filter(item=>Number(item.clubId)===Number(match.awayId)).map(item=>item.inId)))];
     const playerStatsResult = { ...match, played:true, engine:'continuous-540-v981', homeGoals, awayGoals, goals, cards, injuries, substitutions, keySaves:incidents.keySaves, errors:incidents.errors, starterIdsHome, starterIdsAway, playedIdsHome, playedIdsAway, matchStats, matchContext, continuousEngine:continuousEngineSummaryV974(state) };
-    if(!match.friendly){
+    if(!match.friendly && !isAdminSimulationSandboxV982(match)){
       applyMatchCohesionResult(playerStatsResult, substitutions, cards);
       applyResultToTables(playerStatsResult, homeGoals, awayGoals);
       applyPlayerStats(match.homeId, home.lineup, substitutions, goals, cards, injuries, incidents.keySaves, incidents.errors, playerStatsResult);
@@ -3064,6 +3071,7 @@
     continuousEngineEnabled:USE_CONTINUOUS_MATCH_ENGINE_V974,
     continuousEngineConfig:{ ...CONTINUOUS_MATCH_CONFIG_V974 },
     _debugContinuousCoreV974:debugContinuousCoreV974,
-    botTacticForClub:botTacticForClubV2
+    botTacticForClub:botTacticForClubV2,
+    isAdminSimulationSandbox:isAdminSimulationSandboxV982
   };
 })();
