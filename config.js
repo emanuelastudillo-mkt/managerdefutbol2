@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V9.84',
+  version: 'V9.85',
   marca: {
     nombre: 'Una vida de manager',
     nombreCorto: 'Una vida de manager',
@@ -164,9 +164,9 @@ window.GAME_CONFIG = {
       cohesionVictoria: 4,
       cohesionEmpate: 2,
       cohesionDerrota: -2,
-      // Programación desde los días vacíos del calendario. Mañana y pasado mañana quedan excluidos.
-      anticipacionMinimaDias: 3,
-      // Ninguno de los dos clubes puede tener otro partido dentro de este margen, antes o después.
+      // Programación durante toda la temporada. Con hoy como primer día libre, el amistoso puede ir en el centro de una ventana de cinco días.
+      anticipacionMinimaDias: 2,
+      // Ambos clubes deben tener libres el día del amistoso y los dos días anteriores y posteriores.
       margenPartidosDias: 2,
       // Rivales sorteados y persistentes para cada fecha consultada.
       opcionesPorFecha: 5,

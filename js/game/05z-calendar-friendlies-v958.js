@@ -1,10 +1,10 @@
-/* V9.58/V9.60 · Programación de amistosos desde el calendario y fechas disponibles destacadas. */
+/* V9.58/V9.85 · Programación de amistosos durante toda la temporada con ventana libre de cinco días. */
 (function(){
   'use strict';
 
-  const VERSION = 'V9.60';
+  const VERSION = 'V9.85';
   const DEFAULTS = {
-    minimumLeadDays:3,
+    minimumLeadDays:2,
     matchBufferDays:2,
     optionsPerDate:5,
     candidateAttempts:70
@@ -24,7 +24,7 @@
   }
   function settings(){
     return {
-      minimumLeadDays:Math.round(numberCfg('calendario.amistosos.anticipacionMinimaDias', DEFAULTS.minimumLeadDays, 3, 30)),
+      minimumLeadDays:Math.round(numberCfg('calendario.amistosos.anticipacionMinimaDias', DEFAULTS.minimumLeadDays, 2, 30)),
       matchBufferDays:Math.round(numberCfg('calendario.amistosos.margenPartidosDias', DEFAULTS.matchBufferDays, 0, 10)),
       optionsPerDate:Math.round(numberCfg('calendario.amistosos.opcionesPorFecha', DEFAULTS.optionsPerDate, 1, 10)),
       candidateAttempts:Math.round(numberCfg('calendario.amistosos.intentosMaximosRivales', DEFAULTS.candidateAttempts, 10, 250))
@@ -75,7 +75,7 @@
     if(!game || !id || !validIsoDate(date)) return [];
     const found=[];
     (game.fixtures || []).forEach(round => (round?.matches || []).forEach(match => {
-      if(match?.played || (Number(match?.homeId || 0)!==id && Number(match?.awayId || 0)!==id)) return;
+      if(Number(match?.homeId || 0)!==id && Number(match?.awayId || 0)!==id) return;
       const scheduled=matchDate(match, round);
       if(!validIsoDate(scheduled)) return;
       if(Math.abs(daysBetweenIsoDates(date, scheduled)) <= buffer) found.push({match,round,date:scheduled});
@@ -104,7 +104,6 @@
   function buildClubMatchDateIndex(){
     const index=new Map();
     (game?.fixtures || []).forEach(round => (round?.matches || []).forEach(match => {
-      if(match?.played) return;
       const date=matchDate(match,round);
       if(!validIsoDate(date)) return;
       [Number(match.homeId||0),Number(match.awayId||0)].filter(Boolean).forEach(id => {
@@ -125,16 +124,15 @@
     if(!validIsoDate(date)) return {allowed:false,label:'',reason:'Fecha inválida'};
     const year=seasonYear();
     const start=seasonStartDateForYear(year);
-    const leagueStart=leagueStartDateForSeason(year);
     const end=seasonEndDateForYear(year);
     if(daysBetweenIsoDates(start,date)<0 || daysBetweenIsoDates(date,end)<0) return {allowed:false,label:'',reason:'La fecha está fuera de la temporada'};
-    if(daysBetweenIsoDates(date,leagueStart)>0) return {allowed:true,key:'preseason',label:'Pretemporada'};
-    if(typeof isMidseasonVacationDate === 'function' && isMidseasonVacationDate(date,year)) return {allowed:true,key:'midseason',label:'Vacaciones de mitad de temporada'};
-    if((typeof isPostseason === 'function' && isPostseason()) || String(game?.seasonPhase || '')==='postseason'){
-      const postStart=validIsoDate(game?.postseasonStartDate) ? game.postseasonStartDate : nowDate();
-      if(daysBetweenIsoDates(postStart,date)>=0) return {allowed:true,key:'postseason',label:'Postemporada'};
+    const buffer=settings().matchBufferDays;
+    const windowStart=addDaysToIsoDate(date,-buffer);
+    const windowEnd=addDaysToIsoDate(date,buffer);
+    if(daysBetweenIsoDates(start,windowStart)<0 || daysBetweenIsoDates(windowEnd,end)<0){
+      return {allowed:false,label:'',reason:`El amistoso necesita ${buffer} días libres antes y ${buffer} después dentro de la temporada`};
     }
-    return {allowed:false,label:'',reason:'Los amistosos solo se programan en pretemporada, vacaciones de mitad de temporada o postemporada'};
+    return {allowed:true,key:'season',label:'Temporada completa',windowStart,windowEnd};
   }
   function scheduledFriendlyForDate(date){
     if(!game || !validIsoDate(date)) return null;
@@ -158,31 +156,27 @@
     if(scheduledFriendlyForDate(date)) return {allowed:false,reason:'Ya hay un amistoso programado para esa fecha',scheduled:true};
     const own=Number(game?.selectedClubId || 0);
     if(!own) return {allowed:false,reason:'No hay club seleccionado'};
-    if(internationalParticipantIds().has(own)) return {allowed:false,reason:'Tu club participa en una copa internacional esta temporada'};
     const nearby=clubMatchesNearDate(own,date);
-    if(nearby.length) return {allowed:false,reason:`Tu club tiene un partido dentro del margen de ${settings().matchBufferDays} días`};
+    if(nearby.length) return {allowed:false,reason:`Necesitás ${settings().matchBufferDays} días libres antes y ${settings().matchBufferDays} después del amistoso`};
     return {...windowInfo,allowed:true,lead};
   }
-  function candidateAllowed(clubId,date,internationalIds,blocked,dateIndex=null){
+  function candidateAllowed(clubId,date,blocked,dateIndex=null){
     const id=Number(clubId || 0);
     if(!id || id===Number(game?.selectedClubId || 0) || blocked.has(id)) return false;
-    if(internationalIds.has(id)) return false;
     if(!clubHasUsableRoster(id)) return false;
     return dateIndex ? !clubHasIndexedMatchNear(id,date,dateIndex) : clubMatchesNearDate(id,date).length===0;
   }
   function deterministicCandidates(date){
     const state=ensureState();
     if(!state) return [];
-    const stored=uniqueIds(state.optionsByDate[date]);
-    if(stored.length){ state.optionsByDate[date]=stored; return stored; }
     const blocked=new Set(uniqueIds(state.blockedByDate[date]));
-    const internationalIds=internationalParticipantIds();
     const own=Number(game.selectedClubId || 0);
     const candidates=(seed?.clubs || []).filter(club => Number(club?.id || 0)>0 && Number(club.id)!==own);
-    const salt=`friendly-v958-${game.saveCode || ''}-${seasonNo()}-${date}`;
-    const chosen=[];
-    const seen=new Set();
+    const salt=`friendly-v985-${game.saveCode || ''}-${seasonNo()}-${date}`;
     const dateIndex=buildClubMatchDateIndex();
+    const stored=uniqueIds(state.optionsByDate[date]).filter(id=>candidateAllowed(id,date,blocked,dateIndex));
+    const chosen=stored.slice(0,settings().optionsPerDate);
+    const seen=new Set(chosen.map(id=>candidates.findIndex(club=>Number(club?.id||0)===Number(id))).filter(index=>index>=0));
     const limit=Math.min(candidates.length,settings().candidateAttempts);
     let attempt=0;
     while(seen.size<limit && attempt<settings().candidateAttempts*4 && chosen.length<settings().optionsPerDate){
@@ -191,7 +185,7 @@
       if(seen.has(pick)) continue;
       seen.add(pick);
       const id=Number(candidates[pick]?.id || 0);
-      if(candidateAllowed(id,date,internationalIds,blocked,dateIndex)) chosen.push(id);
+      if(candidateAllowed(id,date,blocked,dateIndex)) chosen.push(id);
     }
     state.optionsByDate[date]=chosen;
     return chosen;
@@ -226,7 +220,7 @@
     if(!state || !own || !rival || !validIsoDate(date)) return null;
     const status=dateStatus(date);
     if(!status.allowed){ showNotice(status.reason || 'La fecha dejó de estar disponible.'); return null; }
-    if(!candidateAllowed(rival,date,internationalParticipantIds(),blockedForDate(date),buildClubMatchDateIndex())){ showNotice('El rival dejó de cumplir los requisitos para ese día.'); return null; }
+    if(!candidateAllowed(rival,date,blockedForDate(date),buildClubMatchDateIndex())){ showNotice('El rival ya no tiene libres los dos días anteriores y posteriores a ese amistoso.'); return null; }
     const homeId=managerVenue==='home' ? own : rival;
     const awayId=managerVenue==='home' ? rival : own;
     const token=String(date).replaceAll('-','');
@@ -291,7 +285,7 @@
     openModal(`<div class="card inner friendly-v958-modal">
       <p class="label">Programar amistoso · ${escapeHtml(status.label || '')}</p>
       <h2>${escapeHtml(date)}</h2>
-      <p class="muted">Se sortearon hasta cinco clubes disponibles. Estas opciones quedan guardadas para esta fecha. Los participantes de copas internacionales y los equipos con partidos dentro de los dos días anteriores o posteriores están excluidos.</p>
+      <p class="muted">Se sortearon hasta cinco clubes disponibles. Estas opciones quedan guardadas para esta fecha. Cada rival debe tener libres el día elegido y los dos días anteriores y posteriores. Participar en liga o copas no lo excluye si existe esa ventana libre de cinco días.</p>
       ${proposalMarkup}
       <div class="friendly-v958-list">${list}</div>
       <div class="modal-actions"><button class="ghost" data-close-modal>Cerrar</button></div>
@@ -490,7 +484,7 @@
     turnModePanelMarkup=function(){
       // La disponibilidad se comunica directamente en el calendario; evitamos repetir un bloque explicativo en pretemporada.
       if(typeof isPreseason==='function'&&isPreseason()) return '';
-      if(typeof isPostseason==='function'&&isPostseason()) return `<div class="card preseason-card"><div class="row"><div><p class="label">Postemporada</p><h3>${phaseDayRangeLabel(game.phaseTurn||0,postseasonTurnsForCurrentSeason())}</h3></div><span class="pill">Amistosos disponibles</span></div><p class="muted">Podés programar amistosos desde los días vacíos del calendario antes del cierre anual.</p></div>`;
+      if(typeof isPostseason==='function'&&isPostseason()) return `<div class="card preseason-card"><div class="row"><div><p class="label">Postemporada</p><h3>${phaseDayRangeLabel(game.phaseTurn||0,postseasonTurnsForCurrentSeason())}</h3></div><span class="pill">Amistosos disponibles</span></div><p class="muted">Podés programar amistosos durante toda la temporada siempre que haya dos días libres antes y dos después.</p></div>`;
       return originalTurnPanel();
     };
   }
