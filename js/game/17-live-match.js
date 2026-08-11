@@ -5,6 +5,8 @@
   let liveState = null;
   let livePaused = true;
   let liveAutoTimer = null;
+  let liveClockTimer = null;
+  let liveDisplayedClockSeconds = 0;
   let liveSelectedInstruction = 'none';
   let liveSelectedStarterId = 0;
   let liveSelectedBenchId = 0;
@@ -37,10 +39,49 @@
     return ownSide() === 'home' ? (liveState?.homeBoardSlots || []) : (liveState?.awayBoardSlots || []);
   }
   function liveIsBreak(){ return liveState?.period === 'break' || liveState?.nextBlock?.period === 'break' || liveState?.lastBlock?.period === 'break'; }
-  function liveDisplayMinute(){
-    if(liveState?.finished) return 'FIN';
-    if(liveIsBreak()) return 'DESC';
-    return `${Number(liveState?.minute || 0)}'`;
+  function liveClockTargetSeconds(){
+    if(Number.isFinite(Number(liveState?.continuousClockSeconds))) return Math.max(0, Math.min(5400, Number(liveState.continuousClockSeconds || 0)));
+    return Math.max(0, Math.min(5400, Number(liveState?.minute || 0) * 60));
+  }
+  function liveClockPhaseFromSeconds(seconds){
+    const perPhase = Math.max(1, Number(liveState?.continuousSecondsPerPhase || 15));
+    return Math.max(0, Math.min(Number(liveState?.continuousTotalPhases || 360), Math.round(Number(seconds || 0) / perPhase)));
+  }
+  function liveClockText(seconds=liveDisplayedClockSeconds){
+    const safe = Math.max(0, Math.min(5400, Math.round(Number(seconds || 0))));
+    const minutes = Math.floor(safe / 60);
+    const secs = safe % 60;
+    return `${String(minutes).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  }
+  function syncLiveClockDom(){
+    const clock = document.querySelector('#liveMatchClock');
+    const phase = document.querySelector('#liveMatchContinuousPhase');
+    if(clock) clock.textContent = liveClockText();
+    if(phase){
+      const total = Number(liveState?.continuousTotalPhases || 360);
+      phase.textContent = `Fase ${liveClockPhaseFromSeconds(liveDisplayedClockSeconds)} / ${total}`;
+    }
+  }
+  function stopLiveClockAnimation(){
+    if(liveClockTimer){ clearInterval(liveClockTimer); liveClockTimer = null; }
+  }
+  function animateLiveClockToState(options={}){
+    stopLiveClockAnimation();
+    const target = liveClockTargetSeconds();
+    if(options.instant || target <= liveDisplayedClockSeconds){
+      liveDisplayedClockSeconds = target;
+      syncLiveClockDom();
+      return;
+    }
+    const step = Math.max(1, Number(liveState?.continuousSecondsPerPhase || 15));
+    const steps = Math.max(1, Math.ceil((target - liveDisplayedClockSeconds) / step));
+    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 840));
+    const delay = Math.max(70, Math.min(160, Math.floor(autoDelay / Math.max(4, steps + 1))));
+    liveClockTimer = setInterval(() => {
+      liveDisplayedClockSeconds = Math.min(target, liveDisplayedClockSeconds + step);
+      syncLiveClockDom();
+      if(liveDisplayedClockSeconds >= target) stopLiveClockAnimation();
+    }, delay);
   }
   function livePhaseLabel(){
     if(liveState?.finished) return 'Finalizado';
@@ -404,7 +445,7 @@
     const html = `<div class="live-match-shell live-v512 live-v517">
       <div class="match-modal-head live-match-head">
         <div class="live-head-left"><p class="label">${match.friendly ? 'Simulación viva · Amistoso' : 'Simulación viva · Fecha'} ${ehtml(match.matchday || '—')} · ${ehtml(match.date || '')}</p><h2>${liveBadge(match.homeId)} ${ehtml(homeTitle)} <span class="live-score">${Number(liveState.homeGoals || 0)} - ${Number(liveState.awayGoals || 0)}</span> ${ehtml(awayTitle)} ${liveBadge(match.awayId)}</h2></div>
-        <div class="live-head-right"><strong>${ehtml(liveDisplayMinute())}</strong><span>Fase ${Math.min(totalPhases, Math.max(1, phasesPlayed || 1))} / ${totalPhases}</span><small>${ehtml(livePhaseLabel())}</small></div>
+        <div class="live-head-right"><strong id="liveMatchClock">${ehtml(liveClockText())}</strong><span id="liveMatchContinuousPhase">Fase ${liveClockPhaseFromSeconds(liveDisplayedClockSeconds)} / ${Number(liveState?.continuousTotalPhases || 360)}</span><small>${ehtml(livePhaseLabel())}</small></div>
       </div>
       <div class="live-progress"><span style="width:${progress}%"></span></div>
       ${minuteRail(events)}
@@ -440,6 +481,7 @@
       else root.innerHTML = html;
     }
     bindLiveControls();
+    syncLiveClockDom();
   }
   function resetLiveSelections(){ liveSelectedStarterId = 0; liveSelectedBenchId = 0; liveSelectedBoardSlot = -1; }
   function queueSubstitution(outId, inId){
@@ -505,6 +547,7 @@
     }
     resetLiveSelections();
     renderLiveMatch();
+    animateLiveClockToState();
   }
   function finishLiveMatchInstantlyFromUi(){
     if(!liveSession || liveState?.finished) return;
@@ -527,7 +570,9 @@
     livePendingSubstitutions = [];
     liveTacticOpen = false;
     resetLiveSelections();
+    liveDisplayedClockSeconds = liveClockTargetSeconds();
     renderLiveMatch();
+    animateLiveClockToState({ instant:true });
     liveShowNotice('Partido terminado. Estadísticas completas disponibles.', false);
   }
   function bindLiveControls(){
@@ -582,7 +627,7 @@
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
       liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1;
-      resetLiveSelections(); clearTimeout(liveAutoTimer);
+      resetLiveSelections(); clearTimeout(liveAutoTimer); stopLiveClockAnimation(); liveDisplayedClockSeconds = 0;
     });
   }
   function runAutoMode(){
@@ -599,6 +644,8 @@
       ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
       : window.Simulator20.createLiveMatchSession(match);
     liveState = window.Simulator20.livePublicState(liveSession);
+    stopLiveClockAnimation();
+    liveDisplayedClockSeconds = liveClockTargetSeconds();
     window.__activeCompetitionSuspensionMatch = { ...match };
     window.__liveMatchCloseLocked = false;
     openModal('<div id="liveMatchRoot"></div>');

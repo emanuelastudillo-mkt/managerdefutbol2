@@ -1,9 +1,14 @@
-# V9.74 · Motor continuo de 360 fases
+# V9.75 · Reloj MM:SS sincronizado con las 360 fases
 
-Primera implementación estructural del rediseño del motor de partido. El partido se resuelve mediante 360 fases internas de 15 segundos, con posesión persistente y geometría tomada directamente de los slots tácticos personalizados.
+Ajuste visual del simulador en vivo sobre V9.74.
 
-La versión mantiene los subsistemas anteriores de cansancio, amarillas, rojas, lesiones, penalización de marcadores altos y ventaja local condicionada por superioridad de hinchas.
+- El encabezado del partido muestra un reloj `MM:SS`.
+- Cada fase interna representa 15 segundos: `00:15`, `00:30`, `00:45`, `01:00`... hasta `90:00`.
+- El contador de fase visible usa ahora las 360 fases reales del motor continuo.
+- Durante el entretiempo el reloj de partido queda congelado en `45:00`.
+- El avance visual del reloj se anima rápidamente entre las cuatro fases que componen cada minuto simulado.
+- Terminar partido salta correctamente a `90:00`.
+- No cambia ninguna probabilidad, acción, cansancio, tarjetas, lesiones, goles ni lógica del motor.
+- No modifica Worker, API ni D1.
 
-También incorpora dos nuevas instrucciones tácticas: distribución del arquero y creación de juego.
-
-Ver `AJUSTES-V9.74.md`.
+Ver `AJUSTES-V9.75.md`.
