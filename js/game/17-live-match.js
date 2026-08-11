@@ -293,6 +293,7 @@
     if(highlights) bindLivePlayerLinksWithin(highlights);
   }
   function livePitchClamp(value, min=3, max=97){ return Math.max(min, Math.min(max, Number(value ?? 50))); }
+  const livePitchPreviousPositions = new Map();
   function livePitchPerspectivePoint(point, attackingClubId){
     if(!point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y))) return null;
     let x = Number(point.x), y = Number(point.y);
@@ -301,6 +302,13 @@
   }
   function liveNominalPlayerPoint(playerId, clubId){
     const side = Number(clubId || 0) === Number(liveState?.match?.awayId || 0) ? 'away' : 'home';
+    const pitchList = side === 'home' ? (liveState?.homePitchPlayers || []) : (liveState?.awayPitchPlayers || []);
+    const pitchEntry = pitchList.find(entry => Number(entry?.id || 0) === Number(playerId || 0));
+    if(pitchEntry){
+      let x = Number(pitchEntry.x ?? 50), y = Number(pitchEntry.y ?? 50);
+      if(side === 'away'){ x = 100 - x; y = 100 - y; }
+      return { x:livePitchClamp(x), y:livePitchClamp(y) };
+    }
     const player = sideLineup(side).find(entry => Number(entry?.id || 0) === Number(playerId || 0));
     const role = String(player?.role || player?.position || '').toUpperCase();
     const rolePoints = {
@@ -313,15 +321,126 @@
     if(side === 'away'){ x = 100 - x; y = 100 - y; }
     return { x:livePitchClamp(x), y:livePitchClamp(y) };
   }
-  function livePitchPlayerMarkup(playerId, point, clubId, roleLabel, extraClass=''){
-    const id = Number(playerId || 0);
-    if(!id || !point) return '';
-    const sideClass = Number(clubId || 0) === Number(liveState?.match?.homeId || 0) ? 'home' : 'away';
-    return `<button type="button" class="live-pitch-player ${sideClass} ${ehtml(extraClass)}" data-live-player-id="${id}" style="--px:${Number(point.x).toFixed(2)};--py:${Number(point.y).toFixed(2)}" title="${ehtml(liveActionPlayerName(id))}"><span>${ehtml(eventPlayerLabel(id))}</span><small>${ehtml(roleLabel || '')}</small></button>`;
+  function livePitchActivePlayers(side){
+    const match = liveState?.match || {};
+    const clubId = Number(side === 'home' ? match.homeId : match.awayId);
+    const sentOff = liveState?.sentOffByPlayer || {};
+    const injured = liveState?.injuredGhostByPlayer || {};
+    const raw = side === 'home' ? (liveState?.homePitchPlayers || []) : (liveState?.awayPitchPlayers || []);
+    if(Array.isArray(raw) && raw.length){
+      return raw.filter(entry => !sentOff[String(Number(entry?.id || 0))] && !injured[String(Number(entry?.id || 0))]).map(entry => ({ ...entry, side, clubId }));
+    }
+    return sideLineup(side).filter(entry => entry && !entry.injuredGhost && !entry.ghost && !sentOff[String(Number(entry?.id || 0))] && !injured[String(Number(entry?.id || 0))]).map(entry => {
+      const point = liveNominalPlayerPoint(entry.id,clubId);
+      return { ...entry, side, clubId, x:side === 'away' ? 100-Number(point.x) : Number(point.x), y:side === 'away' ? 100-Number(point.y) : Number(point.y) };
+    });
   }
-  function livePitchBallMarkup(fromPoint, toPoint, kind='action'){
+  function livePitchBasePoint(entry){
+    if(!entry) return {x:50,y:50};
+    let x = Number(entry.x ?? 50), y = Number(entry.y ?? 50);
+    if(entry.side === 'away'){ x = 100 - x; y = 100 - y; }
+    return { x:livePitchClamp(x,4,96), y:livePitchClamp(y,5,95) };
+  }
+  function livePitchRoleGroup(role){
+    role = String(role || '').toUpperCase();
+    if(role === 'POR') return 'gk';
+    if(['DFC','LI','LD'].includes(role)) return 'def';
+    if(['MCD','MC'].includes(role)) return 'mid';
+    if(['MCO','MI','MD'].includes(role)) return 'am';
+    if(['DC','EI','ED'].includes(role)) return 'att';
+    return 'mid';
+  }
+  function livePitchCurrentBallPoint(item){
+    const match = liveState?.match || {};
+    if(item){
+      const attackClubId = Number(item.clubId || 0);
+      const fromPoint = item.absolutePoint || livePitchPerspectivePoint(item.fromPosition,attackClubId) || liveNominalPlayerPoint(item.actorId,attackClubId);
+      const toPoint = item.absolutePoint || livePitchDestination(item,fromPoint);
+      if(fromPoint && toPoint) return { x:livePitchClamp((Number(fromPoint.x)+Number(toPoint.x))/2), y:livePitchClamp((Number(fromPoint.y)+Number(toPoint.y))/2) };
+      return fromPoint || toPoint || {x:50,y:50};
+    }
+    const carrierId = Number(liveState?.continuousBallCarrierId || 0);
+    const possessionClub = Number(liveState?.continuousPossessionTeamId || 0);
+    if(carrierId && possessionClub) return liveNominalPlayerPoint(carrierId,possessionClub);
+    if(Number(match.homeId || 0)) return {x:50,y:50};
+    return {x:50,y:50};
+  }
+  function livePitchTacticalPoint(entry, item, ballPoint, pressLevel=0){
+    const base = livePitchBasePoint(entry);
+    const match = liveState?.match || {};
+    const clubId = Number(entry?.clubId || 0);
+    const side = entry?.side === 'away' ? 'away' : 'home';
+    const direction = side === 'away' ? -1 : 1;
+    const possessionClub = Number(item?.clubId || liveState?.continuousPossessionTeamId || 0);
+    const ownsBall = clubId && possessionClub && clubId === possessionClub;
+    const group = livePitchRoleGroup(entry?.role || entry?.position);
+    const role = String(entry?.role || entry?.position || '').toUpperCase();
+    const ownBallProgress = direction > 0 ? Number(ballPoint?.x ?? 50) : 100 - Number(ballPoint?.x ?? 50);
+    const baseShift = ownsBall ? ((ownBallProgress - 50) * 0.16 + 6.5) : ((ownBallProgress - 50) * 0.12 - 2.5);
+    const xWeight = ({gk:.12,def:.56,mid:.82,am:.96,att:.90})[group] || .80;
+    let x = Number(base.x) + direction * baseShift * xWeight;
+    const ballY = Number(ballPoint?.y ?? 50);
+    let yWeight = ({gk:.05,def:.18,mid:.28,am:.34,att:.25})[group] || .25;
+    if(['LI','LD','MI','MD','EI','ED'].includes(role)) yWeight *= .55;
+    let y = Number(base.y) + (ballY - Number(base.y)) * yWeight;
+    const seconds = Number(item?.clockSeconds ?? liveDisplayedClockSeconds ?? 0);
+    const playerId = Number(entry?.id || 0);
+    const wave = Math.sin((seconds / 18) + playerId * 0.71);
+    if(group === 'att'){
+      const lateralAmp = role === 'DC' ? 6.5 : 4.0;
+      y += wave * lateralAmp;
+      if(ownsBall) x += direction * Math.max(0,wave) * 2.2;
+    }else if(group === 'am'){
+      y += wave * 2.3;
+    }else if(group === 'mid'){
+      y += wave * 1.3;
+    }
+    if(!ownsBall && group !== 'gk' && pressLevel > 0){
+      const press = pressLevel === 1 ? .24 : .13;
+      x += (Number(ballPoint?.x ?? x) - x) * press;
+      y += (Number(ballPoint?.y ?? y) - y) * press;
+    }
+    if(group === 'gk'){
+      x = Number(base.x) + direction * (ownsBall ? 1.4 : 0);
+      y = Number(base.y) + (ballY - Number(base.y)) * .08;
+    }
+    return { x:livePitchClamp(x,4,96), y:livePitchClamp(y,5,95) };
+  }
+  function livePitchSpecialPointMap(item, fromPoint, toPoint){
+    const map = new Map();
+    if(!item) return map;
+    const attackClubId = Number(item.clubId || 0);
+    if(item.actorId && fromPoint) map.set(Number(item.actorId),fromPoint);
+    if(item.targetId){
+      const targetPoint = livePitchPerspectivePoint(item.toPosition,attackClubId) || toPoint;
+      if(targetPoint) map.set(Number(item.targetId),targetPoint);
+    }
+    if(item.defenderId){
+      const defenderPoint = livePitchPerspectivePoint(item.defenderPosition,attackClubId) || toPoint;
+      if(defenderPoint) map.set(Number(item.defenderId),defenderPoint);
+    }
+    if(item.keeperId){
+      const keeperPoint = livePitchPerspectivePoint(item.keeperPosition,attackClubId) || livePitchPerspectivePoint({x:96,y:50},attackClubId);
+      if(keeperPoint) map.set(Number(item.keeperId),keeperPoint);
+    }
+    return map;
+  }
+  function livePitchPlayerMarkup(entry, point, previousPoint, item){
+    const id = Number(entry?.id || 0);
+    if(!id || !point) return '';
+    const sideClass = entry.side === 'away' ? 'away' : 'home';
+    const role = String(entry.role || entry.position || '');
+    const classes = [];
+    if(Number(item?.actorId || 0) === id) classes.push('actor');
+    if(Number(item?.targetId || 0) === id) classes.push('target');
+    if(Number(item?.defenderId || 0) === id) classes.push('defender');
+    if(Number(item?.keeperId || 0) === id || role === 'POR') classes.push('keeper');
+    const prev = previousPoint || point;
+    return `<button type="button" class="live-pitch-player ${sideClass} ${classes.join(' ')}" data-live-player-id="${id}" style="--from-px:${Number(prev.x).toFixed(2)};--from-py:${Number(prev.y).toFixed(2)};--px:${Number(point.x).toFixed(2)};--py:${Number(point.y).toFixed(2)}" title="${ehtml(liveActionPlayerName(id))} · ${ehtml(role)}"><span>${ehtml(eventPlayerLabel(id))}</span><small>${ehtml(role)}</small></button>`;
+  }
+  function livePitchBallMarkup(fromPoint, toPoint, kind='action', staticBall=false){
     if(!fromPoint || !toPoint) return '';
-    return `<span class="live-pitch-ball ${ehtml(kind)}" style="--fx:${Number(fromPoint.x).toFixed(2)};--fy:${Number(fromPoint.y).toFixed(2)};--tx:${Number(toPoint.x).toFixed(2)};--ty:${Number(toPoint.y).toFixed(2)}" aria-hidden="true">●</span>`;
+    return `<span class="live-pitch-ball ${ehtml(kind)} ${staticBall ? 'static' : ''}" style="--fx:${Number(fromPoint.x).toFixed(2)};--fy:${Number(fromPoint.y).toFixed(2)};--tx:${Number(toPoint.x).toFixed(2)};--ty:${Number(toPoint.y).toFixed(2)}" aria-hidden="true">●</span>`;
   }
   function livePitchDetail(item){
     const actor = item?.actorId ? eventPlayerLabel(item.actorId, true) : '';
@@ -356,32 +475,40 @@
   function livePitchStageMarkup(item=livePitchVisual){
     const match = liveState?.match || {};
     const colors = liveContrastColorPair(match.homeId, match.awayId);
-    if(!item){
-      const stateLabel = liveState?.finished ? 'FINAL' : (liveIsBreak() ? 'ENTRETIEMPO' : 'PARTIDO EN JUEGO');
-      const stateDetail = liveState?.finished ? 'El partido terminó.' : (liveIsBreak() ? 'Los equipos están en descanso.' : 'Esperando la próxima acción.');
-      return `<div class="live-animated-pitch idle" style="--pitch-home:${ehtml(colors.home)};--pitch-away:${ehtml(colors.away)}"><div class="live-pitch-markings"><i class="mid"></i><i class="circle"></i><i class="box left"></i><i class="box right"></i><i class="goal left"></i><i class="goal right"></i></div><div class="live-pitch-status neutral"><strong>${ehtml(stateLabel)}</strong><span>${ehtml(stateDetail)}</span></div></div>`;
-    }
-    const attackClubId = Number(item.clubId || 0);
-    const defendingClubId = Number(item.defendingClubId || (attackClubId === Number(match.homeId) ? match.awayId : match.homeId));
-    const fromPoint = item.absolutePoint || livePitchPerspectivePoint(item.fromPosition, attackClubId) || liveNominalPlayerPoint(item.actorId, attackClubId);
-    const toPoint = item.absolutePoint || livePitchDestination(item, fromPoint);
-    const actorPoint = fromPoint;
-    const targetPoint = item.targetId ? (livePitchPerspectivePoint(item.toPosition, attackClubId) || toPoint) : null;
-    const defenderPoint = item.defenderId ? (livePitchPerspectivePoint(item.defenderPosition, attackClubId) || toPoint) : null;
-    const keeperPoint = item.keeperId ? (livePitchPerspectivePoint(item.keeperPosition, attackClubId) || livePitchPerspectivePoint({x:96,y:50}, attackClubId)) : null;
-    const players = [
-      livePitchPlayerMarkup(item.actorId, actorPoint, attackClubId, item.visualKind === 'yellow' || item.visualKind === 'red' || item.visualKind === 'injury' ? 'jugador' : 'poseedor', 'actor'),
-      item.targetId && Number(item.targetId) !== Number(item.actorId) ? livePitchPlayerMarkup(item.targetId, targetPoint, attackClubId, 'receptor', 'target') : '',
-      item.defenderId && Number(item.defenderId) !== Number(item.actorId) ? livePitchPlayerMarkup(item.defenderId, defenderPoint, defendingClubId, item.visualKind === 'steal' ? 'recupera' : 'rival', 'defender') : '',
-      item.keeperId && Number(item.keeperId) !== Number(item.defenderId) ? livePitchPlayerMarkup(item.keeperId, keeperPoint, defendingClubId, 'arquero', 'keeper') : ''
-    ].filter(Boolean).join('');
-    const specialNoBall = ['yellow','red','injury'].includes(String(item.visualKind || ''));
-    const ball = specialNoBall ? '' : livePitchBallMarkup(fromPoint,toPoint,item.visualKind || 'action');
+    const attackClubId = Number(item?.clubId || liveState?.continuousPossessionTeamId || match.homeId || 0);
+    const fromPoint = item ? (item.absolutePoint || livePitchPerspectivePoint(item.fromPosition,attackClubId) || liveNominalPlayerPoint(item.actorId,attackClubId)) : livePitchCurrentBallPoint(null);
+    const toPoint = item ? (item.absolutePoint || livePitchDestination(item,fromPoint)) : fromPoint;
+    const ballFocus = item ? livePitchCurrentBallPoint(item) : (fromPoint || {x:50,y:50});
+    const specialPoints = livePitchSpecialPointMap(item,fromPoint,toPoint);
+    const allEntries = livePitchActivePlayers('home').concat(livePitchActivePlayers('away'));
+    const possessionClub = Number(item?.clubId || liveState?.continuousPossessionTeamId || 0);
+    const pressers = allEntries.filter(entry => Number(entry.clubId || 0) !== possessionClub && livePitchRoleGroup(entry.role || entry.position) !== 'gk')
+      .map(entry => ({ id:Number(entry.id || 0), distance:Math.hypot(livePitchBasePoint(entry).x-Number(ballFocus.x || 50),livePitchBasePoint(entry).y-Number(ballFocus.y || 50)) }))
+      .sort((a,b)=>a.distance-b.distance).slice(0,2).map(entry=>entry.id);
+    const nextPositions = new Map();
+    const players = allEntries.map(entry => {
+      const id = Number(entry.id || 0);
+      const pressLevel = id === Number(pressers[0] || 0) ? 1 : (id === Number(pressers[1] || 0) ? 2 : 0);
+      const tacticalPoint = livePitchTacticalPoint(entry,item,ballFocus,pressLevel);
+      const point = specialPoints.get(id) || tacticalPoint;
+      const previous = livePitchPreviousPositions.get(id) || livePitchBasePoint(entry);
+      nextPositions.set(id,point);
+      return livePitchPlayerMarkup(entry,point,previous,item);
+    }).join('');
+    livePitchPreviousPositions.clear();
+    nextPositions.forEach((point,id)=>livePitchPreviousPositions.set(id,point));
+    const stateLabel = liveState?.finished ? 'FINAL' : (liveIsBreak() ? 'ENTRETIEMPO' : (item?.visualTitle || 'PARTIDO EN JUEGO'));
+    const stateDetail = liveState?.finished ? 'El partido terminó.' : (liveIsBreak() ? 'Los equipos están en descanso.' : (item ? livePitchDetail(item) : 'Los equipos mantienen su estructura táctica.'));
     const direction = attackClubId === Number(match.awayId) ? '←' : '→';
-    return `<div class="live-animated-pitch ${ehtml(item.visualKind || 'action')}" style="--pitch-home:${ehtml(colors.home)};--pitch-away:${ehtml(colors.away)}"><div class="live-pitch-markings"><i class="mid"></i><i class="circle"></i><i class="box left"></i><i class="box right"></i><i class="goal left"></i><i class="goal right"></i></div><div class="live-pitch-team-label home">${liveBadge(match.homeId)} ${ehtml(liveClubName(match.homeId))}</div><div class="live-pitch-team-label away">${ehtml(liveClubName(match.awayId))} ${liveBadge(match.awayId)}</div>${players}${ball}<div class="live-pitch-status ${ehtml(item.visualKind || 'action')}"><strong>${ehtml(item.visualTitle || 'JUGADA')}</strong><span>${ehtml(livePitchDetail(item))}</span><small>${ehtml(item.time || liveClockText())} · ${direction} ${ehtml(liveClubName(attackClubId))}</small></div></div>`;
+    const specialNoBall = item && ['yellow','red','injury'].includes(String(item.visualKind || ''));
+    const ball = specialNoBall ? '' : livePitchBallMarkup(fromPoint || ballFocus,toPoint || ballFocus,item?.visualKind || 'action',!item);
+    const statusClass = item?.visualKind || 'neutral';
+    const statusMeta = item ? `${ehtml(item.time || liveClockText())} · ${direction} ${ehtml(liveClubName(attackClubId))}` : `${allEntries.length} jugadores en cancha · movimientos tácticos`;
+    return `<div class="live-animated-pitch ${ehtml(item?.visualKind || 'idle')}" style="--pitch-home:${ehtml(colors.home)};--pitch-away:${ehtml(colors.away)}"><div class="live-pitch-markings"><i class="mid"></i><i class="circle"></i><i class="box left"></i><i class="box right"></i><i class="goal left"></i><i class="goal right"></i></div><div class="live-pitch-team-label home">${liveBadge(match.homeId)} ${ehtml(liveClubName(match.homeId))}</div><div class="live-pitch-team-label away">${ehtml(liveClubName(match.awayId))} ${liveBadge(match.awayId)}</div>${players}${ball}<div class="live-pitch-status ${ehtml(statusClass)}"><strong>${ehtml(stateLabel)}</strong><span>${ehtml(stateDetail)}</span><small>${statusMeta}</small></div></div>`;
   }
   function livePitchCardMarkup(){
-    return `<div class="card inner live-pitch-card"><div class="live-card-head"><h3>Cancha en vivo</h3><span class="muted small">jugadores que intervienen · acción por acción</span></div><div id="liveAnimatedPitchStage">${livePitchStageMarkup()}</div><div class="live-pitch-legend"><span><i class="home"></i>Local</span><span><i class="away"></i>Visitante</span><span><b>⚽</b> Gol</span><span><b>↗</b> Errada</span><span><b>🛡️</b> Robo</span><span><b>🟨</b> Tarjeta</span><span><b>✚</b> Lesión</span></div></div>`;
+    const activeCount = livePitchActivePlayers('home').length + livePitchActivePlayers('away').length;
+    return `<div class="card inner live-pitch-card"><div class="live-card-head"><h3>Cancha táctica en vivo</h3><span class="muted small">${activeCount} jugadores · desplazamientos según posesión y posición</span></div><div id="liveAnimatedPitchStage">${livePitchStageMarkup()}</div><div class="live-pitch-legend"><span><i class="home"></i>Local</span><span><i class="away"></i>Visitante</span><span><b>⚽</b> Gol</span><span><b>↗</b> Errada</span><span><b>🛡️</b> Robo</span><span><b>🟨</b> Tarjeta</span><span><b>✚</b> Lesión</span></div></div>`;
   }
   function refreshLivePitchOnly(){
     const stage = document.querySelector('#liveAnimatedPitchStage');
@@ -1047,7 +1174,7 @@
       window.__activeCompetitionSuspensionMatch = null;
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
-      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); document.body?.classList.remove('live-commentary-expanded');
+      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); livePitchPreviousPositions.clear(); document.body?.classList.remove('live-commentary-expanded');
       resetLiveSelections(); clearTimeout(liveAutoTimer); stopLiveClockAnimation(); liveDisplayedClockSeconds = 0;
     });
   }
@@ -1060,7 +1187,7 @@
   function start(match, options={}){
     if(!match || !window.Simulator20?.createLiveMatchSession) return false;
     clearTimeout(liveAutoTimer);
-    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); document.body?.classList.remove('live-commentary-expanded'); resetLiveSelections();
+    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); livePitchPreviousPositions.clear(); document.body?.classList.remove('live-commentary-expanded'); resetLiveSelections();
     liveSession = typeof withCompetitionSuspensionContext === 'function'
       ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
       : window.Simulator20.createLiveMatchSession(match);

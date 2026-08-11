@@ -1,4 +1,4 @@
-/* V9.86 · cancha animada para el simulador vivo. */
+/* V9.88 · cancha táctica animada para el simulador vivo. */
 .live-v517 .live-pitch-card{
   display:grid;
   gap:6px;
@@ -128,4 +128,43 @@
 @media (prefers-reduced-motion:reduce){
   .live-v517 .live-pitch-player,.live-v517 .live-pitch-ball,.live-v517 .live-pitch-status{animation:none!important;}
   .live-v517 .live-pitch-ball{left:calc(var(--tx) * 1%);top:calc(var(--ty) * 1%);}
+}
+
+/* V9.88 · cancha táctica persistente con 22 jugadores y movimientos colectivos. */
+.live-v517 #liveAnimatedPitchStage{min-height:340px;}
+.live-v517 .live-animated-pitch{min-height:340px;}
+.live-v517 .live-pitch-player{
+  width:38px;height:38px;padding:2px;
+  animation:livePitchPlayerMoveV988 .62s cubic-bezier(.22,.72,.20,1) both;
+  will-change:left,top,transform;
+  box-shadow:0 2px 8px rgba(0,0,0,.34),inset 0 0 0 1px rgba(0,0,0,.10);
+}
+.live-v517 .live-pitch-player span{max-width:35px;font-size:6.2px;line-height:1.02;}
+.live-v517 .live-pitch-player small{font-size:4.7px;line-height:1;}
+.live-v517 .live-pitch-player.defender,.live-v517 .live-pitch-player.keeper{width:38px;height:38px;}
+.live-v517 .live-pitch-player.actor{z-index:14;border-width:3px;box-shadow:0 0 0 4px rgba(255,255,255,.16),0 3px 12px rgba(0,0,0,.44);}
+.live-v517 .live-pitch-player.target{z-index:11;box-shadow:0 0 0 3px rgba(255,255,255,.12),0 2px 9px rgba(0,0,0,.38);}
+.live-v517 .live-pitch-player.defender{z-index:12;border-style:dashed;}
+.live-v517 .live-pitch-player.keeper{border-style:double;}
+.live-v517 .live-pitch-ball.static{animation:none;left:calc(var(--tx) * 1%);top:calc(var(--ty) * 1%);opacity:.9;}
+.live-v517 .live-pitch-status.neutral{
+  grid-template-columns:auto 1fr;text-align:left;bottom:10px;transform:translateX(-50%);width:min(78%,360px);
+}
+.live-v517 .live-pitch-status.neutral strong{grid-row:1 / span 2;}
+@keyframes livePitchPlayerMoveV988{
+  from{left:calc(var(--from-px) * 1%);top:calc(var(--from-py) * 1%);transform:translate(-50%,-50%);opacity:.92}
+  to{left:calc(var(--px) * 1%);top:calc(var(--py) * 1%);transform:translate(-50%,-50%);opacity:1}
+}
+@media (max-width:1260px){
+  .live-v517 #liveAnimatedPitchStage,.live-v517 .live-animated-pitch{min-height:330px;}
+}
+@media (max-width:760px){
+  .live-v517 #liveAnimatedPitchStage,.live-v517 .live-animated-pitch{min-height:250px;}
+  .live-v517 .live-pitch-player,.live-v517 .live-pitch-player.defender,.live-v517 .live-pitch-player.keeper{width:29px;height:29px;padding:1px;border-width:1.5px;}
+  .live-v517 .live-pitch-player.actor{border-width:2px;}
+  .live-v517 .live-pitch-player span{max-width:27px;font-size:5px;}
+  .live-v517 .live-pitch-player small{font-size:3.8px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .live-v517 .live-pitch-player{animation:none!important;left:calc(var(--px) * 1%);top:calc(var(--py) * 1%);}
 }

@@ -104,6 +104,12 @@
   const LIVE_FATIGUE_MULTIPLIER = simConfigNumber('simulador.fatigaVivaMultiplicador', 2, 0.5, 4);
   const SIM_CARD_RATE_MULTIPLIER = simConfigNumber('simulador.multiplicadorTarjetas', 0.70, 0, 2);
   const SIM_DIRECT_RED_RATE_MULTIPLIER = simConfigNumber('simulador.multiplicadorRojasDirectas', 0.55, 0, 2);
+  // V9.87: menos recuperaciones defensivas y mayor volumen de faltas.
+  const SIM_STEAL_RATE_MULTIPLIER = simConfigNumber('simulador.multiplicadorRobos', 0.50, 0, 2);
+  const SIM_FOUL_RATE_MULTIPLIER = simConfigNumber('simulador.multiplicadorFaltas', 2.00, 0, 4);
+  function disciplinaryFoulsV987(fouls){
+    return Math.max(0, Number(fouls || 0)) / Math.max(0.01, SIM_FOUL_RATE_MULTIPLIER);
+  }
   const SIM_HIGH_CARD_PENALTY_ENABLED = Boolean(simConfigValue('simulador.penalizacionTarjetasAltas.activo', true));
   function normalizeCardPenaltyRulesV2(path, fallback){
     return simConfigArray(path, fallback).map(rule => ({
@@ -743,7 +749,7 @@
     const xgPerChance = simClamp((0.14 + (own.attackQuality - rival.keeperQuality) / 650 + forwardCount * 0.018 - defenderCount * 0.009) * ownStyle.conversionMultiplier * rivalStyle.rivalConversionMultiplier, 0.05, 0.46);
     const xg = simClamp(chances * xgPerChance + (fullBlockAttacks > 8 ? 0.04 * phaseFactor : 0) + (!neutralVenue && isHome ? 0.03 * phaseFactor : 0), 0, 0.55);
     const fullBlockFouls = Math.max(0, 1.1 + own.aggression/46 + (100-own.discipline)/62 + ownStyle.foulAdd + (ownInstruction === 'push' ? 0.55 : ownInstruction === 'lower' ? -0.35 : 0) + simRnd(-0.7,0.9));
-    const fouls = simClamp(probabilisticRoundV2(fullBlockFouls * phaseFactor), 0, 3);
+    const fouls = simClamp(probabilisticRoundV2(fullBlockFouls * SIM_FOUL_RATE_MULTIPLIER * phaseFactor), 0, 6);
     return { attacks, chances, possession, fouls, passScore:Math.round(effectiveMid), xg };
   }
   const CONTINUOUS_STAT_KEYS_V974 = ['passesAttempted','passesCompleted','longPassesAttempted','longPassesCompleted','throughPassesAttempted','throughPassesCompleted','crossesAttempted','crossesCompleted','dribblesAttempted','dribblesWon','interceptions','tackles','shots','shotsOnTarget'];
@@ -949,7 +955,7 @@
   function makeCardsV2(clubId, power, fouls){
     const cards = [];
     const cardMultiplier = simClamp(Number(power?.styleEffects?.cardMultiplier || 1), 0.20, 2.50);
-    const yellowCount = simClamp(poissonV2((fouls * SIM_CARD_RATE_MULTIPLIER * cardMultiplier) / 7.6), 0, 6);
+    const yellowCount = simClamp(poissonV2((disciplinaryFoulsV987(fouls) * SIM_CARD_RATE_MULTIPLIER * cardMultiplier) / 7.6), 0, 6);
     const byPlayer = new Map();
     for(let i=0;i<yellowCount;i++){
       const p = weightedPickV2(power.lineup, cardWeightV2);
@@ -1694,7 +1700,7 @@
     const locallySent = new Set();
     const eligibleLineup = (power.lineup || []).filter(p => p && !liveIsUnavailableForPlay(session, p.id));
     const cardMultiplier = simClamp(Number(power?.styleEffects?.cardMultiplier || 1), 0.20, 2.50);
-    const yellowCount = simClamp(probabilisticRoundV2((Math.max(0, Number(fouls || 0)) * SIM_CARD_RATE_MULTIPLIER * cardMultiplier) / 7.6), 0, 2);
+    const yellowCount = simClamp(probabilisticRoundV2((disciplinaryFoulsV987(fouls) * SIM_CARD_RATE_MULTIPLIER * cardMultiplier) / 7.6), 0, 2);
     session.yellowByPlayer = session.yellowByPlayer || {};
     for(let i=0;i<yellowCount;i++){
       const p = weightedPickV2(eligibleLineup.filter(item => !locallySent.has(Number(item.id))), cardWeightV2);
@@ -2148,7 +2154,7 @@
     const actionExtra = actionType === 'dribble' ? 0.026 : ['pass_through','cross'].includes(actionType) ? 0.012 : 0;
     const baseChance = 0.010 + aggression/3200 + (100-discipline)/4200 + pressure*0.009 + actionExtra;
     const phaseDurationScale = CONTINUOUS_MATCH_CONFIG_V974.secondsPerPhase / 15;
-    return simClamp(baseChance * phaseDurationScale,0.005,0.16);
+    return simClamp(baseChance * phaseDurationScale * SIM_FOUL_RATE_MULTIPLIER,0,0.32);
   }
   function continuousSpatialQualityV974(power, point, mode='support'){
     const entries = continuousEntriesV974(power);
@@ -2253,6 +2259,9 @@
     const foulChance = continuousFoulChanceV974(defendingPower,context,type);
     if(!duel.success && context.defender && continuousRandomV974(state) < foulChance){
       return { ...base, success:false, foul:true, possessionChanged:false, reason:'foul_won', executionAbility:duel.executionAbility, attackPower:duel.attackPower, defensePower:duel.defensePower };
+    }
+    if(!duel.success && context.defender && continuousRandomV974(state) >= SIM_STEAL_RATE_MULTIPLIER){
+      return { ...base, success:true, possessionChanged:false, reason:'completed', executionAbility:duel.executionAbility, attackPower:duel.attackPower, defensePower:duel.defensePower };
     }
     return { ...base, success:duel.success, possessionChanged:!duel.success, reason:duel.success?'completed':'intercepted', executionAbility:duel.executionAbility, attackPower:duel.attackPower, defensePower:duel.defensePower };
   }
@@ -2630,6 +2639,27 @@
     if(session.blockIndex >= session.blocks.length) return finishLiveMatchSession(session);
     return livePublicState(session, { block, homeBlock:h, awayBlock:a, cards, injuries });
   }
+  function livePublicPitchPlayersV988(session, clubId){
+    const tactic = liveTacticForClub(session, clubId);
+    const slots = liveTacticSlots(tactic);
+    const coords = typeof tacticSlotCoordinates === 'function' ? tacticSlotCoordinates(tactic || {}) : [];
+    const starters = Array.isArray(tactic?.starters) ? tactic.starters : [];
+    return starters.slice(0,11).map((id,index) => {
+      const player = playerById(id);
+      if(!player || liveIsUnavailableForPlay(session, player.id)) return null;
+      const point = coords[index] || {};
+      return {
+        id:Number(player.id || 0),
+        name:player.name,
+        position:player.position,
+        role:slots[index] || player.position || 'MC',
+        slotIndex:index,
+        x:simClamp(Number(point.x ?? 50),0,100),
+        y:simClamp(Number(point.y ?? 50),0,100),
+        condition:liveEffectiveCondition(session, player.id)
+      };
+    }).filter(Boolean);
+  }
   function livePublicLineup(session, clubId){
     const tactic = liveTacticForClub(session, clubId);
     const slots = liveTacticSlots(tactic);
@@ -2757,6 +2787,8 @@
       instructionLog:session.instructionLog.slice(),
       homeLineup:livePublicLineup(session, session.match.homeId),
       awayLineup:livePublicLineup(session, session.match.awayId),
+      homePitchPlayers:livePublicPitchPlayersV988(session, session.match.homeId),
+      awayPitchPlayers:livePublicPitchPlayersV988(session, session.match.awayId),
       homeBoardSlots:livePublicBoardSlots(session, session.match.homeId),
       awayBoardSlots:livePublicBoardSlots(session, session.match.awayId),
       ownBoardSlots:livePublicBoardSlots(session, game?.selectedClubId || 0),
