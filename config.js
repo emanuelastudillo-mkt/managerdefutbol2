@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V9.78',
+  version: 'V9.79',
   marca: {
     nombre: 'Una vida de manager',
     nombreCorto: 'Una vida de manager',
@@ -1175,14 +1175,14 @@ window.GAME_CONFIG = {
   },
 
   simulador: {
-    // V9.74 · Motor de posesión continua. La interfaz puede seguir avanzando por minuto,
-    // pero cada partido reglamentario procesa exactamente 360 fases internas de 15 segundos.
+    // V9.79 · Motor de posesión continua. La interfaz sigue avanzando por minuto,
+    // pero cada partido reglamentario procesa exactamente 540 fases internas de 10 segundos.
     motorContinuoV974: {
       activo: true,
-      fasesPorPartido: 360,
-      segundosPorFase: 15,
+      fasesPorPartido: 540,
+      segundosPorFase: 10,
       logTecnico: false,
-      maxLogTecnico: 360,
+      maxLogTecnico: 540,
       distancias: {
         paseCortoMax: 34,
         paseLargoMin: 25,
@@ -1200,7 +1200,12 @@ window.GAME_CONFIG = {
         tiro: 4,
         regate: 12
       },
-      contraataqueFases: 7,
+      // 11 fases de 10 s conservan casi la misma ventana temporal del contraataque anterior (7 x 15 s).
+      contraataqueFases: 11,
+      // Aumenta la elección de acciones verticales/ofensivas para aproximar 2x ataques totales.
+      multiplicadorIntencionAtaque: 1.60,
+      // Compensa el mayor volumen de remates para sostener un rango de goles similar al anterior.
+      multiplicadorConversionVolumen: 0.60,
       ventajaLocalMaxPct: 0.08,
       azarPuja: 13
     },

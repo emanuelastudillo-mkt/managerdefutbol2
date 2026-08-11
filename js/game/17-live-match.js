@@ -51,8 +51,8 @@
     return Math.max(0, Math.min(5400, Number(liveState?.minute || 0) * 60));
   }
   function liveClockPhaseFromSeconds(seconds){
-    const perPhase = Math.max(1, Number(liveState?.continuousSecondsPerPhase || 15));
-    return Math.max(0, Math.min(Number(liveState?.continuousTotalPhases || 360), Math.floor(Number(seconds || 0) / perPhase)));
+    const perPhase = Math.max(1, Number(liveState?.continuousSecondsPerPhase || 10));
+    return Math.max(0, Math.min(Number(liveState?.continuousTotalPhases || 540), Math.floor(Number(seconds || 0) / perPhase)));
   }
   function liveClockText(seconds=liveDisplayedClockSeconds){
     const safe = Math.max(0, Math.min(5400, Math.round(Number(seconds || 0))));
@@ -65,7 +65,7 @@
     const phase = document.querySelector('#liveMatchContinuousPhase');
     if(clock) clock.textContent = liveClockText();
     if(phase){
-      const total = Number(liveState?.continuousTotalPhases || 360);
+      const total = Number(liveState?.continuousTotalPhases || 540);
       phase.textContent = `Fase ${liveClockPhaseFromSeconds(liveDisplayedClockSeconds)} / ${total}`;
     }
   }
@@ -183,7 +183,7 @@
       else{ text(' prueba al arco, pero el remate se va desviado.'); endingIcon='↗'; }
     }
     if(segments.length <= 1) return null;
-    const seconds = Math.max(0, Math.min(5400, Number(result.clockSeconds || Number(result.phase || 0) * 15)));
+    const seconds = Math.max(0, Math.min(5400, Number(result.clockSeconds || Number(result.phase || 0) * Number(liveState?.continuousSecondsPerPhase || 10))));
     return {
       key:`action-${Number(result.phase || 0)}-${type}-${actorId}-${targetId}-${String(result.reason || '')}`,
       clockSeconds:seconds,
@@ -642,7 +642,7 @@
     const html = `<div class="live-match-shell live-v512 live-v517">
       <div class="match-modal-head live-match-head">
         <div class="live-head-left"><p class="label">${match.friendly ? 'Simulación viva · Amistoso' : 'Simulación viva · Fecha'} ${ehtml(match.matchday || '—')} · ${ehtml(match.date || '')}</p><h2>${liveBadge(match.homeId)} ${ehtml(homeTitle)} <span class="live-score">${Number(liveState.homeGoals || 0)} - ${Number(liveState.awayGoals || 0)}</span> ${ehtml(awayTitle)} ${liveBadge(match.awayId)}</h2></div>
-        <div class="live-head-right"><strong id="liveMatchClock">${ehtml(liveClockText())}</strong><span id="liveMatchContinuousPhase">Fase ${liveClockPhaseFromSeconds(liveDisplayedClockSeconds)} / ${Number(liveState?.continuousTotalPhases || 360)}</span><small>${ehtml(livePhaseLabel())}</small></div>
+        <div class="live-head-right"><strong id="liveMatchClock">${ehtml(liveClockText())}</strong><span id="liveMatchContinuousPhase">Fase ${liveClockPhaseFromSeconds(liveDisplayedClockSeconds)} / ${Number(liveState?.continuousTotalPhases || 540)}</span><small>${ehtml(livePhaseLabel())}</small></div>
       </div>
       <div class="live-progress"><span style="width:${progress}%"></span></div>
       ${minuteRail(events)}
