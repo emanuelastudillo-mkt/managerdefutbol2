@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V9.85',
+  version: 'V9.91',
   marca: {
     nombre: 'Una vida de manager',
     nombreCorto: 'Una vida de manager',
@@ -1237,6 +1237,9 @@ window.GAME_CONFIG = {
         avanceBloquePorPase: 0.70,
         avanceExtraPaseProgresivo: 0.13,
         carreraRecepcionMax: 3.6,
+        // V9.91: delanteros sin balón respetan la línea dinámica del defensor rival más retrasado.
+        lineaOffsideActiva: true,
+        margenLineaOffside: 0.85,
         movimientoPostAccion: 0.66,
         pesoAmenazaDestino: 42,
         escalaLogitPase: 9.5,

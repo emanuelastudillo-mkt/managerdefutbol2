@@ -183,6 +183,8 @@
         progressivePassBase:simClamp(Number(newV1.avanceBloquePorPase ?? 0.70),0,3),
         progressivePassFactor:simClamp(Number(newV1.avanceExtraPaseProgresivo ?? 0.13),0,0.40),
         receptionRunMax:simClamp(Number(newV1.carreraRecepcionMax ?? 3.6),0,8),
+        offsideLineEnabled:newV1.lineaOffsideActiva !== false,
+        offsideLineMargin:simClamp(Number(newV1.margenLineaOffside ?? 0.85),0.20,3.00),
         postActionMovement:simClamp(Number(newV1.movimientoPostAccion ?? 0.66),0.10,1.50),
         threatTargetWeight:simClamp(Number(newV1.pesoAmenazaDestino ?? 42),0,100),
         passLogitScale:simClamp(Number(newV1.escalaLogitPase ?? 9.5),3,25),
@@ -1962,6 +1964,37 @@
     const entries = continuousDynamicEntriesV1(state,power);
     return entries.find(entry => entry.slot === 'POR' || entry.player?.position === 'POR') || entries.slice().sort((a,b)=>a.x-b.x)[0] || null;
   }
+  // V9.91 · Línea dinámica de offside para delanteros sin balón.
+  // Cada equipo guarda sus coordenadas desde su propia perspectiva; el rival se invierte para medir la línea en el sentido de ataque.
+  function continuousOffsideLineV991(state,attackingPower,defendingPower){
+    const cfg = CONTINUOUS_MATCH_CONFIG_V974.newV1 || {};
+    if(!cfg.offsideLineEnabled || !state || !attackingPower || !defendingPower) return null;
+    const opponent = continuousDynamicEntriesV1(state,defendingPower).map(continuousOpponentPerspectiveV974);
+    const defenders = opponent.filter(entry => continuousRoleGroupV1(entry) === 'def');
+    // En tácticas sin defensores naturales, usar el jugador de campo más retrasado como referencia.
+    const referencePool = defenders.length ? defenders : opponent.filter(entry => continuousRoleGroupV1(entry) !== 'gk');
+    if(!referencePool.length) return null;
+    const deepest = Math.max(...referencePool.map(entry => Number(entry.x || 0)));
+    // No existe offside en campo propio: la línea nunca baja de mitad de cancha.
+    return simClamp(Math.max(50,deepest),50,97);
+  }
+  function continuousOffsideLimitV991(state,attackingPower,defendingPower){
+    const line = continuousOffsideLineV991(state,attackingPower,defendingPower);
+    if(!Number.isFinite(line)) return null;
+    const margin = Number(CONTINUOUS_MATCH_CONFIG_V974.newV1?.offsideLineMargin || 0.85);
+    return simClamp(line-margin,49.5,96.5);
+  }
+  function continuousEnforceOffsideShapeV991(state,attackingPower,defendingPower){
+    if(!state || Number(state.possessionTeamId || 0) !== Number(attackingPower?.clubId || 0)) return;
+    const limit = continuousOffsideLimitV991(state,attackingPower,defendingPower);
+    if(!Number.isFinite(limit)) return;
+    continuousEntriesV974(attackingPower).forEach(entry => {
+      if(continuousRoleGroupV1(entry) !== 'att' || Number(entry.playerId) === Number(state.ballCarrierId || 0)) return;
+      const key = continuousPositionKeyV1(attackingPower.clubId,entry.playerId);
+      const pos = state.playerPositions?.[key];
+      if(pos) pos.x = Math.min(Number(pos.x),Number(limit));
+    });
+  }
   function continuousProgressiveSupportAdvanceV990(state){
     const cfg = CONTINUOUS_MATCH_CONFIG_V974.newV1 || {};
     return simClamp(Number(state?.possessionAdvanceV990 || 0),0,Number(cfg.progressiveBlockMax || 15));
@@ -2013,7 +2046,7 @@
     result.xTAfter = Number(updatedThreat.toFixed(4));
     result.xTGain = Number((updatedThreat-Number(result.xTBefore || 0)).toFixed(4));
   }
-  function continuousMoveTeamShapeV1(state,power,hasBall,movementMultiplier=1){
+  function continuousMoveTeamShapeV1(state,power,opponentPower,hasBall,movementMultiplier=1){
     if(!state || !power || !CONTINUOUS_MATCH_CONFIG_V974.newV1?.enabled) return;
     const cfg = CONTINUOUS_MATCH_CONFIG_V974.newV1;
     const ball = continuousBallPointForClubV1(state,power.clubId);
@@ -2021,6 +2054,7 @@
     const counterActive = hasBall && Number(state.counterPhasesLeft || 0) > 0 && String(state.transitionType || '').includes('recovery');
     const styleAdvance = hasBall ? ({possession:0.76,direct:1.03,counter:counterActive?1.30:0.94,long_ball:0.88})[build] || 1 : 1;
     const sequenceAdvance = continuousProgressiveSupportAdvanceV990(state);
+    const offsideLimit = hasBall ? continuousOffsideLimitV991(state,power,opponentPower) : null;
     const entries = continuousEntriesV974(power);
     const current = entries.map(entry => {
       const key = continuousPositionKeyV1(power.clubId,entry.playerId);
@@ -2074,15 +2108,22 @@
           targetY += (Number(ball.y)-targetY)*pressurePull;
         }
       }
-      if(Number(state.possessionTeamId) === Number(power.clubId) && Number(state.ballCarrierId) === Number(entry.playerId)){
+      const isCarrier = Number(state.possessionTeamId) === Number(power.clubId) && Number(state.ballCarrierId) === Number(entry.playerId);
+      if(isCarrier){
         targetX = Number(state.ballPosition?.x ?? targetX); targetY = Number(state.ballPosition?.y ?? targetY);
       }
+      // Delanteros sin balón se mueven sobre la línea rival, pero nunca por delante de ella.
+      // El poseedor queda exceptuado: una vez que conduce el balón ya no puede estar en offside.
+      const enforceOffside = hasBall && group === 'att' && !isCarrier && Number.isFinite(offsideLimit);
+      if(enforceOffside) targetX = Math.min(targetX,Number(offsideLimit));
       targetX = simClamp(targetX,group === 'gk'?2:3,group === 'gk'?18:97);
       targetY = simClamp(targetY,4,96);
       const baseLerp = Number(cfg.movementLerp || 0.38);
       const lerp = simClamp(baseLerp*Number(movementMultiplier || 1),0.04,0.88);
       pos.x = Number(pos.x) + (targetX-Number(pos.x))*lerp;
       pos.y = Number(pos.y) + (targetY-Number(pos.y))*lerp;
+      // Garantía dura: evita que la interpolación deje al círculo adelantado durante uno o más frames.
+      if(enforceOffside) pos.x = Math.min(Number(pos.x),Number(offsideLimit));
       pos.baseX = base.x; pos.baseY = base.y; pos.slot = entry.slot; pos.slotIndex = entry.slotIndex;
       state.playerPositions[key] = pos;
     });
@@ -2090,8 +2131,11 @@
   function continuousUpdatePlayerPositionsV1(state,home,away,movementMultiplier=1){
     if(!CONTINUOUS_MATCH_CONFIG_V974.newV1?.enabled) return;
     continuousSyncPlayerPositionsV1(state,home,away);
-    continuousMoveTeamShapeV1(state,home,Number(state.possessionTeamId)===Number(home?.clubId),movementMultiplier);
-    continuousMoveTeamShapeV1(state,away,Number(state.possessionTeamId)===Number(away?.clubId),movementMultiplier);
+    continuousMoveTeamShapeV1(state,home,away,Number(state.possessionTeamId)===Number(home?.clubId),movementMultiplier);
+    continuousMoveTeamShapeV1(state,away,home,Number(state.possessionTeamId)===Number(away?.clubId),movementMultiplier);
+    // Recalcular con ambas líneas ya desplazadas para evitar un frame adelantado por el orden de actualización.
+    if(Number(state.possessionTeamId) === Number(home?.clubId)) continuousEnforceOffsideShapeV991(state,home,away);
+    else if(Number(state.possessionTeamId) === Number(away?.clubId)) continuousEnforceOffsideShapeV991(state,away,home);
   }
   function continuousPositionSnapshotV1(state){
     return Object.values(state?.playerPositions || {}).map(pos => {
