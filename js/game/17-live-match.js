@@ -11,6 +11,9 @@
   let liveLastCommentaryKey = '';
   let livePendingActionNarrations = [];
   let liveSeenActionNarrationKeys = new Set();
+  let liveHighlightedHistory = [];
+  let liveInspectPlayerId = 0;
+  let liveInspectResumeAfterClose = false;
   let liveSelectedInstruction = 'none';
   let liveSelectedStarterId = 0;
   let liveSelectedBenchId = 0;
@@ -126,52 +129,75 @@
   function liveActionPlayerName(id){
     return id ? eventPlayerLabel(id, true) : 'un jugador';
   }
+  function livePlayerLinkMarkup(id, fallback='Jugador'){
+    const playerId = Number(id || 0);
+    if(!playerId) return ehtml(fallback);
+    return `<button type="button" class="linklike live-commentary-player" data-live-player-id="${playerId}" title="Ver jugador">${ehtml(liveActionPlayerName(playerId))}</button>`;
+  }
+  function liveNarrationSegmentsMarkup(segments=[]){
+    return (Array.isArray(segments) ? segments : []).map(part => {
+      if(part?.playerId) return livePlayerLinkMarkup(part.playerId, part.fallback || 'Jugador');
+      return ehtml(part?.text || '');
+    }).join('');
+  }
   function liveActionNarration(result){
     if(!result || !result.type || !result.actorId) return null;
-    const actor = liveActionPlayerName(result.actorId);
-    const target = result.targetId ? liveActionPlayerName(result.targetId) : '';
-    const defender = result.defenderId ? liveActionPlayerName(result.defenderId) : '';
+    const actorId = Number(result.actorId || 0);
+    const targetId = Number(result.targetId || 0);
+    const defenderId = Number(result.defenderId || 0);
     const keeperId = Number(result.shot?.keeper?.playerId || result.shot?.keySave?.playerId || 0);
-    const keeper = keeperId ? liveActionPlayerName(keeperId) : '';
     const type = String(result.type || '');
     const success = Boolean(result.success);
     const foul = Boolean(result.foul);
-    let text = '';
+    const segments = [];
+    const text = value => segments.push({ text:String(value || '') });
+    const player = (id, fallback='un jugador') => id ? segments.push({ playerId:Number(id), fallback }) : text(fallback);
+    let endingIcon = '';
+    let highlight = '';
+    let highlightLabel = '';
+    player(actorId);
     if(type === 'pass_short'){
-      if(foul) text = `${actor} intenta jugar en corto${target ? ` con ${target}` : ''}, pero ${defender || 'un rival'} corta con falta.`;
-      else if(success) text = `${actor} toca en corto para ${target || 'un compañero'}.`;
-      else text = `${actor} busca a ${target || 'un compañero'} con un pase corto, pero ${defender || 'un rival'} intercepta.`;
+      if(foul){ text(' intenta jugar en corto'); if(targetId){ text(' con '); player(targetId); } text(', pero '); player(defenderId,'un rival'); text(' corta con falta.'); endingIcon='⚠'; }
+      else if(success){ text(' toca en corto para '); player(targetId,'un compañero'); text('.'); }
+      else{ text(' busca a '); player(targetId,'un compañero'); text(' con un pase corto, pero '); player(defenderId,'un rival'); text(' intercepta.'); endingIcon='🛡️'; }
     }else if(type === 'pass_long'){
-      if(foul) text = `${actor} intenta un envío largo hacia ${target || 'un compañero'} y ${defender || 'un rival'} lo frena con falta.`;
-      else if(success) text = `${actor} lanza un pase largo hacia ${target || 'un compañero'} y encuentra destino.`;
-      else text = `${actor} busca en largo a ${target || 'un compañero'}, pero ${defender || 'un rival'} corta el envío.`;
+      if(foul){ text(' intenta un envío largo hacia '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' lo frena con falta.'); endingIcon='⚠'; }
+      else if(success){ text(' lanza un pase largo hacia '); player(targetId,'un compañero'); text(' y encuentra destino.'); }
+      else{ text(' busca en largo a '); player(targetId,'un compañero'); text(', pero '); player(defenderId,'un rival'); text(' corta el envío.'); endingIcon='🛡️'; }
     }else if(type === 'pass_through'){
-      if(foul) text = `${actor} intenta filtrar para ${target || 'un compañero'} y ${defender || 'un rival'} interrumpe con falta.`;
-      else if(success) text = `${actor} filtra un pase profundo para ${target || 'un compañero'} y rompe una línea.`;
-      else text = `${actor} intenta un pase profundo para ${target || 'un compañero'}, pero ${defender || 'un rival'} anticipa.`;
+      if(foul){ text(' intenta filtrar para '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' interrumpe con falta.'); endingIcon='⚠'; }
+      else if(success){ text(' filtra un pase profundo para '); player(targetId,'un compañero'); text(' y rompe una línea.'); }
+      else{ text(' intenta un pase profundo para '); player(targetId,'un compañero'); text(', pero '); player(defenderId,'un rival'); text(' anticipa.'); endingIcon='🛡️'; }
     }else if(type === 'cross'){
-      if(foul) text = `${actor} busca el centro para ${target || 'un compañero'} y ${defender || 'un rival'} corta con falta.`;
-      else if(success) text = `${actor} envía un centro buscando a ${target || 'un compañero'} y conecta la jugada.`;
-      else text = `${actor} tira el centro hacia ${target || 'el área'}, pero ${defender || 'un rival'} despeja.`;
+      if(foul){ text(' busca el centro para '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' corta con falta.'); endingIcon='⚠'; }
+      else if(success){ text(' envía un centro buscando a '); player(targetId,'un compañero'); text(' y conecta la jugada.'); }
+      else{ text(' tira el centro hacia '); player(targetId,'el área'); text(', pero '); player(defenderId,'un rival'); text(' despeja.'); endingIcon='🛡️'; }
     }else if(type === 'dribble'){
-      if(foul) text = `${actor} encara a ${defender || 'su marcador'} y recibe la falta.`;
-      else if(success) text = defender ? `${actor} encara a ${defender} y logra superarlo.` : `${actor} avanza en conducción y gana metros.`;
-      else text = `${actor} intenta el regate, pero ${defender || 'un rival'} le gana el duelo y recupera.`;
+      if(foul){ text(' encara a '); player(defenderId,'su marcador'); text(' y recibe la falta.'); endingIcon='⚠'; }
+      else if(success){ if(defenderId){ text(' encara a '); player(defenderId); text(' y logra superarlo.'); } else text(' avanza en conducción y gana metros.'); }
+      else{ text(' intenta el regate, pero '); player(defenderId,'un rival'); text(' le gana el duelo y recupera.'); endingIcon='🛡️'; }
     }else if(type === 'shot'){
-      if(result.shot?.goal) text = `${actor} remata al arco y convierte el gol.`;
-      else if(result.shot?.blocked) text = `${actor} remata, pero ${defender || 'un defensor'} bloquea el disparo.`;
-      else if(result.shot?.onTarget) text = `${actor} remata al arco y ${keeper || 'el arquero'} contiene el disparo.`;
-      else text = `${actor} prueba al arco, pero el remate se va desviado.`;
+      if(result.shot?.goal){ text(' remata al arco y convierte el gol.'); endingIcon='⚽'; highlight='goal'; highlightLabel='Gol'; }
+      else if(result.shot?.blocked){ text(' remata, pero '); player(defenderId,'un defensor'); text(' bloquea el disparo.'); endingIcon='🧱'; }
+      else if(result.shot?.onTarget){ text(' remata al arco y '); player(keeperId,'el arquero'); text(' contiene el disparo.'); endingIcon='🎯'; highlight='shot'; highlightLabel='Tiro al arco'; }
+      else{ text(' prueba al arco, pero el remate se va desviado.'); endingIcon='↗'; }
     }
-    if(!text) return null;
+    if(segments.length <= 1) return null;
     const seconds = Math.max(0, Math.min(5400, Number(result.clockSeconds || Number(result.phase || 0) * 15)));
     return {
-      key:`action-${Number(result.phase || 0)}-${type}-${Number(result.actorId || 0)}-${Number(result.targetId || 0)}-${String(result.reason || '')}`,
+      key:`action-${Number(result.phase || 0)}-${type}-${actorId}-${targetId}-${String(result.reason || '')}`,
       clockSeconds:seconds,
       time:liveClockText(seconds),
-      title:`Fase ${Number(result.phase || liveClockPhaseFromSeconds(seconds))}`,
-      text,
-      sub:'',
+      clubId:Number(result.attackingClubId || 0),
+      type,
+      actorId,
+      targetId:targetId || null,
+      defenderId:defenderId || null,
+      keeperId:keeperId || null,
+      segments,
+      endingIcon,
+      highlight,
+      highlightLabel,
       tone:`action-${type}`
     };
   }
@@ -183,9 +209,30 @@
     });
     livePendingActionNarrations.sort((a,b)=>Number(a.clockSeconds || 0)-Number(b.clockSeconds || 0));
   }
+  function openLivePlayerQuick(playerId){
+    const id = Number(playerId || 0);
+    if(!id) return;
+    liveInspectResumeAfterClose = !livePaused;
+    livePaused = true;
+    clearTimeout(liveAutoTimer);
+    stopLiveClockAnimation();
+    liveInspectPlayerId = id;
+    renderLiveMatch();
+  }
+  function bindLivePlayerLinksWithin(root=document){
+    root?.querySelectorAll?.('[data-live-player-id]').forEach(btn => btn.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      openLivePlayerQuick(btn.getAttribute('data-live-player-id'));
+    }));
+  }
   function refreshLiveCommentaryHistoryOnly(){
-    const box = document.querySelector('.live-commentary-history-list');
-    if(box) box.innerHTML = liveCommentaryHistoryMarkup();
+    const commentary = document.querySelector('.live-commentary-history-list');
+    const highlights = document.querySelector('.live-highlight-events-list');
+    if(commentary) commentary.innerHTML = liveCommentaryHistoryMarkup();
+    if(highlights) highlights.innerHTML = liveHighlightedEventsMarkup();
+    if(commentary) bindLivePlayerLinksWithin(commentary);
+    if(highlights) bindLivePlayerLinksWithin(highlights);
   }
   function flushLiveActionNarrationsUpTo(seconds){
     const limit = Number(seconds || 0);
@@ -195,6 +242,7 @@
       if(!item || liveSeenActionNarrationKeys.has(item.key)) continue;
       liveSeenActionNarrationKeys.add(item.key);
       liveCommentaryHistory.push(item);
+      if(item.highlight && !liveHighlightedHistory.some(entry => entry.key === item.key)) liveHighlightedHistory.push(item);
       changed = true;
     }
     if(changed) refreshLiveCommentaryHistoryOnly();
@@ -229,6 +277,7 @@
         : '';
       return { tone:'final', title:'Final del partido', text:`Resultado final: ${h} - ${a}.${shootoutText}`, sub:shootout ? 'La tanda no modifica los goles ni las estadísticas del partido.' : 'Ya podés cerrar y guardar el resultado.' };
     }
+    if(Array.isArray(liveState?.continuousResults) && liveState.continuousResults.length) return null;
     if(latest && latest.minute === minute){
       const playerId = latest.data?.playerId || latest.data?.inId || latest.data?.outId || 0;
       const player = typeof playerById === 'function' ? playerById(playerId) : null;
@@ -242,7 +291,6 @@
         : fallback;
       return { tone:`event-${latest.type}`, title:`Minuto ${minute}'`, text, sub:latest.text };
     }
-    if(Array.isArray(liveState?.continuousResults) && liveState.continuousResults.length) return null;
     const stats = liveState?.matchStats || {};
     const hStats = stats.home || {}, aStats = stats.away || {};
     const hPressure = Number(hStats.attacks || 0) + Number(hStats.chances || 0) * 3 + Number(hStats.possession || 50) / 12;
@@ -276,7 +324,17 @@
   function liveCommentaryHistoryMarkup(){
     const items = liveCommentaryHistory.slice().reverse();
     if(!items.length) return '<p class="muted small">Todavía no hay relatos.</p>';
-    return items.map(item => `<div class="live-event commentary ${ehtml(item.tone)}"><span>${ehtml(item.time)}</span><i>◉</i><span class="live-event-source">REL</span><strong><b>${ehtml(item.title)}</b> · ${ehtml(item.text)}${item.sub ? `<small>${ehtml(item.sub)}</small>` : ''}</strong></div>`).join('');
+    return items.map(item => {
+      if(Array.isArray(item.segments)){
+        return `<div class="live-event commentary ${ehtml(item.tone)}"><span class="live-event-time">${ehtml(item.time)}</span><span class="live-event-badge">${item.clubId ? liveBadge(item.clubId) : ''}</span><strong>${liveNarrationSegmentsMarkup(item.segments)}</strong>${item.endingIcon ? `<i class="live-action-ending" title="Resultado de la jugada">${ehtml(item.endingIcon)}</i>` : '<i class="live-action-ending empty"></i>'}</div>`;
+      }
+      return `<div class="live-event commentary system ${ehtml(item.tone)}"><span class="live-event-time">${ehtml(item.time)}</span><span class="live-event-badge"></span><strong>${ehtml(item.text || item.title || '')}</strong><i class="live-action-ending empty"></i></div>`;
+    }).join('');
+  }
+  function liveHighlightedEventsMarkup(){
+    const items = liveHighlightedHistory.slice().reverse();
+    if(!items.length) return '<p class="muted small">Todavía no hay jugadas destacadas.</p>';
+    return items.map(item => `<div class="live-event highlight ${ehtml(item.highlight || '')}"><span>${ehtml(item.time)}</span><span class="live-event-badge">${item.clubId ? liveBadge(item.clubId) : ''}</span><strong>${item.highlightLabel ? `<b>${ehtml(item.highlightLabel)}</b> · ` : ''}${liveNarrationSegmentsMarkup(item.segments)}</strong><i>${ehtml(item.endingIcon || '•')}</i></div>`).join('');
   }
   function meterClass(value){ const n = Number(value || 0); return n >= 76 ? 'ok' : n >= 55 ? 'warn' : 'bad'; }
   function fitClass(value){ const n = Number(value || 0); return n >= 90 ? 'ok' : n >= 74 ? 'warn' : 'bad'; }
@@ -329,7 +387,9 @@
       repeatIcon('👟', ev.assists),
       repeatIcon('🟨', ev.yellow),
       repeatIcon('🟥', ev.red),
-      repeatIcon('✚', ev.injuries, 1)
+      repeatIcon('✚', ev.injuries, 1),
+      repeatIcon('⇧', ev.subIn, 1),
+      repeatIcon('⇩', ev.subOut, 1)
     ].filter(Boolean).join('');
     return icons ? `<span class="live-player-icons" title="Estados del partido">${icons}</span>` : '';
   }
@@ -435,17 +495,34 @@
   function liveCompareClubColor(clubId, fallback){
     const raw = typeof clubById === 'function' ? clubById(clubId)?.primaryColor : null;
     let rgb = typeof parseCssColorToRgb === 'function' ? parseCssColorToRgb(raw) : null;
+    if(!rgb) rgb = typeof parseCssColorToRgb === 'function' ? parseCssColorToRgb(fallback) : null;
     if(!rgb) return fallback;
     if(typeof rgbLuminance === 'function' && rgbLuminance(rgb) > 0.84 && typeof mixRgb === 'function') rgb = mixRgb(rgb, [100,116,139], 0.58);
     return typeof rgbToCss === 'function' ? rgbToCss(rgb) : fallback;
+  }
+  function liveColorDistance(a,b){
+    const ra = typeof parseCssColorToRgb === 'function' ? parseCssColorToRgb(a) : null;
+    const rb = typeof parseCssColorToRgb === 'function' ? parseCssColorToRgb(b) : null;
+    if(!ra || !rb) return 999;
+    return Math.sqrt(ra.reduce((sum, value, index) => sum + Math.pow(Number(value || 0) - Number(rb[index] || 0), 2), 0));
+  }
+  function liveContrastColorPair(homeId, awayId){
+    let home = liveCompareClubColor(homeId, '#e11d48');
+    let away = liveCompareClubColor(awayId, '#60a5fa');
+    if(liveColorDistance(home, away) < 115){
+      const alternatives = ['#38bdf8','#facc15','#22c55e','#f97316','#e879f9','#f8fafc'];
+      away = alternatives.slice().sort((a,b)=>liveColorDistance(home,b)-liveColorDistance(home,a))[0] || '#facc15';
+    }
+    return { home, away };
   }
   function compareStatsCard(){
     const match = liveState.match || {};
     const h = liveState.matchStats?.home || {};
     const a = liveState.matchStats?.away || {};
     const awayPoss = Number(a.possession ?? (100 - Number(h.possession || 50)));
-    const homeColor = liveCompareClubColor(match.homeId, '#e11d48');
-    const awayColor = liveCompareClubColor(match.awayId, '#60a5fa');
+    const colors = liveContrastColorPair(match.homeId, match.awayId);
+    const homeColor = colors.home;
+    const awayColor = colors.away;
     return `<div class="card inner live-compare-card" style="--live-home-color:${ehtml(homeColor)};--live-away-color:${ehtml(awayColor)}">
       <div class="live-compare-top"><span>${liveBadge(match.homeId)} ${ehtml(liveClubName(match.homeId))}</span><b>Estadísticas del partido</b><span>${ehtml(liveClubName(match.awayId))} ${liveBadge(match.awayId)}</span></div>
       ${compareStatRow('Intentos de ataque', h.attacks || 0, a.attacks || 0)}
@@ -541,6 +618,16 @@
       <div class="live-board-field">${rows}</div>
     </section>`;
   }
+  function livePlayerQuickView(){
+    const playerId = Number(liveInspectPlayerId || 0);
+    if(!playerId) return '';
+    const p = typeof playerById === 'function' ? playerById(playerId) : null;
+    if(!p) return '';
+    const overall = typeof visibleOverall === 'function' ? visibleOverall(p) : Number(p.overall || p.media || 0);
+    const cond = Math.round(Number(p.condition ?? p.estadoFisico ?? 0));
+    const morale = Math.round(Number(p.morale ?? p.moral ?? 0));
+    return `<div class="live-player-quick-overlay" role="dialog" aria-modal="true" aria-label="Jugador ${ehtml(p.name || '')}"><section class="live-player-quick-card"><button type="button" class="ghost mini" data-close-live-player>Cerrar</button><div class="live-player-quick-head">${typeof faceImg === 'function' ? faceImg(p,'player-photo-placeholder') : ''}<div><p class="label">${liveBadge(p.clubId)} ${ehtml(liveClubName(p.clubId))}</p><h3>${ehtml(p.name || 'Jugador')}</h3><p class="muted small">${ehtml(p.nationality || '')} · ${ehtml(p.position || '')} · ${Number(p.age || 0)} años</p></div></div><div class="live-player-quick-metrics"><div><span>Media</span><strong>${ehtml(overall)}</strong></div><div><span>Físico</span><strong>${cond || '—'}</strong></div><div><span>Moral</span><strong>${morale || '—'}</strong></div></div></section></div>`;
+  }
   function renderLiveMatch(){
     if(!liveState) return;
     const match = liveState.match || {};
@@ -552,7 +639,6 @@
     const events = liveEvents();
     const narration = liveNarration(events);
     rememberLiveNarration(narration);
-    const recentEvents = events.slice().reverse();
     const html = `<div class="live-match-shell live-v512 live-v517">
       <div class="match-modal-head live-match-head">
         <div class="live-head-left"><p class="label">${match.friendly ? 'Simulación viva · Amistoso' : 'Simulación viva · Fecha'} ${ehtml(match.matchday || '—')} · ${ehtml(match.date || '')}</p><h2>${liveBadge(match.homeId)} ${ehtml(homeTitle)} <span class="live-score">${Number(liveState.homeGoals || 0)} - ${Number(liveState.awayGoals || 0)}</span> ${ehtml(awayTitle)} ${liveBadge(match.awayId)}</h2></div>
@@ -570,8 +656,8 @@
           </div>
           ${compareStatsCard()}
           <div class="card inner live-events-card">
-            <div class="live-card-head"><h3>Eventos</h3><span class="muted small">últimos arriba</span></div>
-            <div class="live-events-list">${recentEvents.length ? recentEvents.map(ev => `<div class="live-event ${ehtml(ev.type)}"><span>${ev.minute}'</span><i>${eventIcon(ev.type)}</i>${liveBadge(ev.clubId)}<strong>${ehtml(ev.text)}</strong></div>`).join('') : '<p class="muted small">Todavía no hay eventos relevantes.</p>'}</div>
+            <div class="live-card-head"><h3>Eventos</h3><span class="muted small">jugadas destacadas · últimos arriba</span></div>
+            <div class="live-events-list live-highlight-events-list">${liveHighlightedEventsMarkup()}</div>
           </div>
           <div class="card inner compact-match-context live-context-compact">
             <div><span>Clima</span><strong>${ehtml(liveState.matchContext?.weather || '—')}</strong></div>
@@ -583,6 +669,7 @@
         ${liveTeamPanel('away')}
       </div>
       ${liveManagerPanel()}
+      ${livePlayerQuickView()}
     </div>`;
     const root = document.querySelector('#liveMatchRoot');
     if(root){
@@ -673,8 +760,10 @@
     while(liveSession && !liveSession.finished && guard < 140){
       const substitutions = first ? livePendingSubstitutions.slice() : [];
       const stateOrResult = window.Simulator20.simulateLiveBlock(liveSession, { instruction:liveSelectedInstruction, substitutions });
-      if(stateOrResult?.played){ liveState = window.Simulator20.livePublicState(liveSession); liveState.finished = true; break; }
+      if(stateOrResult?.played){ liveState = window.Simulator20.livePublicState(liveSession); queueLiveActionNarrations(liveState?.continuousResults || []); flushLiveActionNarrationsUpTo(liveClockTargetSeconds()); liveState.finished = true; break; }
       liveState = stateOrResult || window.Simulator20.livePublicState(liveSession);
+      queueLiveActionNarrations(liveState?.continuousResults || []);
+      flushLiveActionNarrationsUpTo(liveClockTargetSeconds());
       livePendingSubstitutions = [];
       first = false;
       guard += 1;
@@ -690,6 +779,14 @@
     liveShowNotice('Partido terminado. Estadísticas completas disponibles.', false);
   }
   function bindLiveControls(){
+    bindLivePlayerLinksWithin(document);
+    document.querySelector('[data-close-live-player]')?.addEventListener('click', event => {
+      event.preventDefault(); event.stopPropagation();
+      const resume = liveInspectResumeAfterClose;
+      liveInspectPlayerId = 0; liveInspectResumeAfterClose = false;
+      if(resume && !liveState?.finished){ livePaused = false; renderLiveMatch(); animateLiveClockToState(); runAutoMode(); }
+      else renderLiveMatch();
+    });
     document.querySelectorAll('[data-live-instruction]').forEach(btn => btn.addEventListener('click', () => { liveSelectedInstruction = btn.getAttribute('data-live-instruction') || 'none'; renderLiveMatch(); }));
     document.querySelectorAll('#liveFormationSelect').forEach(select => select.addEventListener('change', (ev) => {
       const value = ev.target.value;
@@ -744,7 +841,7 @@
       window.__activeCompetitionSuspensionMatch = null;
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
-      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set();
+      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false;
       resetLiveSelections(); clearTimeout(liveAutoTimer); stopLiveClockAnimation(); liveDisplayedClockSeconds = 0;
     });
   }
@@ -757,7 +854,7 @@
   function start(match, options={}){
     if(!match || !window.Simulator20?.createLiveMatchSession) return false;
     clearTimeout(liveAutoTimer);
-    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); resetLiveSelections();
+    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; resetLiveSelections();
     liveSession = typeof withCompetitionSuspensionContext === 'function'
       ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
       : window.Simulator20.createLiveMatchSession(match);
