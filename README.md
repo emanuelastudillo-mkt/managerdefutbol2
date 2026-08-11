@@ -1,4 +1,8 @@
-# Una Vida de Mánager · V9.82
+# Una Vida de Mánager · V9.83
+
+Versión centrada en la legibilidad del simulador vivo. Corrige el visor ampliado de Relato y agrega dos modos de reproducción: Jugadas importantes y Partido completo. Las 540 fases y el resultado del motor no cambian.
+
+## Historial inmediato · V9.82
 
 ## Administración · banco de simulación de 10 partidos
 

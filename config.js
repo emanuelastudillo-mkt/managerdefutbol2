@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V9.82',
+  version: 'V9.83',
   marca: {
     nombre: 'Una vida de manager',
     nombreCorto: 'Una vida de manager',
