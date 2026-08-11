@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V9.91',
+  version: 'V9.92',
   marca: {
     nombre: 'Una vida de manager',
     nombreCorto: 'Una vida de manager',
@@ -1242,6 +1242,13 @@ window.GAME_CONFIG = {
         margenLineaOffside: 0.85,
         movimientoPostAccion: 0.66,
         pesoAmenazaDestino: 42,
+        // V9.92: más paredes/circulación corta dentro de la misma zona conforme madura la posesión.
+        bonusPaseCortoMismaZonaBase: 0.18,
+        bonusPaseCortoMismaZonaProgresion: 0.75,
+        bonusReceptorMismaZona: 26,
+        // V9.92: los jugadores ubicados como DC/EI/ED intentan más regates y remates.
+        multiplicadorRegateDelanteros: 1.55,
+        multiplicadorTiroDelanteros: 1.75,
         escalaLogitPase: 9.5,
         escalaLogitRegate: 8.5,
         xgMaximo: 0.58

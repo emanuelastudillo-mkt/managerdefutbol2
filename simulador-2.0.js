@@ -187,6 +187,12 @@
         offsideLineMargin:simClamp(Number(newV1.margenLineaOffside ?? 0.85),0.20,3.00),
         postActionMovement:simClamp(Number(newV1.movimientoPostAccion ?? 0.66),0.10,1.50),
         threatTargetWeight:simClamp(Number(newV1.pesoAmenazaDestino ?? 42),0,100),
+        // V9.92: circulación corta por zona y sesgo ofensivo de los delanteros.
+        sameZoneShortPassBase:simClamp(Number(newV1.bonusPaseCortoMismaZonaBase ?? 0.18),0,1.50),
+        sameZoneShortPassProgress:simClamp(Number(newV1.bonusPaseCortoMismaZonaProgresion ?? 0.75),0,2.50),
+        sameZoneReceiverBonus:simClamp(Number(newV1.bonusReceptorMismaZona ?? 26),0,80),
+        attackerDribbleMultiplier:simClamp(Number(newV1.multiplicadorRegateDelanteros ?? 1.55),1,3),
+        attackerShotMultiplier:simClamp(Number(newV1.multiplicadorTiroDelanteros ?? 1.75),1,3),
         passLogitScale:simClamp(Number(newV1.escalaLogitPase ?? 9.5),3,25),
         dribbleLogitScale:simClamp(Number(newV1.escalaLogitRegate ?? 8.5),3,25),
         xgMax:simClamp(Number(newV1.xgMaximo ?? 0.58),0.20,0.85)
@@ -2302,6 +2308,20 @@
     );
     return { active,targetPasses,passQuality,qualityEdge,midfielders,securityBonus,build,liveInstruction,scoreInstruction };
   }
+  // V9.92 · La circulación corta gana peso dentro de la misma zona a medida que madura la posesión.
+  function continuousSequenceProgressV992(state){
+    const cfg = CONTINUOUS_MATCH_CONFIG_V974.newV1 || {};
+    const streak = simClamp(Number(state?.completedPassStreak || 0) / 6,0,1);
+    const advanceMax = Math.max(1,Number(cfg.progressiveBlockMax || 15));
+    const advance = simClamp(Number(state?.possessionAdvanceV990 || 0) / advanceMax,0,1);
+    return simClamp(streak*0.55 + advance*0.45,0,1);
+  }
+  function continuousSameZoneShortPassContextV992(state, attackingPower, carrier, candidates=[]){
+    const origin = continuousOriginForCarrierV974(state,carrier);
+    const originZone = continuousZoneV1(origin);
+    const sameZone = (candidates || []).filter(candidate => continuousZoneV1(candidate).id === originZone.id);
+    return { originZone, sameZone, sameCount:sameZone.length, progress:continuousSequenceProgressV992(state) };
+  }
   function continuousPossessionStreakWeightV981(state, profile, type, origin){
     if(!profile?.active || Number(profile.targetPasses || 0) <= 0) return 1;
     const streak = Math.max(0,Number(state.completedPassStreak || 0));
@@ -2345,7 +2365,22 @@
     if(type === 'cross') weight *= simClamp((origin.x-45)/30,0.35,1.6);
     if(type === 'pass_through') weight *= simClamp((100-origin.x)/65,0.55,1.45);
     if(type === 'pass_short' && action.candidates.length >= 3) weight *= 1.12;
+    // V9.92: si hay apoyos cortos en la misma zona, la secuencia tiende a circular entre ellos.
+    if(type === 'pass_short' && action.candidates?.length){
+      const zoneCtx = continuousSameZoneShortPassContextV992(state,attackingPower,carrier,action.candidates);
+      if(zoneCtx.sameCount > 0){
+        const cfgV1 = CONTINUOUS_MATCH_CONFIG_V974.newV1 || {};
+        const extraOptions = Math.min(0.24,Math.max(0,zoneCtx.sameCount-1)*0.08);
+        weight *= 1 + Number(cfgV1.sameZoneShortPassBase || 0.18) + Number(cfgV1.sameZoneShortPassProgress || 0.75)*zoneCtx.progress + extraOptions;
+      }
+    }
     if(type === 'pass_long' && !action.candidates.length) weight *= 0.05;
+    // V9.92: DC/EI/ED conservan más iniciativa individual cerca del arco rival.
+    if(continuousRoleGroupV1(carrier) === 'att'){
+      const cfgV1 = CONTINUOUS_MATCH_CONFIG_V974.newV1 || {};
+      if(type === 'dribble') weight *= Number(cfgV1.attackerDribbleMultiplier || 1.55);
+      if(type === 'shot') weight *= Number(cfgV1.attackerShotMultiplier || 1.75);
+    }
     // Nuevo V1: la decisión considera cuánto peligro espacial puede crear la acción.
     const threatBefore = continuousThreatValueV1(origin);
     let threatAfter = threatBefore;
@@ -2379,7 +2414,17 @@
     const condition = simClamp(Number(currentCondition(candidate.playerId) || 70),1,100)/100;
     const positionSkill = simAvg([matchSkill(candidate.player,'posicionamiento'),matchSkill(candidate.player,'serenidad')]);
     let score = 28 + freeSpace*34 + condition*10 + positionSkill*0.12;
-    if(actionType === 'pass_short') score += Math.max(0,34-dist)*1.1 + progress*0.28 - Math.max(0,progress-24)*0.45;
+    if(actionType === 'pass_short'){
+      score += Math.max(0,34-dist)*1.1 + progress*0.28 - Math.max(0,progress-24)*0.45;
+      // V9.92: el receptor que comparte la zona táctica con el poseedor gana prioridad conforme avanza la posesión.
+      const originZone = continuousZoneV1(origin);
+      const candidateZone = continuousZoneV1(candidate);
+      if(originZone.id === candidateZone.id){
+        const sequenceProgress = continuousSequenceProgressV992(state);
+        const sameZoneBonus = Number(CONTINUOUS_MATCH_CONFIG_V974.newV1?.sameZoneReceiverBonus || 26);
+        score += sameZoneBonus * (0.45 + sequenceProgress*0.85);
+      }
+    }
     if(actionType === 'pass_long') score += dist*0.38 + Math.max(0,progress)*0.62 - Math.max(0,dist-70)*1.2;
     if(actionType === 'pass_through') score += Math.max(0,progress)*1.35 + freeSpace*22 - Math.abs(candidate.y-50)*0.10;
     if(actionType === 'cross') score += candidate.x*0.52 + (100-Math.abs(candidate.y-50)*1.5)*0.16 + matchSkill(candidate.player,'cabezazo')*0.24 + matchSkill(candidate.player,'remate')*0.16;
