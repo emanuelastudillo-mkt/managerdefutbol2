@@ -179,6 +179,11 @@
         defenseShift:simClamp(Number(newV1.desplazamientoDefensa ?? 5),0,15),
         defenseCompactY:simClamp(Number(newV1.compactacionLateralDefensa ?? 0.34),0,0.80),
         pressers:Math.max(0,Math.min(4,Math.round(Number(newV1.presionJugadoresCercanos ?? 2)))),
+        progressiveBlockMax:simClamp(Number(newV1.avanceBloqueMaximo ?? 15),4,26),
+        progressivePassBase:simClamp(Number(newV1.avanceBloquePorPase ?? 0.70),0,3),
+        progressivePassFactor:simClamp(Number(newV1.avanceExtraPaseProgresivo ?? 0.13),0,0.40),
+        receptionRunMax:simClamp(Number(newV1.carreraRecepcionMax ?? 3.6),0,8),
+        postActionMovement:simClamp(Number(newV1.movimientoPostAccion ?? 0.66),0.10,1.50),
         threatTargetWeight:simClamp(Number(newV1.pesoAmenazaDestino ?? 42),0,100),
         passLogitScale:simClamp(Number(newV1.escalaLogitPase ?? 9.5),3,25),
         dribbleLogitScale:simClamp(Number(newV1.escalaLogitRegate ?? 8.5),3,25),
@@ -1957,13 +1962,65 @@
     const entries = continuousDynamicEntriesV1(state,power);
     return entries.find(entry => entry.slot === 'POR' || entry.player?.position === 'POR') || entries.slice().sort((a,b)=>a.x-b.x)[0] || null;
   }
-  function continuousMoveTeamShapeV1(state,power,hasBall){
+  function continuousProgressiveSupportAdvanceV990(state){
+    const cfg = CONTINUOUS_MATCH_CONFIG_V974.newV1 || {};
+    return simClamp(Number(state?.possessionAdvanceV990 || 0),0,Number(cfg.progressiveBlockMax || 15));
+  }
+  function continuousUpdatePossessionAdvanceV990(state,result){
+    if(!state || !result || !CONTINUOUS_MATCH_CONFIG_V974.newV1?.enabled) return;
+    const cfg = CONTINUOUS_MATCH_CONFIG_V974.newV1;
+    if(result.possessionChanged && !result.foul){
+      state.possessionAdvanceV990 = 0;
+      return;
+    }
+    if(!result.success) return;
+    const fromX = Number(result.fromPosition?.x ?? 50);
+    const toX = Number(result.toPosition?.x ?? fromX);
+    const progress = toX-fromX;
+    let delta = 0;
+    if(['pass_short','pass_long','pass_through','cross'].includes(String(result.type || ''))){
+      delta = Number(cfg.progressivePassBase || 0.70) + Math.max(0,progress)*Number(cfg.progressivePassFactor || 0.13) - Math.max(0,-progress)*0.11;
+      if(result.type === 'pass_through') delta += 1.15;
+      else if(result.type === 'pass_long' && progress > 8) delta += 0.55;
+      else if(result.type === 'cross') delta += 0.40;
+    }else if(result.type === 'dribble'){
+      delta = 0.95 + Math.max(0,progress)*0.09;
+    }
+    state.possessionAdvanceV990 = simClamp(Number(state.possessionAdvanceV990 || 0)+delta,0,Number(cfg.progressiveBlockMax || 15));
+  }
+  function continuousApplyReceptionRunV990(state,result){
+    if(!state || !result?.success || !['pass_short','pass_long','pass_through'].includes(String(result.type || ''))) return;
+    if(!state.ballPosition || Number(state.possessionTeamId || 0) !== Number(result.attackingClubId || 0)) return;
+    const cfg = CONTINUOUS_MATCH_CONFIG_V974.newV1 || {};
+    const fromX = Number(result.fromPosition?.x ?? state.ballPosition.x ?? 50);
+    const toX = Number(result.toPosition?.x ?? state.ballPosition.x ?? fromX);
+    const progress = toX-fromX;
+    if(progress <= 1.5) return;
+    let extra = 0.55 + progress*0.055;
+    if(result.type === 'pass_through') extra += 1.35;
+    else if(result.type === 'pass_long') extra += 0.45;
+    extra = simClamp(extra,0,Number(cfg.receptionRunMax || 3.6));
+    const nextX = simClamp(Number(state.ballPosition.x || toX)+extra,2,96.5);
+    const key = continuousPositionKeyV1(state.possessionTeamId,state.ballCarrierId);
+    const carrierPos = state.playerPositions?.[key];
+    state.ballPosition.x = nextX;
+    if(carrierPos) carrierPos.x = nextX;
+    result.receptionAdvance = Number(extra.toFixed(2));
+    result.toPosition = { x:Number(state.ballPosition.x),y:Number(state.ballPosition.y) };
+    const updatedZone = continuousZoneV1(result.toPosition);
+    const updatedThreat = continuousThreatValueV1(result.toPosition);
+    result.toZone = updatedZone.id;
+    result.xTAfter = Number(updatedThreat.toFixed(4));
+    result.xTGain = Number((updatedThreat-Number(result.xTBefore || 0)).toFixed(4));
+  }
+  function continuousMoveTeamShapeV1(state,power,hasBall,movementMultiplier=1){
     if(!state || !power || !CONTINUOUS_MATCH_CONFIG_V974.newV1?.enabled) return;
     const cfg = CONTINUOUS_MATCH_CONFIG_V974.newV1;
     const ball = continuousBallPointForClubV1(state,power.clubId);
     const build = normalizeBuildUpStyleV974(power?.tactic?.buildUpStyle);
     const counterActive = hasBall && Number(state.counterPhasesLeft || 0) > 0 && String(state.transitionType || '').includes('recovery');
     const styleAdvance = hasBall ? ({possession:0.76,direct:1.03,counter:counterActive?1.30:0.94,long_ball:0.88})[build] || 1 : 1;
+    const sequenceAdvance = continuousProgressiveSupportAdvanceV990(state);
     const entries = continuousEntriesV974(power);
     const current = entries.map(entry => {
       const key = continuousPositionKeyV1(power.clubId,entry.playerId);
@@ -1977,9 +2034,17 @@
       const base = {x:Number(entry.x),y:Number(entry.y)};
       let targetX = base.x, targetY = base.y;
       if(hasBall){
-        const progressShift = (Number(ball.x)-50)*0.12;
-        const roleWeight = ({gk:0.10,def:0.50,mid:0.78,am:0.98,att:1.02})[group] || 0.78;
-        targetX += (Number(cfg.attackShift || 8)*styleAdvance + progressShift)*roleWeight;
+        const progressShift = (Number(ball.x)-50)*0.14;
+        const roleWeight = ({gk:0.10,def:0.52,mid:0.82,am:1.00,att:1.03})[group] || 0.80;
+        const sequenceWeight = ({gk:0.05,def:0.46,mid:0.88,am:1.05,att:0.96})[group] || 0.82;
+        targetX += (Number(cfg.attackShift || 8)*styleAdvance + progressShift)*roleWeight + sequenceAdvance*sequenceWeight;
+
+        // La línea acompaña el balón: defensas pisan más arriba, medios ofrecen apoyo y atacantes atacan el siguiente espacio.
+        const followBehind = ({gk:78,def:42,mid:25,am:15,att:7})[group] ?? 25;
+        if(group !== 'gk') targetX = Math.max(targetX,Number(ball.x)-followBehind);
+        const maxAhead = ({def:9,mid:18,am:25,att:33})[group];
+        if(Number.isFinite(maxAhead)) targetX = Math.min(targetX,Number(ball.x)+maxAhead);
+
         let lateralWeight = ({gk:0.05,def:0.18,mid:0.30,am:0.36,att:0.28})[group] || 0.28;
         if(['LI','LD','MI','MD','EI','ED'].includes(role)) lateralWeight *= 0.55;
         targetY += (Number(ball.y)-base.y)*lateralWeight;
@@ -1987,11 +2052,20 @@
         if(group === 'att'){
           targetY += wave*(role === 'DC' ? 5.8 : 3.8);
           targetX += Math.max(0,wave)*(counterActive?4.6:2.8);
-        }else if(group === 'am') targetY += wave*2.0;
+        }else if(group === 'am'){
+          targetY += wave*2.0;
+          targetX += Math.max(0,wave)*1.2;
+        }else if(group === 'mid' && Number(ball.x) > 56){
+          targetX += Math.max(0,wave)*0.75;
+        }
+        if(['LI','LD'].includes(role) && Number(ball.x) > 58){
+          targetX += Math.min(4.5,(Number(ball.x)-58)*0.10);
+        }
       }else{
-        const retreatNeed = Number(cfg.defenseShift || 5) + (50-Number(ball.x))*0.16;
-        const roleWeight = ({gk:0.10,def:0.62,mid:0.82,am:0.72,att:0.46})[group] || 0.70;
-        targetX -= retreatNeed*roleWeight;
+        const retreatNeed = Number(cfg.defenseShift || 5) + (50-Number(ball.x))*0.17;
+        const roleWeight = ({gk:0.10,def:0.64,mid:0.84,am:0.73,att:0.46})[group] || 0.70;
+        const sequenceRetreatWeight = ({gk:0.03,def:0.62,mid:0.76,am:0.60,att:0.36})[group] || 0.60;
+        targetX -= retreatNeed*roleWeight + sequenceAdvance*sequenceRetreatWeight;
         const compact = Number(cfg.defenseCompactY || 0.34)*(({gk:0.10,def:0.72,mid:0.90,am:0.78,att:0.60})[group] || 0.75);
         targetY += (Number(ball.y)-base.y)*compact;
         if(pressCandidates.includes(key)){
@@ -2005,18 +2079,19 @@
       }
       targetX = simClamp(targetX,group === 'gk'?2:3,group === 'gk'?18:97);
       targetY = simClamp(targetY,4,96);
-      const lerp = Number(cfg.movementLerp || 0.38);
+      const baseLerp = Number(cfg.movementLerp || 0.38);
+      const lerp = simClamp(baseLerp*Number(movementMultiplier || 1),0.04,0.88);
       pos.x = Number(pos.x) + (targetX-Number(pos.x))*lerp;
       pos.y = Number(pos.y) + (targetY-Number(pos.y))*lerp;
       pos.baseX = base.x; pos.baseY = base.y; pos.slot = entry.slot; pos.slotIndex = entry.slotIndex;
       state.playerPositions[key] = pos;
     });
   }
-  function continuousUpdatePlayerPositionsV1(state,home,away){
+  function continuousUpdatePlayerPositionsV1(state,home,away,movementMultiplier=1){
     if(!CONTINUOUS_MATCH_CONFIG_V974.newV1?.enabled) return;
     continuousSyncPlayerPositionsV1(state,home,away);
-    continuousMoveTeamShapeV1(state,home,Number(state.possessionTeamId)===Number(home?.clubId));
-    continuousMoveTeamShapeV1(state,away,Number(state.possessionTeamId)===Number(away?.clubId));
+    continuousMoveTeamShapeV1(state,home,Number(state.possessionTeamId)===Number(home?.clubId),movementMultiplier);
+    continuousMoveTeamShapeV1(state,away,Number(state.possessionTeamId)===Number(away?.clubId),movementMultiplier);
   }
   function continuousPositionSnapshotV1(state){
     return Object.values(state?.playerPositions || {}).map(pos => {
@@ -2042,6 +2117,7 @@
     state.previousBallSlot = state.ballSlot;
     if(previousTeamId && previousTeamId !== nextTeamId){
       state.completedPassStreak = 0;
+      state.possessionAdvanceV990 = 0;
       state.possessionStartPhase = Number(state.phase || 0);
     }
     state.possessionTeamId = nextTeamId;
@@ -2050,7 +2126,13 @@
     state.ballPosition = ballPosition ? { x:simClamp(Number(ballPosition.x),0,100), y:simClamp(Number(ballPosition.y),0,100) } : { x:Number(entry.x), y:Number(entry.y) };
     state.transitionType = transition;
     if(transition === 'recovery') state.counterPhasesLeft = CONTINUOUS_MATCH_CONFIG_V974.counterPhases;
-    if(['kickoff','goalkeeper','goal_kick','restart'].includes(transition)) state.counterPhasesLeft = 0;
+    if(['kickoff','goalkeeper','goal_kick'].includes(transition)){
+      state.counterPhasesLeft = 0;
+      state.possessionAdvanceV990 = 0;
+    }else if(transition === 'restart'){
+      state.counterPhasesLeft = 0;
+      state.possessionAdvanceV990 = Number(state.possessionAdvanceV990 || 0) * 0.65;
+    }
     return true;
   }
   function continuousEnsureCarrierV974(state, home, away){
@@ -2464,6 +2546,7 @@
     if(result.foul){
       state.transitionType = 'restart';
       state.counterPhasesLeft = 0;
+      state.possessionAdvanceV990 = Number(state.possessionAdvanceV990 || 0) * 0.65;
       return;
     }
     if(result.type === 'shot'){
@@ -2491,11 +2574,15 @@
         state.completedPassStreak = Math.max(0,Number(state.completedPassStreak || 0)) + 1;
         result.completedPassStreakAfter = Number(state.completedPassStreak || 0);
         state.lastCompletedPass = { phase:state.phase,clubId:attackingPower.clubId,actorId:carrier.playerId,targetId:target.playerId,type:result.type };
+        continuousUpdatePossessionAdvanceV990(state,result);
+        continuousApplyReceptionRunV990(state,result);
         if(Number(target.x) < Number(context.origin.x)-8) state.counterPhasesLeft = 0;
       }else if(result.type === 'dribble'){
         const advance = simClamp(6 + continuousExecutionAbilityV974('dribble',carrier.player)/18,6,12);
         const nextPosition = { x:simClamp(Number(context.origin.x)+advance,0,96), y:simClamp(Number(context.origin.y)+(50-Number(context.origin.y))*0.12,3,97) };
         continuousSetCarrierV974(state,attackingPower.clubId,carrier,'possession',nextPosition);
+        result.toPosition = { ...nextPosition };
+        continuousUpdatePossessionAdvanceV990(state,result);
         state.lastCompletedPass = null;
       }
       return;
@@ -2571,7 +2658,7 @@
       version:'NEW-SIM-V1', phase:0,totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:0,
       homeId:Number(match.homeId),awayId:Number(match.awayId),
       possessionTeamId:null,ballCarrierId:null,ballSlot:null,previousBallSlot:null,ballPosition:null,playerPositions:{},
-      possessionStartPhase:0,transitionType:'kickoff',counterPhasesLeft:0,completedPassStreak:0,lastAction:null,lastResult:null,lastCompletedPass:null,
+      possessionStartPhase:0,transitionType:'kickoff',counterPhasesLeft:0,completedPassStreak:0,possessionAdvanceV990:0,lastAction:null,lastResult:null,lastCompletedPass:null,
       score:{home:0,away:0},context:context || {},rngState:continuousSeedForMatchV974(match),technicalLog:[]
     };
     continuousSyncPlayerPositionsV1(state,homePower,awayPower);
@@ -2606,6 +2693,8 @@
     continuousApplyActionV974(state,attackingPower,defendingPower,carrier,target,context,result);
     const nextPos = state.playerPositions?.[continuousPositionKeyV1(state.possessionTeamId,state.ballCarrierId)];
     if(nextPos && state.ballPosition){ nextPos.x=Number(state.ballPosition.x); nextPos.y=Number(state.ballPosition.y); }
+    // V9.90: tras la acción el bloque reacciona al nuevo punto del balón en la misma fase.
+    continuousUpdatePlayerPositionsV1(state,home,away,Number(CONTINUOUS_MATCH_CONFIG_V974.newV1?.postActionMovement || 0.66));
     result.playerPositions = continuousPositionSnapshotV1(state);
     result.ballAfter = state.ballPosition ? { ...state.ballPosition,clubId:Number(state.possessionTeamId || 0),playerId:Number(state.ballCarrierId || 0) } : null;
     continuousTechnicalLogV974(state,result,context);
@@ -2621,7 +2710,7 @@
     return { home:continuousBlockStatsV974(accumulator,'home'), away:continuousBlockStatsV974(accumulator,'away'), goals:accumulator.goals, keySaves:accumulator.keySaves, errors:accumulator.errors, results:accumulator.results, phases:accumulator.phaseCount };
   }
   function continuousEngineSummaryV974(state){
-    return { version:'NEW-SIM-V1',phases:Number(state?.phase || 0),totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:Number(state?.clockSeconds || 0),possessionTeamId:Number(state?.possessionTeamId || 0),ballCarrierId:Number(state?.ballCarrierId || 0),ballSlot:Number(state?.ballSlot ?? -1),ballPosition:state?.ballPosition?{...state.ballPosition}:null,playerPositions:continuousPositionSnapshotV1(state),transitionType:String(state?.transitionType || ''),completedPassStreak:Number(state?.completedPassStreak || 0),rngState:Number(state?.rngState || 0)>>>0,technicalLog:CONTINUOUS_MATCH_CONFIG_V974.technicalLog ? (state?.technicalLog || []).slice() : [] };
+    return { version:'NEW-SIM-V1',phases:Number(state?.phase || 0),totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:Number(state?.clockSeconds || 0),possessionTeamId:Number(state?.possessionTeamId || 0),ballCarrierId:Number(state?.ballCarrierId || 0),ballSlot:Number(state?.ballSlot ?? -1),ballPosition:state?.ballPosition?{...state.ballPosition}:null,playerPositions:continuousPositionSnapshotV1(state),transitionType:String(state?.transitionType || ''),completedPassStreak:Number(state?.completedPassStreak || 0),possessionAdvance:Number(state?.possessionAdvanceV990 || 0),rngState:Number(state?.rngState || 0)>>>0,technicalLog:CONTINUOUS_MATCH_CONFIG_V974.technicalLog ? (state?.technicalLog || []).slice() : [] };
   }
   function debugContinuousCoreV974(match,home,away,context={}){
     const state = continuousCreateMatchStateV974(match,home,away,context);

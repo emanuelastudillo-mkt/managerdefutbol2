@@ -168,3 +168,25 @@
 @media (prefers-reduced-motion:reduce){
   .live-v517 .live-pitch-player{animation:none!important;left:calc(var(--px) * 1%);top:calc(var(--py) * 1%);}
 }
+
+/* V9.90 · movimiento progresivo: el bloque acompaña la creación y las líneas avanzan con la posesión. */
+.live-v517 .live-pitch-player{
+  animation-name:livePitchPlayerMoveV990;
+  animation-duration:var(--move-ms,640ms);
+  animation-timing-function:cubic-bezier(.18,.72,.20,1);
+  animation-fill-mode:both;
+}
+.live-v517 .live-pitch-player.advancing{
+  box-shadow:0 3px 10px rgba(0,0,0,.36),inset 0 0 0 1px rgba(255,255,255,.10);
+}
+.live-v517 .live-pitch-ball:not(.static){
+  animation-duration:var(--ball-ms,520ms);
+}
+@keyframes livePitchPlayerMoveV990{
+  0%{left:calc(var(--from-px) * 1%);top:calc(var(--from-py) * 1%);transform:translate(-50%,-50%) scale(.985);opacity:.94}
+  68%{transform:translate(-50%,-50%) scale(1.012);opacity:1}
+  100%{left:calc(var(--px) * 1%);top:calc(var(--py) * 1%);transform:translate(-50%,-50%) scale(1);opacity:1}
+}
+@media (prefers-reduced-motion:reduce){
+  .live-v517 .live-pitch-player{animation:none!important;left:calc(var(--px) * 1%);top:calc(var(--py) * 1%);}
+}

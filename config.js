@@ -1232,6 +1232,12 @@ window.GAME_CONFIG = {
         desplazamientoDefensa: 5.0,
         compactacionLateralDefensa: 0.34,
         presionJugadoresCercanos: 2,
+        // V9.90: el bloque acompaña la construcción y avanza de forma acumulativa con los pases.
+        avanceBloqueMaximo: 15,
+        avanceBloquePorPase: 0.70,
+        avanceExtraPaseProgresivo: 0.13,
+        carreraRecepcionMax: 3.6,
+        movimientoPostAccion: 0.66,
         pesoAmenazaDestino: 42,
         escalaLogitPase: 9.5,
         escalaLogitRegate: 8.5,

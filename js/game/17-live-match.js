@@ -452,11 +452,17 @@
     if(Number(item?.defenderId || 0) === id) classes.push('defender');
     if(Number(item?.keeperId || 0) === id || role === 'POR') classes.push('keeper');
     const prev = previousPoint || point;
-    return `<button type="button" class="live-pitch-player ${sideClass} ${classes.join(' ')}" data-live-player-id="${id}" style="--from-px:${Number(prev.x).toFixed(2)};--from-py:${Number(prev.y).toFixed(2)};--px:${Number(point.x).toFixed(2)};--py:${Number(point.y).toFixed(2)}" title="${ehtml(liveActionPlayerName(id))} · ${ehtml(role)}"><span>${ehtml(eventPlayerLabel(id))}</span><small>${ehtml(role)}</small></button>`;
+    const moveDistance = Math.hypot(Number(point.x)-Number(prev.x),Number(point.y)-Number(prev.y));
+    const moveMs = Math.max(360,Math.min(920,Math.round(390+moveDistance*22)));
+    const forwardDelta = entry.side === 'away' ? Number(prev.x)-Number(point.x) : Number(point.x)-Number(prev.x);
+    if(forwardDelta > 1.35) classes.push('advancing');
+    return `<button type="button" class="live-pitch-player ${sideClass} ${classes.join(' ')}" data-live-player-id="${id}" style="--from-px:${Number(prev.x).toFixed(2)};--from-py:${Number(prev.y).toFixed(2)};--px:${Number(point.x).toFixed(2)};--py:${Number(point.y).toFixed(2)};--move-ms:${moveMs}ms" title="${ehtml(liveActionPlayerName(id))} · ${ehtml(role)}"><span>${ehtml(eventPlayerLabel(id))}</span><small>${ehtml(role)}</small></button>`;
   }
   function livePitchBallMarkup(fromPoint, toPoint, kind='action', staticBall=false){
     if(!fromPoint || !toPoint) return '';
-    return `<span class="live-pitch-ball ${ehtml(kind)} ${staticBall ? 'static' : ''}" style="--fx:${Number(fromPoint.x).toFixed(2)};--fy:${Number(fromPoint.y).toFixed(2)};--tx:${Number(toPoint.x).toFixed(2)};--ty:${Number(toPoint.y).toFixed(2)}" aria-hidden="true">●</span>`;
+    const distance = Math.hypot(Number(toPoint.x)-Number(fromPoint.x),Number(toPoint.y)-Number(fromPoint.y));
+    const ballMs = Math.max(260,Math.min(690,Math.round(270+distance*10)));
+    return `<span class="live-pitch-ball ${ehtml(kind)} ${staticBall ? 'static' : ''}" style="--fx:${Number(fromPoint.x).toFixed(2)};--fy:${Number(fromPoint.y).toFixed(2)};--tx:${Number(toPoint.x).toFixed(2)};--ty:${Number(toPoint.y).toFixed(2)};--ball-ms:${ballMs}ms" aria-hidden="true">●</span>`;
   }
   function livePitchDetail(item){
     const actor = item?.actorId ? eventPlayerLabel(item.actorId, true) : '';
@@ -520,7 +526,7 @@
   }
   function livePitchCardMarkup(){
     const activeCount = livePitchActivePlayers('home').length + livePitchActivePlayers('away').length;
-    return `<div class="card inner live-pitch-card"><div class="live-card-head"><h3>Cancha del Simulador V1</h3><span class="muted small">${activeCount} jugadores · posiciones calculadas por el motor</span></div><div id="liveAnimatedPitchStage">${livePitchStageMarkup()}</div><div class="live-pitch-legend"><span><i class="home"></i>Local</span><span><i class="away"></i>Visitante</span><span><b>⚽</b> Gol</span><span><b>↗</b> Errada</span><span><b>🛡️</b> Robo</span><span><b>🟨</b> Tarjeta</span><span><b>✚</b> Lesión</span></div></div>`;
+    return `<div class="card inner live-pitch-card"><div class="live-card-head"><h3>Cancha del Simulador V1.1</h3><span class="muted small">${activeCount} jugadores · posiciones calculadas por el motor</span></div><div id="liveAnimatedPitchStage">${livePitchStageMarkup()}</div><div class="live-pitch-legend"><span><i class="home"></i>Local</span><span><i class="away"></i>Visitante</span><span><b>⚽</b> Gol</span><span><b>↗</b> Errada</span><span><b>🛡️</b> Robo</span><span><b>🟨</b> Tarjeta</span><span><b>✚</b> Lesión</span></div></div>`;
   }
   function refreshLivePitchOnly(){
     const stage = document.querySelector('#liveAnimatedPitchStage');
