@@ -2281,6 +2281,8 @@
     const target = continuousChooseTargetV974(state,attackingPower,defendingPower,carrier,action);
     const context = continuousDefensiveContextV974(state,attackingPower,defendingPower,carrier,target,action.type);
     const result = continuousResolveActionV974(state,attackingPower,defendingPower,carrier,action,target,context,runtime);
+    result.phase = Number(state.phase || 0);
+    result.clockSeconds = Number(state.clockSeconds || 0);
     continuousApplyActionV974(state,attackingPower,defendingPower,carrier,target,context,result);
     continuousTechnicalLogV974(state,result,context);
     return { result,context,possessionAtStart };
@@ -2355,6 +2357,7 @@
       liveConditionDeltas:{},
       liveInstructionRecoveryProgress:{},
       instructionLog:[],
+      lastContinuousResults:[],
       finished:false
     };
     if(USE_CONTINUOUS_MATCH_ENGINE_V974){
@@ -2396,6 +2399,7 @@
   }
   function simulateLiveBlock(session, options={}){
     if(!session || session.finished) return null;
+    session.lastContinuousResults = [];
     const block = session.blocks[session.blockIndex];
     if(!block) return finishLiveMatchSession(session);
     const ownId = Number(game?.selectedClubId || 0);
@@ -2438,6 +2442,7 @@
         conditionResolver:id=>liveEffectiveCondition(session,id),
         liveInstructionByClub:{ [String(ownId)]:instruction }
       });
+      session.lastContinuousResults = (core.results || []).map(result => ({ ...result }));
       h = core.home;
       a = core.away;
       (core.goals || []).forEach(goal=>session.goals.push(goal));
@@ -2603,6 +2608,7 @@
       continuousSecondsPerPhase:session.continuousV974 ? CONTINUOUS_MATCH_CONFIG_V974.secondsPerPhase : 0,
       continuousBallCarrierId:Number(session.continuousV974?.ballCarrierId || 0),
       continuousPossessionTeamId:Number(session.continuousV974?.possessionTeamId || 0),
+      continuousResults:(session.lastContinuousResults || []).map(result => ({ ...result })),
       phaseLabel:(session.blocks[Math.max(0, Number(session.blockIndex || 0) - 1)] || {}).label || `0'`,
       finished:Boolean(session.finished),
       nextBlock:session.blocks[session.blockIndex] || null,

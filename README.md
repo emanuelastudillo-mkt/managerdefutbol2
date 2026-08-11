@@ -1,3 +1,19 @@
+# V9.77 · Relatos con jugadores y ritmo de lectura x2
+
+Ajuste de presentación del motor continuo de 360 fases.
+
+- Cada fase del motor puede alimentar el Relato en vivo con los jugadores concretos que intervienen.
+- Se narran pase corto, pase largo, pase profundo, centro, regate y remate.
+- En acciones fallidas se identifica al defensor que intercepta, bloquea o gana el duelo cuando existe.
+- En remates al arco se identifica al arquero cuando corresponde.
+- Los relatos de las cuatro fases de cada minuto aparecen sincronizados con el reloj en :15, :30, :45 y :00; no se muestran todos de golpe.
+- El avance automático pasa de 840 ms a 1680 ms por minuto simulado: exactamente 2× más lento.
+- El reloj sigue avanzando segundo a segundo y las 360 fases siguen representando 90 minutos.
+- No cambia ninguna probabilidad, cansancio, tarjetas, lesiones, goles, posesión ni lógica del motor.
+- No modifica Worker, API ni D1.
+
+Ver `AJUSTES-V9.77.md`.
+
 # V9.76 · Reloj MM:SS sincronizado con las 360 fases
 
 Ajuste visual del simulador en vivo sobre V9.74.

@@ -9,6 +9,8 @@
   let liveDisplayedClockSeconds = 0;
   let liveCommentaryHistory = [];
   let liveLastCommentaryKey = '';
+  let livePendingActionNarrations = [];
+  let liveSeenActionNarrationKeys = new Set();
   let liveSelectedInstruction = 'none';
   let liveSelectedStarterId = 0;
   let liveSelectedBenchId = 0;
@@ -73,16 +75,18 @@
     if(options.instant || target <= liveDisplayedClockSeconds){
       liveDisplayedClockSeconds = target;
       syncLiveClockDom();
+      flushLiveActionNarrationsUpTo(liveDisplayedClockSeconds);
       return;
     }
     if(livePaused){ syncLiveClockDom(); return; }
-    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 840));
+    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 1680));
     const remaining = Math.max(1, target - liveDisplayedClockSeconds);
     const delay = Math.max(8, Math.min(40, Math.floor(autoDelay / Math.max(1, remaining))));
     liveClockTimer = setInterval(() => {
       if(livePaused){ stopLiveClockAnimation(); return; }
       liveDisplayedClockSeconds = Math.min(target, liveDisplayedClockSeconds + 1);
       syncLiveClockDom();
+      flushLiveActionNarrationsUpTo(liveDisplayedClockSeconds);
       if(liveDisplayedClockSeconds >= target) stopLiveClockAnimation();
     }, delay);
   }
@@ -119,6 +123,82 @@
   }
   function eventOrder(type){ return ({ goal:1, red:2, injury:3, yellow:4, save:5, error:6, sub:7 })[type] || 9; }
   function eventIcon(type){ return ({ goal:'⚽', yellow:'🟨', red:'🟥', injury:'✚', sub:'⇄', save:'🧤', error:'⚠️' })[type] || '•'; }
+  function liveActionPlayerName(id){
+    return id ? eventPlayerLabel(id, true) : 'un jugador';
+  }
+  function liveActionNarration(result){
+    if(!result || !result.type || !result.actorId) return null;
+    const actor = liveActionPlayerName(result.actorId);
+    const target = result.targetId ? liveActionPlayerName(result.targetId) : '';
+    const defender = result.defenderId ? liveActionPlayerName(result.defenderId) : '';
+    const keeperId = Number(result.shot?.keeper?.playerId || result.shot?.keySave?.playerId || 0);
+    const keeper = keeperId ? liveActionPlayerName(keeperId) : '';
+    const type = String(result.type || '');
+    const success = Boolean(result.success);
+    const foul = Boolean(result.foul);
+    let text = '';
+    if(type === 'pass_short'){
+      if(foul) text = `${actor} intenta jugar en corto${target ? ` con ${target}` : ''}, pero ${defender || 'un rival'} corta con falta.`;
+      else if(success) text = `${actor} toca en corto para ${target || 'un compañero'}.`;
+      else text = `${actor} busca a ${target || 'un compañero'} con un pase corto, pero ${defender || 'un rival'} intercepta.`;
+    }else if(type === 'pass_long'){
+      if(foul) text = `${actor} intenta un envío largo hacia ${target || 'un compañero'} y ${defender || 'un rival'} lo frena con falta.`;
+      else if(success) text = `${actor} lanza un pase largo hacia ${target || 'un compañero'} y encuentra destino.`;
+      else text = `${actor} busca en largo a ${target || 'un compañero'}, pero ${defender || 'un rival'} corta el envío.`;
+    }else if(type === 'pass_through'){
+      if(foul) text = `${actor} intenta filtrar para ${target || 'un compañero'} y ${defender || 'un rival'} interrumpe con falta.`;
+      else if(success) text = `${actor} filtra un pase profundo para ${target || 'un compañero'} y rompe una línea.`;
+      else text = `${actor} intenta un pase profundo para ${target || 'un compañero'}, pero ${defender || 'un rival'} anticipa.`;
+    }else if(type === 'cross'){
+      if(foul) text = `${actor} busca el centro para ${target || 'un compañero'} y ${defender || 'un rival'} corta con falta.`;
+      else if(success) text = `${actor} envía un centro buscando a ${target || 'un compañero'} y conecta la jugada.`;
+      else text = `${actor} tira el centro hacia ${target || 'el área'}, pero ${defender || 'un rival'} despeja.`;
+    }else if(type === 'dribble'){
+      if(foul) text = `${actor} encara a ${defender || 'su marcador'} y recibe la falta.`;
+      else if(success) text = defender ? `${actor} encara a ${defender} y logra superarlo.` : `${actor} avanza en conducción y gana metros.`;
+      else text = `${actor} intenta el regate, pero ${defender || 'un rival'} le gana el duelo y recupera.`;
+    }else if(type === 'shot'){
+      if(result.shot?.goal) text = `${actor} remata al arco y convierte el gol.`;
+      else if(result.shot?.blocked) text = `${actor} remata, pero ${defender || 'un defensor'} bloquea el disparo.`;
+      else if(result.shot?.onTarget) text = `${actor} remata al arco y ${keeper || 'el arquero'} contiene el disparo.`;
+      else text = `${actor} prueba al arco, pero el remate se va desviado.`;
+    }
+    if(!text) return null;
+    const seconds = Math.max(0, Math.min(5400, Number(result.clockSeconds || Number(result.phase || 0) * 15)));
+    return {
+      key:`action-${Number(result.phase || 0)}-${type}-${Number(result.actorId || 0)}-${Number(result.targetId || 0)}-${String(result.reason || '')}`,
+      clockSeconds:seconds,
+      time:liveClockText(seconds),
+      title:`Fase ${Number(result.phase || liveClockPhaseFromSeconds(seconds))}`,
+      text,
+      sub:'',
+      tone:`action-${type}`
+    };
+  }
+  function queueLiveActionNarrations(results){
+    (Array.isArray(results) ? results : []).forEach(result => {
+      const item = liveActionNarration(result);
+      if(!item || liveSeenActionNarrationKeys.has(item.key) || livePendingActionNarrations.some(current => current.key === item.key)) return;
+      livePendingActionNarrations.push(item);
+    });
+    livePendingActionNarrations.sort((a,b)=>Number(a.clockSeconds || 0)-Number(b.clockSeconds || 0));
+  }
+  function refreshLiveCommentaryHistoryOnly(){
+    const box = document.querySelector('.live-commentary-history-list');
+    if(box) box.innerHTML = liveCommentaryHistoryMarkup();
+  }
+  function flushLiveActionNarrationsUpTo(seconds){
+    const limit = Number(seconds || 0);
+    let changed = false;
+    while(livePendingActionNarrations.length && Number(livePendingActionNarrations[0].clockSeconds || 0) <= limit){
+      const item = livePendingActionNarrations.shift();
+      if(!item || liveSeenActionNarrationKeys.has(item.key)) continue;
+      liveSeenActionNarrationKeys.add(item.key);
+      liveCommentaryHistory.push(item);
+      changed = true;
+    }
+    if(changed) refreshLiveCommentaryHistoryOnly();
+  }
   function narrationFallback(event, player, club, rival){
     const p = player?.name || 'el jugador';
     if(event.type === 'goal') return `¡Gol de ${p}! ${club} golpea en el minuto ${event.minute}.`;
@@ -162,6 +242,7 @@
         : fallback;
       return { tone:`event-${latest.type}`, title:`Minuto ${minute}'`, text, sub:latest.text };
     }
+    if(Array.isArray(liveState?.continuousResults) && liveState.continuousResults.length) return null;
     const stats = liveState?.matchStats || {};
     const hStats = stats.home || {}, aStats = stats.away || {};
     const hPressure = Number(hStats.attacks || 0) + Number(hStats.chances || 0) * 3 + Number(hStats.possession || 50) / 12;
@@ -558,6 +639,7 @@
     const result = window.Simulator20.simulateLiveBlock(liveSession, { instruction:liveSelectedInstruction, substitutions });
     if(result?.played){ liveState = window.Simulator20.livePublicState(liveSession); liveState.finished = true; }
     else{ liveState = result || window.Simulator20.livePublicState(liveSession); }
+    queueLiveActionNarrations(liveState?.continuousResults || []);
     const ownInjuries = (liveState?.extra?.injuries || []).filter(injury => Number(injury.clubId || 0) === ownClubId());
     if(substitutions.length) livePendingSubstitutions = [];
     if(ownInjuries.length){
@@ -573,7 +655,10 @@
       clearTimeout(liveAutoTimer);
       liveShowNotice('Entretiempo: el partido queda pausado. Podés hacer cambios o ajustar instrucciones.', false);
     }
-    if(livePaused) liveDisplayedClockSeconds = liveClockTargetSeconds();
+    if(livePaused){
+      liveDisplayedClockSeconds = liveClockTargetSeconds();
+      flushLiveActionNarrationsUpTo(liveDisplayedClockSeconds);
+    }
     resetLiveSelections();
     renderLiveMatch();
     animateLiveClockToState();
@@ -659,20 +744,20 @@
       window.__activeCompetitionSuspensionMatch = null;
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
-      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = '';
+      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set();
       resetLiveSelections(); clearTimeout(liveAutoTimer); stopLiveClockAnimation(); liveDisplayedClockSeconds = 0;
     });
   }
   function runAutoMode(){
     clearTimeout(liveAutoTimer);
     if(livePaused || !liveSession || liveState?.finished) return;
-    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 840));
+    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 1680));
     liveAutoTimer = setTimeout(() => { simulateNextBlockFromUi(); runAutoMode(); }, autoDelay);
   }
   function start(match, options={}){
     if(!match || !window.Simulator20?.createLiveMatchSession) return false;
     clearTimeout(liveAutoTimer);
-    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; resetLiveSelections();
+    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); resetLiveSelections();
     liveSession = typeof withCompetitionSuspensionContext === 'function'
       ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
       : window.Simulator20.createLiveMatchSession(match);
