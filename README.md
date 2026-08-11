@@ -1,4 +1,4 @@
-# V9.75 · Reloj MM:SS sincronizado con las 360 fases
+# V9.76 · Reloj MM:SS sincronizado con las 360 fases
 
 Ajuste visual del simulador en vivo sobre V9.74.
 
@@ -12,3 +12,11 @@ Ajuste visual del simulador en vivo sobre V9.74.
 - No modifica Worker, API ni D1.
 
 Ver `AJUSTES-V9.75.md`.
+
+
+## V9.76 · Simulador continuo
+- Reloj visible segundo a segundo, acelerado y sincronizado con las fases de 15 segundos.
+- El partido arranca en reproducción automática; desaparece `Simular 1 minuto`.
+- Botón `Pausa` / `Reanudar` para detener o continuar el avance.
+- Relato en vivo convertido en historial con el mismo formato compacto de Eventos.
+- Relatos y eventos muestran hasta 5 filas visibles y luego usan scroll vertical.

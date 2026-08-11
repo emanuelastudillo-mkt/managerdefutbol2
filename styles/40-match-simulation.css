@@ -389,3 +389,8 @@
   .penalty-round-row{ grid-template-columns:42px minmax(0,1fr) minmax(0,1fr); gap:5px; }
   .penalty-kick{ font-size:.72rem; }
 }
+\n\n/* V9.76 · simulador continuo, reloj segundo a segundo e historiales compactos */\n.live-v517 .live-events-list,\n.live-v517 .live-commentary-history-list{\n  max-height:148px;\n  overflow-y:auto;\n  overscroll-behavior:contain;\n  scrollbar-gutter:stable;\n}\n.live-v517 .live-event{min-height:25px;}\n.live-v517 .live-event.commentary{grid-template-columns:36px 18px 24px minmax(0,1fr);}\n.live-v517 .live-event.commentary .live-event-source{\n  display:inline-flex;align-items:center;justify-content:center;\n  min-width:22px;height:16px;border-radius:999px;\n  font-size:6px;font-weight:800;letter-spacing:.04em;\n  color:var(--muted);background:rgba(148,163,184,.10);\n  border:1px solid rgba(148,163,184,.16);\n}\n.live-v517 .live-event.commentary strong{display:block;min-width:0;}\n.live-v517 .live-event.commentary strong b{font-size:8px;font-weight:700;color:var(--text);}\n.live-v517 .live-event.commentary strong small{display:block;margin-top:2px;color:var(--muted);font-size:7px;font-weight:500;}\n.live-v517 .live-bottom-controls .live-action-row{grid-template-columns:82px 90px 112px 122px;}\n.live-v517 #livePauseBtn{min-width:90px;}\n@media (max-width:760px){\n  .live-v517 .live-bottom-controls .live-action-row{grid-template-columns:1fr 1fr;}\n}\n.live-v517 .live-bottom-controls .live-action-row #liveFinishBtn{
+  grid-column:auto;
+  justify-self:stretch;
+  max-width:none;
+}
