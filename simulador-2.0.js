@@ -2157,6 +2157,31 @@
     const candidates = outfield.length ? outfield : continuousEntriesV974(power);
     return candidates.slice().sort((a,b) => (Math.abs(a.x-50)*1.4 + Math.abs(a.y-50)) - (Math.abs(b.x-50)*1.4 + Math.abs(b.y-50)))[0] || null;
   }
+  // V9.93 · al terminar el entretiempo, ambos equipos vuelven a su estructura de inicio.
+  function continuousPrepareSecondHalfV993(state,home,away){
+    if(!state || !home || !away) return false;
+    continuousSyncPlayerPositionsV1(state,home,away);
+    Object.values(state.playerPositions || {}).forEach(pos => {
+      pos.x = Number(pos.baseX ?? pos.x ?? 50);
+      pos.y = Number(pos.baseY ?? pos.y ?? 50);
+    });
+    const firstKickoff = Number(state.kickoffFirstTeamId || state.homeId);
+    const secondPower = firstKickoff === Number(home.clubId) ? away : home;
+    const carrier = continuousKickoffCarrierV974(secondPower);
+    state.completedPassStreak = 0;
+    state.possessionAdvanceV990 = 0;
+    state.counterPhasesLeft = 0;
+    state.lastAction = null;
+    state.lastResult = null;
+    state.lastCompletedPass = null;
+    state.transitionType = 'kickoff';
+    if(carrier){
+      continuousSetCarrierV974(state,secondPower.clubId,carrier,'kickoff',{x:50,y:50});
+      const key = continuousPositionKeyV1(secondPower.clubId,carrier.playerId);
+      if(state.playerPositions?.[key]){ state.playerPositions[key].x = 50; state.playerPositions[key].y = 50; }
+    }
+    return true;
+  }
   function continuousTeamPowerV974(state, home, away, clubId){ return Number(clubId) === Number(state.homeId) ? home : away; }
   function continuousOtherPowerV974(state, home, away, clubId){ return Number(clubId) === Number(state.homeId) ? away : home; }
   function continuousSideV974(state, clubId){ return Number(clubId) === Number(state.homeId) ? 'home' : 'away'; }
@@ -2746,12 +2771,13 @@
     const state = {
       version:'NEW-SIM-V1', phase:0,totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:0,
       homeId:Number(match.homeId),awayId:Number(match.awayId),
-      possessionTeamId:null,ballCarrierId:null,ballSlot:null,previousBallSlot:null,ballPosition:null,playerPositions:{},
+      possessionTeamId:null,ballCarrierId:null,ballSlot:null,previousBallSlot:null,ballPosition:null,playerPositions:{},kickoffFirstTeamId:null,
       possessionStartPhase:0,transitionType:'kickoff',counterPhasesLeft:0,completedPassStreak:0,possessionAdvanceV990:0,lastAction:null,lastResult:null,lastCompletedPass:null,
       score:{home:0,away:0},context:context || {},rngState:continuousSeedForMatchV974(match),technicalLog:[]
     };
     continuousSyncPlayerPositionsV1(state,homePower,awayPower);
     state.possessionTeamId = continuousRandomV974(state) < 0.5 ? state.homeId : state.awayId;
+    state.kickoffFirstTeamId = Number(state.possessionTeamId);
     const firstPower = Number(state.possessionTeamId) === state.homeId ? homePower : awayPower;
     const candidates = continuousDynamicEntriesV1(state,firstPower);
     const carrier = candidates.slice().filter(entry=>entry.slot!=='POR' && entry.player?.position!=='POR').sort((a,b)=>(Math.abs(a.x-50)*1.4+Math.abs(a.y-50))-(Math.abs(b.x-50)*1.4+Math.abs(b.y-50)))[0] || candidates[0];
@@ -2924,6 +2950,11 @@
       session.breakLog.push({ phase:block.phase, breakMinute:block.breakMinute, homeRecovered:Number(homeRecovered.toFixed(2)), awayRecovered:Number(awayRecovered.toFixed(2)) });
       session.instructionLog.push({ minute:45, to:45, instruction:'break', label:block.label });
       session.currentMinute = Number(block.matchMinute || 45);
+      if(Number(block.breakMinute || 0) >= 15 && session.continuousV974){
+        const pair = livePowerPair(session);
+        continuousPrepareSecondHalfV993(session.continuousV974,pair.home,pair.away);
+        session.lastContinuousResults = [];
+      }
       session.blockIndex += 1;
       if(session.blockIndex >= session.blocks.length) return finishLiveMatchSession(session);
       return livePublicState(session, { block, breakPhase:block.breakMinute, rest:true, homeRecovered, awayRecovered });

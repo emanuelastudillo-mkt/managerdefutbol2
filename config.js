@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V9.92',
+  version: 'V9.93',
   marca: {
     nombre: 'Una vida de manager',
     nombreCorto: 'Una vida de manager',
@@ -1573,6 +1573,10 @@ window.GAME_CONFIG = {
     duracionMinimaFaseSimulacionMs: 3000,
     // Simulador vivo: demora entre cada minuto de reproducción continua.
     simulacionVivaAutoMs: 3360,
+    // V9.93: el entretiempo se reproduce comprimido; entrada/salida y espera del pitido tienen tiempos propios.
+    simulacionVivaDescansoAutoMs: 180,
+    simulacionVivaEntradaSalidaCampoMs: 1180,
+    simulacionVivaEsperaPitidoMs: 650,
     relatoMantenerFases: 1,
     // Animación para acciones que pueden salir bien o fallar: tratar lesionados, charla motivacional, etc.
     accionesFeedbackCargaMs: 750,

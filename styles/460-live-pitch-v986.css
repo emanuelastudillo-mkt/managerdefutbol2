@@ -190,3 +190,30 @@
 @media (prefers-reduced-motion:reduce){
   .live-v517 .live-pitch-player{animation:none!important;left:calc(var(--px) * 1%);top:calc(var(--py) * 1%);}
 }
+
+
+/* V9.93 · ingreso/salida de equipos y entretiempo acelerado. */
+.live-v517 .live-pitch-player{
+  animation-delay:var(--move-delay-ms,0ms);
+}
+.live-v517 .live-pitch-player.ceremony{
+  pointer-events:none;
+  animation-timing-function:cubic-bezier(.24,.68,.22,1);
+}
+.live-v517 .live-pitch-player.leaving-field{
+  opacity:.98;
+}
+.live-v517 .live-animated-pitch.halftime-out .live-pitch-player{
+  visibility:hidden;
+}
+.live-v517 .live-animated-pitch.pregame-enter .live-pitch-status,
+.live-v517 .live-animated-pitch.pregame-ready .live-pitch-status,
+.live-v517 .live-animated-pitch.halftime-exit .live-pitch-status,
+.live-v517 .live-animated-pitch.halftime-out .live-pitch-status,
+.live-v517 .live-animated-pitch.halftime-enter .live-pitch-status,
+.live-v517 .live-animated-pitch.second-ready .live-pitch-status{
+  z-index:24;
+}
+@media (prefers-reduced-motion:reduce){
+  .live-v517 .live-pitch-player.ceremony{animation-delay:0ms!important;}
+}

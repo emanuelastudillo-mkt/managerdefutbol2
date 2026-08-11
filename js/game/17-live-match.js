@@ -24,6 +24,8 @@
   let liveSelectedBenchId = 0;
   let livePendingSubstitutions = [];
   let liveHalftimePaused = false;
+  let livePitchTransitionMode = '';
+  let livePitchTransitionTimer = null;
   let liveTacticOpen = false;
   let liveSelectedBoardSlot = -1;
 
@@ -51,6 +53,16 @@
     return ownSide() === 'home' ? (liveState?.homeBoardSlots || []) : (liveState?.awayBoardSlots || []);
   }
   function liveIsBreak(){ return liveState?.period === 'break' || liveState?.nextBlock?.period === 'break' || liveState?.lastBlock?.period === 'break'; }
+  function liveTransitionMs(key, fallback){
+    return Math.max(80, Number(window.GAME_CONFIG?.ui?.[key] || fallback));
+  }
+  function clearLivePitchTransitionTimer(){
+    if(livePitchTransitionTimer){ clearTimeout(livePitchTransitionTimer); livePitchTransitionTimer = null; }
+  }
+  function scheduleLivePitchTransition(callback, delay){
+    clearLivePitchTransitionTimer();
+    livePitchTransitionTimer = setTimeout(() => { livePitchTransitionTimer = null; callback(); }, Math.max(0, Number(delay || 0)));
+  }
   function liveClockTargetSeconds(){
     if(Number.isFinite(Number(liveState?.continuousClockSeconds))) return Math.max(0, Math.min(5400, Number(liveState.continuousClockSeconds || 0)));
     return Math.max(0, Math.min(5400, Number(liveState?.minute || 0) * 60));
@@ -345,6 +357,12 @@
     if(entry.side === 'away'){ x = 100 - x; y = 100 - y; }
     return { x:livePitchClamp(x,4,96), y:livePitchClamp(y,5,95) };
   }
+  function livePitchTunnelPoint(entry,index=0){
+    // Túnel visual: debajo del punto inferior de la línea central.
+    const sideOffset = entry?.side === 'away' ? 1.9 : -1.9;
+    const lane = ((Number(entry?.slotIndex ?? index) % 5) - 2) * 0.55;
+    return { x:50 + sideOffset + lane, y:108 + (Number(index || 0) % 3) * 0.7 };
+  }
   function livePitchEnginePoint(entry,item){
     const id = Number(entry?.id || 0);
     const clubId = Number(entry?.clubId || 0);
@@ -453,10 +471,15 @@
     if(Number(item?.keeperId || 0) === id || role === 'POR') classes.push('keeper');
     const prev = previousPoint || point;
     const moveDistance = Math.hypot(Number(point.x)-Number(prev.x),Number(point.y)-Number(prev.y));
-    const moveMs = Math.max(360,Math.min(920,Math.round(390+moveDistance*22)));
+    const transitionActive = ['pregame-enter','halftime-exit','halftime-enter'].includes(livePitchTransitionMode);
+    const moveMs = transitionActive
+      ? Math.max(900,Math.min(1450,Math.round(liveTransitionMs('simulacionVivaEntradaSalidaCampoMs',1180)+moveDistance*3)))
+      : Math.max(360,Math.min(920,Math.round(390+moveDistance*22)));
+    const moveDelayMs = transitionActive ? Math.min(260, Math.max(0, Number(entry?.slotIndex || 0)) * 20) : 0;
+    if(transitionActive) classes.push('ceremony', livePitchTransitionMode.includes('exit') ? 'leaving-field' : 'entering-field');
     const forwardDelta = entry.side === 'away' ? Number(prev.x)-Number(point.x) : Number(point.x)-Number(prev.x);
     if(forwardDelta > 1.35) classes.push('advancing');
-    return `<button type="button" class="live-pitch-player ${sideClass} ${classes.join(' ')}" data-live-player-id="${id}" style="--from-px:${Number(prev.x).toFixed(2)};--from-py:${Number(prev.y).toFixed(2)};--px:${Number(point.x).toFixed(2)};--py:${Number(point.y).toFixed(2)};--move-ms:${moveMs}ms" title="${ehtml(liveActionPlayerName(id))} · ${ehtml(role)}"><span>${ehtml(eventPlayerLabel(id))}</span><small>${ehtml(role)}</small></button>`;
+    return `<button type="button" class="live-pitch-player ${sideClass} ${classes.join(' ')}" data-live-player-id="${id}" style="--from-px:${Number(prev.x).toFixed(2)};--from-py:${Number(prev.y).toFixed(2)};--px:${Number(point.x).toFixed(2)};--py:${Number(point.y).toFixed(2)};--move-ms:${moveMs}ms;--move-delay-ms:${moveDelayMs}ms" title="${ehtml(liveActionPlayerName(id))} · ${ehtml(role)}"><span>${ehtml(eventPlayerLabel(id))}</span><small>${ehtml(role)}</small></button>`;
   }
   function livePitchBallMarkup(fromPoint, toPoint, kind='action', staticBall=false){
     if(!fromPoint || !toPoint) return '';
@@ -497,6 +520,8 @@
   function livePitchStageMarkup(item=livePitchVisual){
     const match = liveState?.match || {};
     const colors = liveContrastColorPair(match.homeId, match.awayId);
+    const transition = String(livePitchTransitionMode || '');
+    const transitionActive = Boolean(transition);
     const attackClubId = Number(item?.clubId || liveState?.continuousPossessionTeamId || match.homeId || 0);
     const fromPoint = item ? (item.absolutePoint || livePitchPerspectivePoint(item.fromPosition,attackClubId) || liveNominalPlayerPoint(item.actorId,attackClubId)) : livePitchCurrentBallPoint(null);
     const toPoint = item ? (item.absolutePoint || livePitchDestination(item,fromPoint)) : fromPoint;
@@ -504,29 +529,75 @@
     const specialPoints = livePitchSpecialPointMap(item,fromPoint,toPoint);
     const allEntries = livePitchActivePlayers('home').concat(livePitchActivePlayers('away'));
     const nextPositions = new Map();
-    const players = allEntries.map(entry => {
+    const players = allEntries.map((entry,index) => {
       const id = Number(entry.id || 0);
       const enginePoint = livePitchEnginePoint(entry,item);
       const tacticalPoint = enginePoint || livePitchTacticalPoint(entry,item,ballFocus);
-      const point = specialPoints.get(id) || tacticalPoint;
-      const previous = livePitchPreviousPositions.get(id) || livePitchBasePoint(entry);
+      const formationPoint = specialPoints.get(id) || tacticalPoint;
+      const tunnelPoint = livePitchTunnelPoint(entry,index);
+      let point = formationPoint;
+      let previous = livePitchPreviousPositions.get(id) || livePitchBasePoint(entry);
+
+      if(transition === 'pregame-enter' || transition === 'halftime-enter'){
+        point = formationPoint;
+        previous = tunnelPoint;
+      }else if(transition === 'halftime-exit'){
+        point = tunnelPoint;
+        previous = livePitchPreviousPositions.get(id) || formationPoint;
+      }else if(transition === 'halftime-out'){
+        point = tunnelPoint;
+        previous = tunnelPoint;
+      }else if(transition === 'pregame-ready' || transition === 'second-ready'){
+        point = formationPoint;
+        previous = formationPoint;
+      }
+
       nextPositions.set(id,point);
-      return livePitchPlayerMarkup(entry,point,previous,item);
+      return livePitchPlayerMarkup(entry,point,previous,transitionActive ? null : item);
     }).join('');
     livePitchPreviousPositions.clear();
     nextPositions.forEach((point,id)=>livePitchPreviousPositions.set(id,point));
-    const stateLabel = liveState?.finished ? 'FINAL' : (liveIsBreak() ? 'ENTRETIEMPO' : (item?.visualTitle || 'PARTIDO EN JUEGO'));
-    const stateDetail = liveState?.finished ? 'El partido terminó.' : (liveIsBreak() ? 'Los equipos están en descanso.' : (item ? livePitchDetail(item) : 'Los equipos mantienen su estructura táctica.'));
+
+    let stateLabel = liveState?.finished ? 'FINAL' : (liveIsBreak() ? 'ENTRETIEMPO' : (item?.visualTitle || 'PARTIDO EN JUEGO'));
+    let stateDetail = liveState?.finished ? 'El partido terminó.' : (liveIsBreak() ? 'Los equipos están en descanso.' : (item ? livePitchDetail(item) : 'Los equipos mantienen su estructura táctica.'));
+    let statusMetaOverride = '';
+    if(transition === 'pregame-enter'){
+      stateLabel = 'INGRESO AL CAMPO';
+      stateDetail = 'Los jugadores ingresan desde el túnel y ocupan sus posiciones.';
+      statusMetaOverride = 'Previa · el reloj todavía no corre';
+    }else if(transition === 'pregame-ready'){
+      stateLabel = 'A PUNTO DE COMENZAR';
+      stateDetail = 'Los equipos están ubicados para el saque inicial.';
+      statusMetaOverride = 'Esperando el pitido inicial';
+    }else if(transition === 'halftime-exit'){
+      stateLabel = 'ENTRETIEMPO';
+      stateDetail = 'Los jugadores se retiran por el túnel bajo la línea central.';
+      statusMetaOverride = '45:00 · salida al vestuario';
+    }else if(transition === 'halftime-out'){
+      const phase = Number(liveState?.breakPhase || liveState?.lastBlock?.breakMinute || 0);
+      stateLabel = `DESCANSO ${Math.max(1,phase)}/15`;
+      stateDetail = 'Los equipos están en vestuarios. El descanso avanza acelerado.';
+      statusMetaOverride = 'Entretiempo';
+    }else if(transition === 'halftime-enter'){
+      stateLabel = 'REGRESO AL CAMPO';
+      stateDetail = 'Los jugadores vuelven y se acomodan para el segundo tiempo.';
+      statusMetaOverride = '45:00 · regreso desde vestuarios';
+    }else if(transition === 'second-ready'){
+      stateLabel = 'SEGUNDO TIEMPO';
+      stateDetail = 'Los equipos están en sus posiciones para reanudar.';
+      statusMetaOverride = 'Esperando el pitido del segundo tiempo';
+    }
+
     const direction = attackClubId === Number(match.awayId) ? '←' : '→';
-    const specialNoBall = item && ['yellow','red','injury'].includes(String(item.visualKind || ''));
+    const specialNoBall = transitionActive || (item && ['yellow','red','injury'].includes(String(item.visualKind || '')));
     const ball = specialNoBall ? '' : livePitchBallMarkup(fromPoint || ballFocus,toPoint || ballFocus,item?.visualKind || 'action',!item);
-    const statusClass = item?.visualKind || 'neutral';
-    const statusMeta = item ? `${ehtml(item.time || liveClockText())} · ${direction} ${ehtml(liveClubName(attackClubId))}` : `${allEntries.length} jugadores en cancha · estado espacial real del motor`;
-    return `<div class="live-animated-pitch ${ehtml(item?.visualKind || 'idle')}" style="--pitch-home:${ehtml(colors.home)};--pitch-away:${ehtml(colors.away)}"><div class="live-pitch-markings"><i class="mid"></i><i class="circle"></i><i class="box left"></i><i class="box right"></i><i class="goal left"></i><i class="goal right"></i></div><div class="live-pitch-team-label home">${liveBadge(match.homeId)} ${ehtml(liveClubName(match.homeId))}</div><div class="live-pitch-team-label away">${ehtml(liveClubName(match.awayId))} ${liveBadge(match.awayId)}</div>${players}${ball}<div class="live-pitch-status ${ehtml(statusClass)}"><strong>${ehtml(stateLabel)}</strong><span>${ehtml(stateDetail)}</span><small>${statusMeta}</small></div></div>`;
+    const statusClass = transitionActive ? 'neutral' : (item?.visualKind || 'neutral');
+    const statusMeta = statusMetaOverride || (item ? `${ehtml(item.time || liveClockText())} · ${direction} ${ehtml(liveClubName(attackClubId))}` : `${allEntries.length} jugadores en cancha · estado espacial real del motor`);
+    return `<div class="live-animated-pitch ${ehtml(transitionActive ? transition : (item?.visualKind || 'idle'))}" style="--pitch-home:${ehtml(colors.home)};--pitch-away:${ehtml(colors.away)}"><div class="live-pitch-markings"><i class="mid"></i><i class="circle"></i><i class="box left"></i><i class="box right"></i><i class="goal left"></i><i class="goal right"></i></div><div class="live-pitch-team-label home">${liveBadge(match.homeId)} ${ehtml(liveClubName(match.homeId))}</div><div class="live-pitch-team-label away">${ehtml(liveClubName(match.awayId))} ${liveBadge(match.awayId)}</div>${players}${ball}<div class="live-pitch-status ${ehtml(statusClass)}"><strong>${ehtml(stateLabel)}</strong><span>${ehtml(stateDetail)}</span><small>${statusMeta}</small></div></div>`;
   }
   function livePitchCardMarkup(){
     const activeCount = livePitchActivePlayers('home').length + livePitchActivePlayers('away').length;
-    return `<div class="card inner live-pitch-card"><div class="live-card-head"><h3>Cancha del Simulador V1.1</h3><span class="muted small">${activeCount} jugadores · posiciones calculadas por el motor</span></div><div id="liveAnimatedPitchStage">${livePitchStageMarkup()}</div><div class="live-pitch-legend"><span><i class="home"></i>Local</span><span><i class="away"></i>Visitante</span><span><b>⚽</b> Gol</span><span><b>↗</b> Errada</span><span><b>🛡️</b> Robo</span><span><b>🟨</b> Tarjeta</span><span><b>✚</b> Lesión</span></div></div>`;
+    return `<div class="card inner live-pitch-card"><div class="live-card-head"><h3>Cancha del Simulador V1.2</h3><span class="muted small">${activeCount} jugadores · posiciones calculadas por el motor</span></div><div id="liveAnimatedPitchStage">${livePitchStageMarkup()}</div><div class="live-pitch-legend"><span><i class="home"></i>Local</span><span><i class="away"></i>Visitante</span><span><b>⚽</b> Gol</span><span><b>↗</b> Errada</span><span><b>🛡️</b> Robo</span><span><b>🟨</b> Tarjeta</span><span><b>✚</b> Lesión</span></div></div>`;
   }
   function refreshLivePitchOnly(){
     const stage = document.querySelector('#liveAnimatedPitchStage');
@@ -1059,9 +1130,78 @@
     if(!a || !b) return;
     swapSlots(Number(a.slotIndex), Number(b.slotIndex));
   }
+  function beginLiveHalftimeExitSequence(){
+    if(!liveSession || liveState?.finished) return;
+    liveHalftimePaused = true;
+    livePaused = true;
+    clearTimeout(liveAutoTimer);
+    stopLiveClockAnimation();
+    clearLivePitchTransitionTimer();
+    livePitchVisual = null;
+    livePitchTransitionMode = 'halftime-exit';
+    renderLiveMatch();
+    scheduleLivePitchTransition(() => {
+      if(!liveSession || liveState?.finished) return;
+      livePitchTransitionMode = 'halftime-out';
+      livePaused = false;
+      renderLiveMatch();
+      runAutoMode();
+    }, liveTransitionMs('simulacionVivaEntradaSalidaCampoMs',1180) + 320);
+  }
+  function beginLiveSecondHalfEntrySequence(){
+    if(!liveSession || liveState?.finished) return;
+    livePaused = true;
+    clearTimeout(liveAutoTimer);
+    stopLiveClockAnimation();
+    clearLivePitchTransitionTimer();
+    livePitchVisual = null;
+    livePitchPreviousPositions.clear();
+    livePitchTransitionMode = 'halftime-enter';
+    renderLiveMatch();
+    scheduleLivePitchTransition(() => {
+      if(!liveSession || liveState?.finished) return;
+      livePitchTransitionMode = 'second-ready';
+      renderLiveMatch();
+      scheduleLivePitchTransition(() => {
+        if(!liveSession || liveState?.finished) return;
+        livePitchTransitionMode = '';
+        liveHalftimePaused = false;
+        livePaused = false;
+        renderLiveMatch();
+        animateLiveClockToState({ instant:true });
+        runAutoMode();
+      }, liveTransitionMs('simulacionVivaEsperaPitidoMs',650));
+    }, liveTransitionMs('simulacionVivaEntradaSalidaCampoMs',1180) + 320);
+  }
+  function beginLivePregameEntrySequence(){
+    if(!liveSession || liveState?.finished) return;
+    livePaused = true;
+    clearTimeout(liveAutoTimer);
+    stopLiveClockAnimation();
+    clearLivePitchTransitionTimer();
+    livePitchVisual = null;
+    livePitchPreviousPositions.clear();
+    livePitchTransitionMode = 'pregame-enter';
+    renderLiveMatch();
+    scheduleLivePitchTransition(() => {
+      if(!liveSession || liveState?.finished) return;
+      livePitchTransitionMode = 'pregame-ready';
+      renderLiveMatch();
+      scheduleLivePitchTransition(() => {
+        if(!liveSession || liveState?.finished) return;
+        livePitchTransitionMode = '';
+        livePaused = false;
+        renderLiveMatch();
+        animateLiveClockToState({ instant:true });
+        runAutoMode();
+        liveShowNotice('Pitido inicial. Partido en marcha.', false);
+      }, liveTransitionMs('simulacionVivaEsperaPitidoMs',650));
+    }, liveTransitionMs('simulacionVivaEntradaSalidaCampoMs',1180) + 320);
+  }
   function simulateNextBlockFromUi(){
     if(!liveSession || liveState?.finished) return;
-    const wasBeforeBreak = liveState?.nextBlock?.period !== 'break' && liveState?.period !== 'break';
+    const simulatingBreak = liveState?.nextBlock?.period === 'break';
+    const wasBeforeBreak = !simulatingBreak && liveState?.period !== 'break';
     const substitutions = livePendingSubstitutions.slice();
     const result = window.Simulator20.simulateLiveBlock(liveSession, { instruction:liveSelectedInstruction, substitutions });
     if(result?.played){ liveState = window.Simulator20.livePublicState(liveSession); liveState.finished = true; }
@@ -1078,10 +1218,15 @@
       liveShowNotice(canSub ? `${injuredName} queda lesionado en cancha. Tocá al lesionado y luego un suplente para reemplazarlo.` : `${injuredName} queda lesionado en cancha, pero ya no quedan cambios.`, false);
     }
     if(wasBeforeBreak && liveState?.nextBlock?.period === 'break' && !liveHalftimePaused){
-      livePaused = true;
-      liveHalftimePaused = true;
-      clearTimeout(liveAutoTimer);
-      liveShowNotice('Entretiempo: el partido queda pausado. Podés hacer cambios o ajustar instrucciones.', false);
+      resetLiveSelections();
+      beginLiveHalftimeExitSequence();
+      liveShowNotice('Entretiempo. Los jugadores se retiran al vestuario.', false);
+      return;
+    }
+    if(simulatingBreak && liveState?.nextBlock?.period === 'second') {
+      resetLiveSelections();
+      beginLiveSecondHalfEntrySequence();
+      return;
     }
     if(livePaused){
       liveDisplayedClockSeconds = liveClockTargetSeconds();
@@ -1180,6 +1325,7 @@
     document.querySelector('#liveTacticBtn')?.addEventListener('click', () => { liveTacticOpen = !liveTacticOpen; livePaused = true; clearTimeout(liveAutoTimer); liveSelectedBoardSlot = -1; renderLiveMatch(); });
     document.querySelector('#liveInstantFinishBtn')?.addEventListener('click', () => { finishLiveMatchInstantlyFromUi(); });
     document.querySelector('#livePauseBtn')?.addEventListener('click', () => {
+      if(['pregame-enter','pregame-ready','halftime-exit','halftime-enter','second-ready'].includes(livePitchTransitionMode)) return;
       livePaused = !livePaused;
       if(livePaused){ clearTimeout(liveAutoTimer); stopLiveClockAnimation(); }
       else{ animateLiveClockToState(); runAutoMode(); }
@@ -1192,20 +1338,23 @@
       window.__activeCompetitionSuspensionMatch = null;
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
-      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); livePitchPreviousPositions.clear(); document.body?.classList.remove('live-commentary-expanded');
+      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; livePitchTransitionMode = ''; clearLivePitchTransitionTimer(); liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); livePitchPreviousPositions.clear(); document.body?.classList.remove('live-commentary-expanded');
       resetLiveSelections(); clearTimeout(liveAutoTimer); stopLiveClockAnimation(); liveDisplayedClockSeconds = 0;
     });
   }
   function runAutoMode(){
     clearTimeout(liveAutoTimer);
     if(livePaused || !liveSession || liveState?.finished) return;
-    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 3360));
+    const inFastBreak = livePitchTransitionMode === 'halftime-out' || liveState?.nextBlock?.period === 'break' || liveState?.period === 'break';
+    const autoDelay = inFastBreak
+      ? Math.max(90, Number(window.GAME_CONFIG?.ui?.simulacionVivaDescansoAutoMs || 180))
+      : Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 3360));
     liveAutoTimer = setTimeout(() => { simulateNextBlockFromUi(); runAutoMode(); }, autoDelay);
   }
   function start(match, options={}){
     if(!match || !window.Simulator20?.createLiveMatchSession) return false;
     clearTimeout(liveAutoTimer);
-    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); livePitchPreviousPositions.clear(); document.body?.classList.remove('live-commentary-expanded'); resetLiveSelections();
+    liveOptions = options || {}; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; livePitchTransitionMode = ''; clearLivePitchTransitionTimer(); liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); livePitchPreviousPositions.clear(); document.body?.classList.remove('live-commentary-expanded'); resetLiveSelections();
     liveSession = typeof withCompetitionSuspensionContext === 'function'
       ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
       : window.Simulator20.createLiveMatchSession(match);
@@ -1217,8 +1366,7 @@
     openModal('<div id="liveMatchRoot"></div>');
     window.__liveMatchCloseLocked = true;
     renderLiveMatch();
-    runAutoMode();
-    liveShowNotice('Partido en marcha. Usá Pausa para detener el reloj y hacer ajustes.', false);
+    beginLivePregameEntrySequence();
     return true;
   }
   window.LiveMatchUI = { start };
