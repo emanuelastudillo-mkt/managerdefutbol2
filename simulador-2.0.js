@@ -2591,14 +2591,34 @@
   }
   function livePublicBench(session, clubId){
     const tactic = liveTacticForClub(session, clubId);
-    const regular = (tactic?.bench || []).map(id => playerById(id)).filter(Boolean).filter(player => !liveIsUnavailableForPlay(session, player.id)).map(player => ({ id:player.id, name:player.name, position:player.position, role:player.position, overall:effectiveOverall(player), condition:liveEffectiveCondition(session, player.id), morale:currentMorale(player.id), fit:100, expelled:false, injuredGhost:false }));
+    const regular = (tactic?.bench || []).map(id => playerById(id)).filter(Boolean).filter(player => !liveIsUnavailableForPlay(session, player.id)).map(player => ({ id:player.id, name:player.name, position:player.position, role:player.position, overall:effectiveOverall(player), condition:liveEffectiveCondition(session, player.id), morale:currentMorale(player.id), fit:100, expelled:false, injuredGhost:false, substitutedOut:false }));
     const clubKey = String(clubId || '');
     const starters = new Set((tactic?.starters || []).map(Number).filter(Boolean));
     const already = new Set(regular.map(player => Number(player.id)));
-    const injured = (session?.injuredGhostByClub?.[clubKey] || []).map(id => playerById(id)).filter(Boolean).filter(player => !already.has(Number(player.id)) && !starters.has(Number(player.id))).map(player => ({ id:player.id, name:player.name, position:player.position, role:'LES', overall:effectiveOverall(player), condition:0, morale:currentMorale(player.id), fit:0, expelled:false, injuredGhost:true, blocked:true }));
+    const injured = (session?.injuredGhostByClub?.[clubKey] || []).map(id => playerById(id)).filter(Boolean).filter(player => !already.has(Number(player.id)) && !starters.has(Number(player.id))).map(player => ({ id:player.id, name:player.name, position:player.position, role:'LES', overall:effectiveOverall(player), condition:0, morale:currentMorale(player.id), fit:0, expelled:false, injuredGhost:true, substitutedOut:false, blocked:true }));
     injured.forEach(player => already.add(Number(player.id)));
-    const expelled = (session?.expelledByClub?.[clubKey] || []).map(id => playerById(id)).filter(Boolean).filter(player => !already.has(Number(player.id))).map(player => ({ id:player.id, name:player.name, position:player.position, role:'EXP', overall:effectiveOverall(player), condition:liveEffectiveCondition(session, player.id), morale:currentMorale(player.id), fit:0, expelled:true, blocked:true }));
-    return regular.concat(injured, expelled);
+    const expelled = (session?.expelledByClub?.[clubKey] || []).map(id => playerById(id)).filter(Boolean).filter(player => !already.has(Number(player.id)) && !starters.has(Number(player.id))).map(player => ({ id:player.id, name:player.name, position:player.position, role:'EXP', overall:effectiveOverall(player), condition:liveEffectiveCondition(session, player.id), morale:currentMorale(player.id), fit:0, expelled:true, injuredGhost:false, substitutedOut:false, blocked:true }));
+    expelled.forEach(player => already.add(Number(player.id)));
+    const substituted = (session?.substitutions || [])
+      .filter(item => Number(item?.clubId || 0) === Number(clubId || 0))
+      .map(item => ({ event:item, player:playerById(item?.outId) }))
+      .filter(entry => entry.player && !already.has(Number(entry.player.id)) && !starters.has(Number(entry.player.id)))
+      .map(entry => ({
+        id:entry.player.id,
+        name:entry.player.name,
+        position:entry.player.position,
+        role:'SAL',
+        overall:effectiveOverall(entry.player),
+        condition:liveEffectiveCondition(session, entry.player.id),
+        morale:currentMorale(entry.player.id),
+        fit:0,
+        expelled:false,
+        injuredGhost:false,
+        substitutedOut:true,
+        substitutedMinute:Number(entry.event?.minute || 0),
+        blocked:true
+      }));
+    return regular.concat(injured, expelled, substituted);
   }
   function liveStatsSnapshot(session){
     const played = livePlayedPhaseCount(session);

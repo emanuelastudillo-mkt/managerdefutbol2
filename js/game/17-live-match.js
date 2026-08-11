@@ -344,6 +344,7 @@
   function availabilityTag(player, inField, isOwn){
     if(player?.expelled) return '<span class="live-row-tag red">EXP</span>';
     if(player?.injuredGhost) return '<span class="live-row-tag injury">LES</span>';
+    if(player?.substitutedOut) return `<span class="live-row-tag substituted" title="Reemplazado${player?.substitutedMinute ? ` al ${Number(player.substitutedMinute)}'` : ''}">SAL</span>`;
     if(!isOwn) return '';
     if(inField && pendingOutIds().has(Number(player.id))) return '<span class="live-row-tag warn">SALE</span>';
     if(!inField && pendingInIds().has(Number(player.id))) return '<span class="live-row-tag ok">ENTRA</span>';
@@ -428,8 +429,9 @@
     const id = Number(player.id || 0);
     const expelled = Boolean(player?.expelled);
     const injuredGhost = Boolean(player?.injuredGhost || player?.ghost);
+    const substitutedOut = Boolean(player?.substitutedOut);
     const blocked = Boolean(player?.blocked && !(isOwn && inField && injuredGhost));
-    const selectable = isOwn && !expelled && !blocked;
+    const selectable = isOwn && !expelled && !substitutedOut && !blocked;
     const selected = selectable && (inField ? Number(liveSelectedStarterId) === id : Number(liveSelectedBenchId) === id);
     const disabled = expelled || blocked || (isOwn && (inField ? pendingOutIds().has(id) : pendingInIds().has(id)));
     const cond = Math.round(Number(player.condition || 0));
@@ -437,12 +439,12 @@
     const fit = Math.round(Number(player.fit || (inField ? 100 : 0)));
     const rating = livePlayerRating(player, side, inField);
     const ratingClass = rating === '—' ? 'idle' : liveRatingClass(Number(String(rating).replace(',', '.')));
-    const cls = `live-list-row ${inField ? 'starter' : 'bench'} ${expelled ? 'expelled' : ''} ${injuredGhost ? 'injured-ghost' : ''} ${selectable ? 'clickable' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`;
+    const cls = `live-list-row ${inField ? 'starter' : 'bench'} ${expelled ? 'expelled' : ''} ${injuredGhost ? 'injured-ghost' : ''} ${substitutedOut ? 'substituted-out' : ''} ${selectable ? 'clickable' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`;
     const attr = selectable ? (inField ? `data-live-starter-id="${id}"` : `data-live-bench-id="${id}"`) : '';
     const tag = availabilityTag(player, inField, isOwn);
     const icons = livePlayerIcons(id);
     const nameCell = `<span class="live-name-cell"><strong>${ehtml(lastName(player.name))}</strong>${icons}${tag}</span>`;
-    const rowNo = expelled ? 'R' : (injuredGhost ? 'L' : (inField ? String((Number(player.slotIndex || 0) + 1)).padStart(2,'0') : 'S'));
+    const rowNo = expelled ? 'R' : (injuredGhost ? 'L' : (substitutedOut ? '↘' : (inField ? String((Number(player.slotIndex || 0) + 1)).padStart(2,'0') : 'S')));
     const mediaCell = isOwn ? String(liveDisplayOverall(player)) : '—';
     const body = `<span class="num">${rowNo}</span>${nameCell}<span>${ehtml(player.role || player.position || '—')}</span><b>${ehtml(mediaCell)}</b><b class="live-rating ${ratingClass}">${ehtml(rating)}</b><i class="${meterClass(cond)}">${cond}</i><i class="${meterClass(morale)}">${morale}</i><i class="${fitClass(fit)}">${inField ? fit : '—'}</i>`;
     return selectable ? `<button type="button" class="${cls}" ${attr} ${disabled ? 'disabled' : ''}>${body}</button>` : `<div class="${cls}">${body}</div>`;
@@ -457,6 +459,7 @@
     const isOwn = Number(clubId) === ownClubId();
     const lineup = sideLineup(side);
     const bench = sideBench(side);
+    const activeBenchCount = bench.filter(player => !player?.substitutedOut && !player?.injuredGhost && !player?.expelled).length;
     const used = side === 'home' ? Number(liveState?.usedSubsHome || 0) : Number(liveState?.usedSubsAway || 0);
     const injuredGhosts = lineup.filter(p => p?.injuredGhost).length;
     const selectedHint = isOwn
@@ -470,7 +473,7 @@
       <p class="muted small live-selected-hint">${ehtml(selectedHint)}</p>
       <div class="live-list-head"><span>N°</span><span>Jugador</span><span>Rol</span><span>MED</span><span>Pun</span><span>Fís</span><span>Mor</span><span>Rol%</span></div>
       <div class="live-team-list starters">${lineup.map(p => playerListRow(p, side, true, isOwn)).join('') || '<p class="muted small">Sin titulares.</p>'}</div>
-      <div class="live-bench-title compact"><strong>Banco</strong><span>${bench.length} suplentes · ${used}/3 cambios</span></div>
+      <div class="live-bench-title compact"><strong>Banco</strong><span>${activeBenchCount} disponibles · ${used}/${Number(liveState?.maxSubs || 5)} cambios</span></div>
       <div class="live-team-list bench">${bench.map(p => playerListRow(p, side, false, isOwn)).join('') || '<p class="muted small">Sin suplentes disponibles.</p>'}</div>
       ${isOwn ? `<div class="live-pending-box"><div class="live-bench-title compact"><strong>Pendientes</strong><span>${remainingSubstitutions()} cambios restantes</span></div>${pendingSubstitutionList()}</div>` : ''}
     </section>`;

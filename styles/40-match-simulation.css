@@ -450,3 +450,22 @@
 .live-player-quick-metrics div{display:grid;gap:2px;padding:8px;border-radius:10px;background:rgba(148,163,184,.08);}
 .live-player-quick-metrics span{font-size:7px;text-transform:uppercase;color:var(--muted);font-weight:800;}
 .live-player-quick-metrics strong{font-size:14px;}
+
+/* V9.80 · jugadores sustituidos permanecen visibles */
+.live-list-row.substituted-out{
+  opacity:.44;
+  filter:grayscale(.72) saturate(.45);
+  border-color:rgba(148,163,184,.16);
+  background:rgba(15,23,42,.42);
+  cursor:default;
+}
+.live-list-row.substituted-out:hover{transform:none;box-shadow:none}
+.live-list-row.substituted-out .num,
+.live-list-row.substituted-out strong,
+.live-list-row.substituted-out b,
+.live-list-row.substituted-out i{color:#7f8da3}
+.live-row-tag.substituted{
+  color:#cbd5e1;
+  background:rgba(100,116,139,.14);
+  border:1px solid rgba(148,163,184,.24);
+}
