@@ -616,3 +616,46 @@ body.live-commentary-expanded .modal-panel.live-commentary-modal-expanded > .mod
   .live-v517 .live-commentary-history-card.is-expanded{inset:3px!important;padding:7px!important;border-radius:8px!important;}
 }
 body.live-commentary-expanded .live-player-quick-overlay{z-index:1900!important;}
+
+
+/* V9.84 · historial de relato no compresible + modos solo de filtrado */
+.live-v517 .live-commentary-history-list{
+  display:flex!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  gap:4px!important;
+  height:170px!important;
+  min-height:170px!important;
+  max-height:170px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  align-content:initial!important;
+  justify-content:flex-start!important;
+  scrollbar-gutter:stable;
+}
+.live-v517 .live-commentary-history-list > .live-event.commentary{
+  flex:0 0 auto!important;
+  width:100%!important;
+  min-height:28px!important;
+  box-sizing:border-box!important;
+}
+.live-v517 .live-commentary-history-card:not(.is-expanded) .live-commentary-history-list > .live-event.commentary{
+  height:auto!important;
+  max-height:42px!important;
+}
+.live-v517 .live-commentary-history-card.is-expanded .live-commentary-history-list{
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+.live-v517 .live-commentary-history-card.is-expanded .live-commentary-history-list > .live-event.commentary{
+  flex:0 0 auto!important;
+  min-height:38px!important;
+  max-height:none!important;
+}
+@media (max-width:760px){
+  .live-v517 .live-commentary-history-list{height:156px!important;min-height:156px!important;max-height:156px!important;}
+  .live-v517 .live-commentary-history-card.is-expanded .live-commentary-history-list{height:100%!important;min-height:0!important;max-height:none!important;}
+}

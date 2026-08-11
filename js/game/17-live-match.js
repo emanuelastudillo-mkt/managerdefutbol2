@@ -15,7 +15,7 @@
   let liveInspectPlayerId = 0;
   let liveInspectResumeAfterClose = false;
   let liveCommentaryExpanded = false;
-  let livePlaybackMode = 'important';
+  let livePlaybackMode = 'full';
   let liveLastBlockHadImportantPlay = false;
   let liveSelectedInstruction = 'none';
   let liveSelectedStarterId = 0;
@@ -214,7 +214,6 @@
   }
   function liveImportantResults(results){
     const list = Array.isArray(results) ? results : [];
-    if(livePlaybackMode !== 'important') return list;
     const selected = new Set();
     list.forEach((result, index) => {
       if(!liveResultCountsAsAttack(result)) return;
@@ -232,16 +231,19 @@
     return list.filter((_, index) => selected.has(index));
   }
   function queueLiveActionNarrations(results){
-    const selectedResults = liveImportantResults(results);
+    const list = Array.isArray(results) ? results : [];
+    const importantResults = new Set(liveImportantResults(list));
     let queued = 0;
-    selectedResults.forEach(result => {
+    list.forEach(result => {
       const item = liveActionNarration(result);
       if(!item || liveSeenActionNarrationKeys.has(item.key) || livePendingActionNarrations.some(current => current.key === item.key)) return;
+      item.category = 'action';
+      item.important = importantResults.has(result);
       livePendingActionNarrations.push(item);
       queued += 1;
     });
     livePendingActionNarrations.sort((a,b)=>Number(a.clockSeconds || 0)-Number(b.clockSeconds || 0));
-    return { queued, important:Boolean((Array.isArray(results) ? results : []).some(liveResultCountsAsAttack)) };
+    return { queued, important:Boolean(list.some(liveResultCountsAsAttack)) };
   }
   function openLivePlayerQuick(playerId){
     const id = Number(playerId || 0);
@@ -352,11 +354,13 @@
       title:String(narration.title || ''),
       text:String(narration.text || ''),
       sub:String(narration.sub || ''),
-      tone:String(narration.tone || 'ambient')
+      tone:String(narration.tone || 'ambient'),
+      category:'system',
+      important:false
     });
   }
   function liveCommentaryHistoryMarkup(){
-    const items = liveCommentaryHistory.slice().reverse();
+    const items = liveCommentaryHistory.filter(item => livePlaybackMode !== 'important' || item?.important === true).slice().reverse();
     if(!items.length) return '<p class="muted small">Todavía no hay relatos.</p>';
     return items.map(item => {
       if(Array.isArray(item.segments)){
@@ -596,7 +600,7 @@
     return `<div class="live-pending-subs">${livePendingSubstitutions.map((s, index) => `<div><span>Próx. minuto</span><strong>Entra ${ehtml(eventPlayerLabel(s.inId))} · Sale ${ehtml(eventPlayerLabel(s.outId))}</strong><button type="button" data-live-remove-pending-sub="${index}" class="ghost mini">Quitar</button></div>`).join('')}</div>`;
   }
   function livePlaybackModeControl(){
-    return `<label class="live-playback-mode"><span>Visualización</span><select id="livePlaybackModeSelect" aria-label="Modo de visualización del partido"><option value="important" ${livePlaybackMode === 'important' ? 'selected' : ''}>Jugadas importantes</option><option value="full" ${livePlaybackMode === 'full' ? 'selected' : ''}>Partido completo</option></select></label>`;
+    return `<label class="live-playback-mode"><span>Visualización</span><select id="livePlaybackModeSelect" aria-label="Modo de visualización del partido"><option value="full" ${livePlaybackMode === 'full' ? 'selected' : ''}>Partido completo</option><option value="important" ${livePlaybackMode === 'important' ? 'selected' : ''}>Jugadas importantes</option></select></label>`;
   }
   function liveManagerPanel(){
     return `<div class="card inner live-bottom-controls">
@@ -789,13 +793,13 @@
       clearTimeout(liveAutoTimer);
       liveShowNotice('Entretiempo: el partido queda pausado. Podés hacer cambios o ajustar instrucciones.', false);
     }
-    if(livePaused || (livePlaybackMode === 'important' && !liveLastBlockHadImportantPlay)){
+    if(livePaused){
       liveDisplayedClockSeconds = liveClockTargetSeconds();
       flushLiveActionNarrationsUpTo(liveDisplayedClockSeconds);
     }
     resetLiveSelections();
     renderLiveMatch();
-    animateLiveClockToState({ instant:livePlaybackMode === 'important' && !liveLastBlockHadImportantPlay });
+    animateLiveClockToState();
   }
   function finishLiveMatchInstantlyFromUi(){
     if(!liveSession || liveState?.finished) return;
@@ -878,9 +882,7 @@
       renderLiveMatch();
     });
     document.querySelector('#livePlaybackModeSelect')?.addEventListener('change', event => {
-      livePlaybackMode = event.target.value === 'full' ? 'full' : 'important';
-      livePendingActionNarrations = [];
-      liveLastBlockHadImportantPlay = livePlaybackMode === 'full';
+      livePlaybackMode = event.target.value === 'important' ? 'important' : 'full';
       renderLiveMatch();
       if(!livePaused) runAutoMode();
     });
@@ -899,21 +901,20 @@
       window.__activeCompetitionSuspensionMatch = null;
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
-      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'important'; liveLastBlockHadImportantPlay = false; document.body?.classList.remove('live-commentary-expanded');
+      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; document.body?.classList.remove('live-commentary-expanded');
       resetLiveSelections(); clearTimeout(liveAutoTimer); stopLiveClockAnimation(); liveDisplayedClockSeconds = 0;
     });
   }
   function runAutoMode(){
     clearTimeout(liveAutoTimer);
     if(livePaused || !liveSession || liveState?.finished) return;
-    const fullDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 3360));
-    const autoDelay = livePlaybackMode === 'important' && !liveLastBlockHadImportantPlay ? 120 : fullDelay;
+    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 3360));
     liveAutoTimer = setTimeout(() => { simulateNextBlockFromUi(); runAutoMode(); }, autoDelay);
   }
   function start(match, options={}){
     if(!match || !window.Simulator20?.createLiveMatchSession) return false;
     clearTimeout(liveAutoTimer);
-    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'important'; liveLastBlockHadImportantPlay = false; document.body?.classList.remove('live-commentary-expanded'); resetLiveSelections();
+    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; document.body?.classList.remove('live-commentary-expanded'); resetLiveSelections();
     liveSession = typeof withCompetitionSuspensionContext === 'function'
       ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
       : window.Simulator20.createLiveMatchSession(match);
