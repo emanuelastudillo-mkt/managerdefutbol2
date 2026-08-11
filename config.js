@@ -1175,14 +1175,14 @@ window.GAME_CONFIG = {
   },
 
   simulador: {
-    // V9.81 · Motor de posesión continua con control prolongado y 540 fases.
-    // pero cada partido reglamentario procesa exactamente 540 fases internas de 10 segundos.
+    // V9.89 · Simulador Nuevo V1.
+    // 360 fases internas de 15 segundos: decisión -> destino/zona -> respuesta defensiva -> resolución.
     motorContinuoV974: {
       activo: true,
-      fasesPorPartido: 540,
-      segundosPorFase: 10,
+      fasesPorPartido: 360,
+      segundosPorFase: 15,
       logTecnico: false,
-      maxLogTecnico: 540,
+      maxLogTecnico: 360,
       distancias: {
         paseCortoMax: 34,
         paseLargoMin: 25,
@@ -1200,12 +1200,12 @@ window.GAME_CONFIG = {
         tiro: 4,
         regate: 12
       },
-      // 11 fases de 10 s conservan casi la misma ventana temporal del contraataque anterior (7 x 15 s).
-      contraataqueFases: 11,
+      // 7 fases de 15 s: ventana de contraataque de aproximadamente 105 segundos.
+      contraataqueFases: 7,
       // Aumenta la elección de acciones verticales/ofensivas para aproximar 2x ataques totales.
       multiplicadorIntencionAtaque: 1.60,
-      // Compensa el mayor volumen de remates para sostener un rango de goles similar al anterior.
-      multiplicadorConversionVolumen: 0.60,
+      // V9.89: recalibrado para 360 fases y el nuevo xG logístico.
+      multiplicadorConversionVolumen: 0.95,
       // V9.81 · La posesión puede convertirse en una herramienta defensiva real.
       // La duración objetivo depende de calidad de pase, superioridad técnica,
       // densidad de mediocampo y las instrucciones Posesión / Cuidar resultado.
@@ -1222,7 +1222,21 @@ window.GAME_CONFIG = {
         bonusSeguridadPaseMax: 18
       },
       ventajaLocalMaxPct: 0.08,
-      azarPuja: 13
+      azarPuja: 13,
+      nuevoV1: {
+        activo: true,
+        columnasZonas: 6,
+        filasZonas: 4,
+        movimientoPorFase: 0.38,
+        desplazamientoAtaque: 8.0,
+        desplazamientoDefensa: 5.0,
+        compactacionLateralDefensa: 0.34,
+        presionJugadoresCercanos: 2,
+        pesoAmenazaDestino: 42,
+        escalaLogitPase: 9.5,
+        escalaLogitRegate: 8.5,
+        xgMaximo: 0.58
+      }
     },
     // Equilibrio del resultado de cada ocasión: mitad construcción colectiva y mitad duelo individual.
     // Se aplica al partido normal, al simulador en vivo y a Ver solo resultados.
