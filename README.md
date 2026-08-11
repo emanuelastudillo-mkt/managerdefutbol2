@@ -1,9 +1,9 @@
-# V9.73 · FACES persistentes
+# V9.74 · Motor continuo de 360 fases
 
-Construida sobre V9.72.
+Primera implementación estructural del rediseño del motor de partido. El partido se resuelve mediante 360 fases internas de 15 segundos, con posesión persistente y geometría tomada directamente de los slots tácticos personalizados.
 
-Esta versión incorpora asignación persistente y sin duplicados para el nuevo banco regional de FACES. Cada jugador conserva su rostro mientras siga activo; al retirarse, la FACE vuelve a quedar disponible. Los nuevos archivos agregados consecutivamente a los pools se detectan al cargar y se utilizan para completar jugadores que todavía no tengan rostro.
+La versión mantiene los subsistemas anteriores de cansancio, amarillas, rojas, lesiones, penalización de marcadores altos y ventaja local condicionada por superioridad de hinchas.
 
-Inventario inicial configurado: 1.100 FACES de Cono Sur y 80 de Brasil.
+También incorpora dos nuevas instrucciones tácticas: distribución del arquero y creación de juego.
 
-Ver `AJUSTES-V9.73.md`.
+Ver `AJUSTES-V9.74.md`.

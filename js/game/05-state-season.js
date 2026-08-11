@@ -919,8 +919,14 @@ function normalizeTactic(clubId, tactic){
     ? window.Simulator20.normalizeMatchInstructions(base.matchInstructions)
     : { winning:'normal', drawing:'normal', losing:'normal' };
   const sectorStyles = normalizeSectorStyles(base.sectorStyles);
+  const goalkeeperDistribution = window.Simulator20?.normalizeGoalkeeperDistribution
+    ? window.Simulator20.normalizeGoalkeeperDistribution(base.goalkeeperDistribution)
+    : (['short','long','varied'].includes(String(base.goalkeeperDistribution || '')) ? String(base.goalkeeperDistribution) : 'varied');
+  const buildUpStyle = window.Simulator20?.normalizeBuildUpStyle
+    ? window.Simulator20.normalizeBuildUpStyle(base.buildUpStyle)
+    : (['possession','direct','counter','long_ball'].includes(String(base.buildUpStyle || '')) ? String(base.buildUpStyle) : 'possession');
   const captainSelectionMode = typeof normalizeCaptainSelectionMode === 'function' ? normalizeCaptainSelectionMode(base.captainSelectionMode) : 'automatic';
-  const normalized = { formation, layoutMode, customSlots, captainId:0, captainSelectionMode, starters, bench, autoSubs, playerMentalities:{ ...(game?.playerMentalities || {}), ...(base.playerMentalities || {}) }, matchInstructions, sectorStyles };
+  const normalized = { formation, layoutMode, customSlots, captainId:0, captainSelectionMode, starters, bench, autoSubs, playerMentalities:{ ...(game?.playerMentalities || {}), ...(base.playerMentalities || {}) }, matchInstructions, sectorStyles, goalkeeperDistribution, buildUpStyle };
   normalized.captainId = normalizedCaptainIdForTactic(clubId, { ...normalized, captainId:base.captainId, captainSelectionMode });
   return applyStarterMentalities(normalized);
 }

@@ -492,6 +492,21 @@ const DEFAULT_TACTIC_SECTOR_STYLES = {
   midfield: configValue('tactica.estilosSector.mediosInicial', 'posicional'),
   attack: configValue('tactica.estilosSector.delanterosInicial', 'posicional')
 };
+
+// V9.74 · Instrucciones del motor de posesión continua.
+const TACTIC_GOALKEEPER_DISTRIBUTION_OPTIONS = [
+  { value:'short', label:'Siempre corto' },
+  { value:'long', label:'Siempre largo' },
+  { value:'varied', label:'Variado' }
+];
+const TACTIC_BUILD_UP_STYLE_OPTIONS = [
+  { value:'possession', label:'Posesión' },
+  { value:'direct', label:'Directo' },
+  { value:'counter', label:'Contraataque' },
+  { value:'long_ball', label:'Pelotazo' }
+];
+const DEFAULT_GOALKEEPER_DISTRIBUTION = configValue('tactica.saqueArqueroInicial', 'varied');
+const DEFAULT_BUILD_UP_STYLE = configValue('tactica.creacionJuegoInicial', 'possession');
 const TACTIC_STYLE_CONDITION_DELTAS = {
   highPress: configNumber('tactica.estilosSector.cansancioPresionAlta', -3, -20, 20),
   rotation: configNumber('tactica.estilosSector.cansancioRotacion', -1, -20, 20),
@@ -980,7 +995,9 @@ const DEFAULT_TACTIC = {
   autoSubs:[],
   playerMentalities:{},
   matchInstructions:{winning:'normal',drawing:'normal',losing:'normal'},
-  sectorStyles:{...DEFAULT_TACTIC_SECTOR_STYLES}
+  sectorStyles:{...DEFAULT_TACTIC_SECTOR_STYLES},
+  goalkeeperDistribution:DEFAULT_GOALKEEPER_DISTRIBUTION,
+  buildUpStyle:DEFAULT_BUILD_UP_STYLE
 };
 
 let seed = null;

@@ -109,9 +109,11 @@ function tacticSignature(tactic){
   const instructionSig = ['winning','drawing','losing'].map(key => `${key}:${instructions[key] || 'normal'}`).join('|');
   const sectorStyles = typeof normalizeSectorStyles === 'function' ? normalizeSectorStyles(tactic.sectorStyles) : (tactic.sectorStyles || {});
   const sectorSig = ['defense','midfield','attack'].map(key => `${key}:${sectorStyles[key] || 'posicional'}`).join('|');
+  const goalkeeperDistribution = window.Simulator20?.normalizeGoalkeeperDistribution ? window.Simulator20.normalizeGoalkeeperDistribution(tactic.goalkeeperDistribution) : (tactic.goalkeeperDistribution || 'varied');
+  const buildUpStyle = window.Simulator20?.normalizeBuildUpStyle ? window.Simulator20.normalizeBuildUpStyle(tactic.buildUpStyle) : (tactic.buildUpStyle || 'possession');
   const layoutMode = typeof normalizeTacticLayoutMode === 'function' ? normalizeTacticLayoutMode(tactic.layoutMode) : 'preset';
   const customSig = layoutMode === 'custom' && typeof normalizeCustomTacticSlots === 'function' ? normalizeCustomTacticSlots(tactic.customSlots, tactic).join(',') : '';
-  return [layoutMode, tactic.formation || '', customSig, normalizeIds(tactic.starters), normalizeIds(tactic.bench), mentality, instructionSig, sectorSig].join('::');
+  return [layoutMode, tactic.formation || '', customSig, normalizeIds(tactic.starters), normalizeIds(tactic.bench), mentality, instructionSig, sectorSig, `gk:${goalkeeperDistribution}`, `build:${buildUpStyle}`].join('::');
 }
 function managerTacticalAdaptationState(){
   if(!game) return { season:1, signature:'', streak:0, lastBonus:0 };
@@ -139,7 +141,9 @@ function tacticRepetitionSignature(tactic){
   const instructionSig = ['winning','drawing','losing'].map(key => `${key}:${instructions[key] || 'normal'}`).join('|');
   const sectorStyles = typeof normalizeSectorStyles === 'function' ? normalizeSectorStyles(clean.sectorStyles) : (clean.sectorStyles || {});
   const sectorSig = ['defense','midfield','attack'].map(key => `${key}:${sectorStyles[key] || 'posicional'}`).join('|');
-  return [layoutMode, formation, customSig, mentalities, instructionSig, sectorSig].join('::');
+  const goalkeeperDistribution = window.Simulator20?.normalizeGoalkeeperDistribution ? window.Simulator20.normalizeGoalkeeperDistribution(clean.goalkeeperDistribution) : (clean.goalkeeperDistribution || 'varied');
+  const buildUpStyle = window.Simulator20?.normalizeBuildUpStyle ? window.Simulator20.normalizeBuildUpStyle(clean.buildUpStyle) : (clean.buildUpStyle || 'possession');
+  return [layoutMode, formation, customSig, mentalities, instructionSig, sectorSig, `gk:${goalkeeperDistribution}`, `build:${buildUpStyle}`].join('::');
 }
 function tacticalAdaptationInfoForMatch(tactic){
   if(!game || !configBoolean('dificultad.adaptacionTactica.activo', true)) return { active:false, bonus:0, streak:0 };

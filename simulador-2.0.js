@@ -124,6 +124,37 @@
     { tarjetasTotalesDesde:5, penalizacion:0.90 }
   ]);
   const SIM_DEFAULT_LOSS_RED_CARDS = Math.round(simConfigNumber('simulador.rojasDerrotaDefault', 5, 1, 11));
+  const CONTINUOUS_MATCH_CONFIG_V974 = (() => {
+    const raw = simConfigValue('simulador.motorContinuoV974', {}) || {};
+    const distances = raw.distancias || {};
+    const actions = raw.accionesBase || {};
+    return {
+      enabled:raw.activo !== false,
+      totalPhases:360,
+      secondsPerPhase:15,
+      technicalLog:Boolean(raw.logTecnico),
+      maxTechnicalLog:Math.max(10, Math.round(Number(raw.maxLogTecnico || 360))),
+      shortPassMax:Number(distances.paseCortoMax || 34),
+      longPassMin:Number(distances.paseLargoMin || 25),
+      longPassMax:Number(distances.paseLargoMax || 78),
+      throughProgressMin:Number(distances.paseProfundoAvanceMin || 12),
+      pressureRadius:Number(distances.radioPresion || 20),
+      markingRadius:Number(distances.radioMarcaje || 18),
+      interceptionRadius:Number(distances.radioIntercepcion || 12),
+      counterPhases:Math.max(1, Math.round(Number(raw.contraataqueFases || 7))),
+      homeAdvantageMaxPct:Math.max(0, Math.min(0.30, Number(raw.ventajaLocalMaxPct ?? 0.08))),
+      duelRandomRange:Math.max(1, Number(raw.azarPuja || 13)),
+      actionBase:{
+        pass_short:Math.max(1, Number(actions.paseCorto || 36)),
+        pass_long:Math.max(1, Number(actions.paseLargo || 12)),
+        pass_through:Math.max(1, Number(actions.paseProfundo || 10)),
+        cross:Math.max(1, Number(actions.centro || 6)),
+        shot:Math.max(1, Number(actions.tiro || 4)),
+        dribble:Math.max(1, Number(actions.regate || 12))
+      }
+    };
+  })();
+  const USE_CONTINUOUS_MATCH_ENGINE_V974 = CONTINUOUS_MATCH_CONFIG_V974.enabled;
   const SIM_HIGH_SCORE_GOAL_PENALTY_ENABLED = Boolean(simConfigValue('simulador.penalizacionGolesAltos.activo', true));
   const SIM_HIGH_SCORE_GOAL_PENALTY_RULES = simConfigArray('simulador.penalizacionGolesAltos.tramos', [
     { golesTotalesDesde:1, penalizacion:0.10 },
@@ -276,6 +307,23 @@
     };
   }
 
+  function normalizeGoalkeeperDistributionV974(value){
+    const clean = String(value || '').trim().toLowerCase();
+    const aliases = { corto:'short', short:'short', largo:'long', long:'long', variado:'varied', varied:'varied' };
+    return aliases[clean] || 'varied';
+  }
+  function normalizeBuildUpStyleV974(value){
+    const clean = String(value || '').trim().toLowerCase();
+    const aliases = { posesion:'possession', 'posesión':'possession', possession:'possession', directo:'direct', direct:'direct', contraataque:'counter', counter:'counter', pelotazo:'long_ball', long_ball:'long_ball', 'long-ball':'long_ball' };
+    return aliases[clean] || 'possession';
+  }
+  function normalizeContinuousTacticV974(tactic){
+    const next = tactic || {};
+    next.goalkeeperDistribution = normalizeGoalkeeperDistributionV974(next.goalkeeperDistribution);
+    next.buildUpStyle = normalizeBuildUpStyleV974(next.buildUpStyle);
+    return next;
+  }
+
   function normalizeSectorStyleValueV2(value){
     const clean = String(value || '').trim();
     const aliases = { presion:'presion_alta', presionAlta:'presion_alta', presion_alta:'presion_alta', rotacion:'rotacion', rotación:'rotacion', posicional:'posicional', repliegue:'repliegue' };
@@ -337,7 +385,7 @@
   }
   function botTacticForClubV2(clubId, context={}){
     const id = Number(clubId || 0);
-    if(id === Number(game?.selectedClubId || 0)) return { ...game.tactic, matchInstructions:normalizeMatchInstructions(game.tactic?.matchInstructions), sectorStyles:normalizeSectorStylesV2(game.tactic?.sectorStyles) };
+    if(id === Number(game?.selectedClubId || 0)) return normalizeContinuousTacticV974({ ...game.tactic, matchInstructions:normalizeMatchInstructions(game.tactic?.matchInstructions), sectorStyles:normalizeSectorStylesV2(game.tactic?.sectorStyles) });
     const club = seed?.clubs?.find(c => Number(c.id) === id) || { reputation:60 };
     const selectionOptions = botManagerFormationSelectionOptions(context.opponentClubId);
     if(!BOT_TACTIC_VARIETY_ENABLED){
@@ -353,6 +401,8 @@
         playerMentalities:{},
         matchInstructions:{...DEFAULT_MATCH_INSTRUCTIONS},
         sectorStyles:normalizeSectorStylesV2(null),
+        goalkeeperDistribution:'varied',
+        buildUpStyle:'direct',
         botProfile:'legacy',
         botTopPlayersAudit:selectionOptions.againstManager && BOT_MANAGER_FORMATION_AUDIT_ENABLED_V2 ? (best?.audit || null) : null
       };
@@ -379,6 +429,8 @@
       playerMentalities:{},
       matchInstructions:normalizeMatchInstructions(profile.matchInstructions),
       sectorStyles:normalizeSectorStylesV2(profile.sectorStyles),
+      goalkeeperDistribution:['possession','high_press'].includes(profileId) ? 'short' : (['counter','direct','defensive','cautious'].includes(profileId) ? 'long' : 'varied'),
+      buildUpStyle:profileId === 'possession' ? 'possession' : (profileId === 'counter' ? 'counter' : (['defensive','cautious'].includes(profileId) ? 'long_ball' : 'direct')),
       botProfile:profileId,
       botTacticCycle:cycle,
       botTopPlayersAudit:selectionOptions.againstManager && BOT_MANAGER_FORMATION_AUDIT_ENABLED_V2 ? (best?.audit || null) : null
@@ -675,26 +727,39 @@
     const fouls = simClamp(probabilisticRoundV2(fullBlockFouls * phaseFactor), 0, 3);
     return { attacks, chances, possession, fouls, passScore:Math.round(effectiveMid), xg };
   }
+  const CONTINUOUS_STAT_KEYS_V974 = ['passesAttempted','passesCompleted','longPassesAttempted','longPassesCompleted','throughPassesAttempted','throughPassesCompleted','crossesAttempted','crossesCompleted','dribblesAttempted','dribblesWon','interceptions','tackles','shots','shotsOnTarget'];
   function mergeBlockStats(total, block){
-    total.attacks += block.attacks;
-    total.chances += block.chances;
-    total.fouls += block.fouls;
-    total.xg += block.xg;
-    total.passScore += block.passScore;
-    total.possessionWeighted += block.possession;
+    total.attacks += Number(block.attacks || 0);
+    total.chances += Number(block.chances || 0);
+    total.fouls += Number(block.fouls || 0);
+    total.xg += Number(block.xg || 0);
+    total.passScore += Number(block.passScore || 0);
+    total.possessionWeighted += Number(block.possession || 0);
+    CONTINUOUS_STAT_KEYS_V974.forEach(key => { total[key] = Number(total[key] || 0) + Number(block[key] || 0); });
   }
-  function emptyStats(){ return { attacks:0, chances:0, possession:50, fouls:0, passScore:0, xg:0, possessionWeighted:0, keySaves:0, errors:0, goalErrors:0 }; }
+  function emptyStats(){
+    const base = { attacks:0, chances:0, possession:50, fouls:0, passScore:0, xg:0, possessionWeighted:0, keySaves:0, errors:0, goalErrors:0 };
+    CONTINUOUS_STAT_KEYS_V974.forEach(key => { base[key] = 0; });
+    return base;
+  }
+  function continuousStatsExtrasV974(stats){
+    const out = {};
+    CONTINUOUS_STAT_KEYS_V974.forEach(key => { out[key] = Math.max(0, Math.round(Number(stats?.[key] || 0))); });
+    return out;
+  }
   function finalizeStats(stats){
+    const divisor = USE_CONTINUOUS_MATCH_ENGINE_V974 ? 90 : BLOCKS.length;
     return {
       attacks:simClamp(Math.round(stats.attacks), 1, 75),
-      chances:simClamp(Math.round(stats.chances), 0, 18),
-      possession:simClamp(Math.round(stats.possessionWeighted / BLOCKS.length), 20, 80),
-      fouls:simClamp(Math.round(stats.fouls), 0, 32),
-      passScore:simClamp(Math.round(stats.passScore / BLOCKS.length), 1, 140),
+      chances:simClamp(Math.round(stats.chances), 0, 30),
+      possession:simClamp(Math.round(stats.possessionWeighted / Math.max(1, divisor)), 15, 85),
+      fouls:simClamp(Math.round(stats.fouls), 0, 40),
+      passScore:simClamp(Math.round(stats.passScore / Math.max(1, divisor)), 1, 140),
       xg:Number(stats.xg.toFixed(2)),
       keySaves:Math.round(Number(stats.keySaves || 0)),
       errors:Math.round(Number(stats.errors || 0)),
-      goalErrors:Math.round(Number(stats.goalErrors || 0))
+      goalErrors:Math.round(Number(stats.goalErrors || 0)),
+      ...continuousStatsExtrasV974(stats)
     };
   }
   function poissonV2(lambda){
@@ -1078,6 +1143,8 @@
     next.autoSubs = [];
     next.matchInstructions = normalizeMatchInstructions(next.matchInstructions);
     next.sectorStyles = normalizeSectorStylesV2(next.sectorStyles);
+    next.goalkeeperDistribution = normalizeGoalkeeperDistributionV974(next.goalkeeperDistribution);
+    next.buildUpStyle = normalizeBuildUpStyleV974(next.buildUpStyle);
     return next;
   }
   function liveSideKey(session, clubId){
@@ -1665,17 +1732,18 @@
     return injuries.sort((a,b)=>a.minute-b.minute);
   }
   function liveFinalizeStats(stats, blockCount){
-    const divisor = Math.max(1, Number(blockCount || LIVE_BLOCKS.length));
+    const divisor = Math.max(1, Number(blockCount || 90));
     return {
       attacks:simClamp(Math.round(stats.attacks), 1, 75),
-      chances:simClamp(Math.round(stats.chances), 0, 18),
-      possession:simClamp(Math.round(stats.possessionWeighted / divisor), 20, 80),
-      fouls:simClamp(Math.round(stats.fouls), 0, 32),
+      chances:simClamp(Math.round(stats.chances), 0, 30),
+      possession:simClamp(Math.round(stats.possessionWeighted / divisor), 15, 85),
+      fouls:simClamp(Math.round(stats.fouls), 0, 40),
       passScore:simClamp(Math.round(stats.passScore / divisor), 1, 140),
       xg:Number(stats.xg.toFixed(2)),
       keySaves:Math.round(Number(stats.keySaves || 0)),
       errors:Math.round(Number(stats.errors || 0)),
-      goalErrors:Math.round(Number(stats.goalErrors || 0))
+      goalErrors:Math.round(Number(stats.goalErrors || 0)),
+      ...continuousStatsExtrasV974(stats)
     };
   }
   function liveCurrentStats(stats, simulatedPhases){
@@ -1690,7 +1758,8 @@
       xg:Number(Number(stats.xg || 0).toFixed(2)),
       keySaves:Math.round(Number(stats.keySaves || 0)),
       errors:Math.round(Number(stats.errors || 0)),
-      goalErrors:Math.round(Number(stats.goalErrors || 0))
+      goalErrors:Math.round(Number(stats.goalErrors || 0)),
+      ...continuousStatsExtrasV974(stats)
     };
   }
   function livePowerPair(session){
@@ -1700,6 +1769,548 @@
     const away = teamPowerV2(session.match.awayId, session.awayTactic, { crowdBonus:0, conditionResolver, sentOffIds });
     return applyManagerTacticalAdaptationPairV2(home, away, session.match, session.matchContext);
   }
+  /* V9.74 · Motor de posesión continua de 360 fases.
+     La geometría nace de tacticAssignedEntries/tacticSlotCoordinates; no deduce formaciones clásicas. */
+  function continuousHash32V974(value){
+    const text = String(value || 'match');
+    let hash = 2166136261 >>> 0;
+    for(let i=0;i<text.length;i++){
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619) >>> 0;
+    }
+    return hash || 0x9e3779b9;
+  }
+  function continuousSeedForMatchV974(match){
+    return continuousHash32V974(`${match?.id || 'match'}|${match?.date || game?.currentDate || ''}|${game?.seasonNumber || 1}|v974`);
+  }
+  function continuousRandomV974(state){
+    let x = Number(state?.rngState || 0) >>> 0;
+    if(!x) x = 0x9e3779b9;
+    x ^= x << 13; x >>>= 0;
+    x ^= x >>> 17; x >>>= 0;
+    x ^= x << 5; x >>>= 0;
+    state.rngState = x >>> 0;
+    return (x >>> 0) / 4294967296;
+  }
+  function continuousRndV974(state, min=0, max=1){ return Number(min) + continuousRandomV974(state) * (Number(max) - Number(min)); }
+  function continuousWithMathRandomV974(state, callback){
+    const original = Math.random;
+    Math.random = () => continuousRandomV974(state);
+    try{ return callback(); }
+    finally{ Math.random = original; }
+  }
+  function continuousWeightedPickV974(state, items, weightFn){
+    const weighted = (items || []).filter(Boolean).map(item => ({ item, weight:Math.max(0.001, Number(weightFn(item) || 0.001)) }));
+    if(!weighted.length) return null;
+    const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
+    let cursor = continuousRandomV974(state) * total;
+    for(const entry of weighted){ cursor -= entry.weight; if(cursor <= 0) return entry.item; }
+    return weighted[weighted.length - 1].item;
+  }
+  function continuousDistanceV974(a,b){
+    if(!a || !b) return 999;
+    return Math.hypot(Number(a.x || 0) - Number(b.x || 0), Number(a.y || 0) - Number(b.y || 0));
+  }
+  function continuousSegmentDistanceV974(point, start, end){
+    if(!point || !start || !end) return 999;
+    const x = Number(point.x || 0), y = Number(point.y || 0);
+    const x1 = Number(start.x || 0), y1 = Number(start.y || 0), x2 = Number(end.x || 0), y2 = Number(end.y || 0);
+    const dx = x2 - x1, dy = y2 - y1;
+    const lengthSq = dx*dx + dy*dy;
+    if(lengthSq <= 0.0001) return Math.hypot(x-x1,y-y1);
+    const t = simClamp(((x-x1)*dx + (y-y1)*dy) / lengthSq, 0, 1);
+    return Math.hypot(x-(x1+t*dx), y-(y1+t*dy));
+  }
+  function continuousEntryCoordsV974(entry, fallbackIndex=0, tactic=null){
+    if(Number.isFinite(Number(entry?.x)) && Number.isFinite(Number(entry?.y))) return { x:Number(entry.x), y:Number(entry.y) };
+    const coords = typeof tacticSlotCoordinates === 'function' ? tacticSlotCoordinates(tactic || {}) : [];
+    const point = coords[Number(entry?.index ?? fallbackIndex)] || {};
+    return { x:Number(point.x ?? 50), y:Number(point.y ?? 50) };
+  }
+  const CONTINUOUS_ENTRIES_CACHE_V974 = new WeakMap();
+  function continuousEntriesV974(power){
+    if(power && typeof power === 'object' && CONTINUOUS_ENTRIES_CACHE_V974.has(power)) return CONTINUOUS_ENTRIES_CACHE_V974.get(power);
+    const entries = (power?.assigned || []).map((entry,index) => {
+      if(!entry?.player) return null;
+      const coords = continuousEntryCoordsV974(entry,index,power?.tactic);
+      return {
+        player:entry.player,
+        playerId:Number(entry.player.id || 0),
+        clubId:Number(power.clubId || 0),
+        slot:String(entry.slot || entry.player.position || 'MC'),
+        slotIndex:Number.isInteger(Number(entry.index)) ? Number(entry.index) : index,
+        factor:simClamp(Number(entry.factor || 1), 0.35, 1.20),
+        x:simClamp(coords.x,0,100),
+        y:simClamp(coords.y,0,100)
+      };
+    }).filter(Boolean);
+    if(power && typeof power === 'object') CONTINUOUS_ENTRIES_CACHE_V974.set(power,entries);
+    return entries;
+  }
+  function continuousOpponentPerspectiveV974(entry){
+    return { ...entry, x:100-Number(entry.x || 0), y:100-Number(entry.y || 0), originalX:Number(entry.x || 0), originalY:Number(entry.y || 0) };
+  }
+  function continuousEntryByPlayerV974(power, playerId){ return continuousEntriesV974(power).find(entry => Number(entry.playerId) === Number(playerId)) || null; }
+  function continuousGoalkeeperEntryV974(power){ return continuousEntriesV974(power).find(entry => entry.slot === 'POR' || entry.player?.position === 'POR') || continuousEntriesV974(power).slice().sort((a,b)=>a.x-b.x)[0] || null; }
+  function continuousKickoffCarrierV974(power){
+    const outfield = continuousEntriesV974(power).filter(entry => entry.slot !== 'POR' && entry.player?.position !== 'POR');
+    const candidates = outfield.length ? outfield : continuousEntriesV974(power);
+    return candidates.slice().sort((a,b) => (Math.abs(a.x-50)*1.4 + Math.abs(a.y-50)) - (Math.abs(b.x-50)*1.4 + Math.abs(b.y-50)))[0] || null;
+  }
+  function continuousTeamPowerV974(state, home, away, clubId){ return Number(clubId) === Number(state.homeId) ? home : away; }
+  function continuousOtherPowerV974(state, home, away, clubId){ return Number(clubId) === Number(state.homeId) ? away : home; }
+  function continuousSideV974(state, clubId){ return Number(clubId) === Number(state.homeId) ? 'home' : 'away'; }
+  function continuousSetCarrierV974(state, clubId, entry, transition='possession', ballPosition=null){
+    if(!entry) return false;
+    state.previousBallSlot = state.ballSlot;
+    state.possessionTeamId = Number(clubId || entry.clubId || 0);
+    state.ballCarrierId = Number(entry.playerId || entry.player?.id || 0);
+    state.ballSlot = Number(entry.slotIndex ?? 0);
+    state.ballPosition = ballPosition ? { x:simClamp(Number(ballPosition.x),0,100), y:simClamp(Number(ballPosition.y),0,100) } : { x:Number(entry.x), y:Number(entry.y) };
+    state.transitionType = transition;
+    if(transition === 'recovery') state.counterPhasesLeft = CONTINUOUS_MATCH_CONFIG_V974.counterPhases;
+    if(['kickoff','goalkeeper','goal_kick','restart'].includes(transition)) state.counterPhasesLeft = 0;
+    return true;
+  }
+  function continuousEnsureCarrierV974(state, home, away){
+    let own = continuousTeamPowerV974(state, home, away, state.possessionTeamId);
+    let carrier = continuousEntryByPlayerV974(own, state.ballCarrierId);
+    if(carrier) return { power:own, carrier };
+    const validTeam = [Number(state.homeId),Number(state.awayId)].includes(Number(state.possessionTeamId));
+    if(!validTeam){ state.possessionTeamId = continuousRandomV974(state) < 0.5 ? Number(state.homeId) : Number(state.awayId); own = continuousTeamPowerV974(state,home,away,state.possessionTeamId); }
+    const preferred = ['goalkeeper','goal_kick'].includes(String(state.transitionType || '')) ? continuousGoalkeeperEntryV974(own) : continuousKickoffCarrierV974(own);
+    carrier = preferred || continuousEntriesV974(own)[0] || null;
+    if(carrier) continuousSetCarrierV974(state,state.possessionTeamId,carrier,state.transitionType || 'restart');
+    return { power:own, carrier };
+  }
+  function continuousLocalAdvantagePctV974(state, clubId){
+    if(Number(clubId) !== Number(state.homeId) || state.context?.neutral || state.context?.clubWorldCup) return 0;
+    const homeFans = Math.max(0, Number(state.context?.homeFans || 0));
+    const awayFans = Math.max(0, Number(state.context?.awayFans || 0));
+    if(homeFans <= awayFans) return 0;
+    const ratio = homeFans / Math.max(1, awayFans);
+    const ratioProgress = simClamp((ratio - 1) / 4, 0, 1);
+    const crowdProgress = simClamp(Number(state.context?.homeCrowdBonus || 0) / 50, 0, 1);
+    return CONTINUOUS_MATCH_CONFIG_V974.homeAdvantageMaxPct * Math.max(ratioProgress,crowdProgress);
+  }
+  function continuousDensityAtV974(defendingPower, point, radius=18){
+    if(!point) return 0;
+    return continuousEntriesV974(defendingPower).map(continuousOpponentPerspectiveV974).reduce((sum, defender) => {
+      const dist = continuousDistanceV974(defender,point);
+      return sum + (dist < radius ? (1 - dist/radius) : 0);
+    },0);
+  }
+  function continuousOriginForCarrierV974(state, carrier){
+    if(Number(state.ballCarrierId) === Number(carrier?.playerId) && state.ballPosition) return { x:Number(state.ballPosition.x), y:Number(state.ballPosition.y) };
+    return { x:Number(carrier?.x || 50), y:Number(carrier?.y || 50) };
+  }
+  function continuousReceiverCandidatesV974(state, attackingPower, defendingPower, carrier, actionType){
+    const origin = continuousOriginForCarrierV974(state,carrier);
+    return continuousEntriesV974(attackingPower).filter(entry => Number(entry.playerId) !== Number(carrier.playerId)).filter(entry => {
+      const dist = continuousDistanceV974(origin,entry);
+      const progress = entry.x - origin.x;
+      if(actionType === 'pass_short') return dist <= CONTINUOUS_MATCH_CONFIG_V974.shortPassMax;
+      if(actionType === 'pass_long') return dist >= CONTINUOUS_MATCH_CONFIG_V974.longPassMin && dist <= CONTINUOUS_MATCH_CONFIG_V974.longPassMax;
+      if(actionType === 'pass_through') return progress >= CONTINUOUS_MATCH_CONFIG_V974.throughProgressMin && dist <= CONTINUOUS_MATCH_CONFIG_V974.longPassMax;
+      if(actionType === 'cross') return entry.x >= Math.max(62,origin.x-4) && Math.abs(entry.y-50) <= 30;
+      return true;
+    });
+  }
+  function continuousAvailableActionsV974(state, attackingPower, defendingPower, carrier){
+    const origin = continuousOriginForCarrierV974(state,carrier);
+    const isKeeper = carrier.slot === 'POR' || carrier.player?.position === 'POR';
+    const shortCandidates = continuousReceiverCandidatesV974(state,attackingPower,defendingPower,carrier,'pass_short');
+    const longCandidates = continuousReceiverCandidatesV974(state,attackingPower,defendingPower,carrier,'pass_long');
+    const throughCandidates = continuousReceiverCandidatesV974(state,attackingPower,defendingPower,carrier,'pass_through');
+    const crossCandidates = continuousReceiverCandidatesV974(state,attackingPower,defendingPower,carrier,'cross');
+    const actions = [];
+    const add = (type,candidates=[]) => { if(type === 'shot' || type === 'dribble' || candidates.length) actions.push({ type,candidates }); };
+    if(isKeeper){
+      const distribution = normalizeGoalkeeperDistributionV974(attackingPower?.tactic?.goalkeeperDistribution);
+      if(distribution === 'short'){
+        if(shortCandidates.length) add('pass_short',shortCandidates); else add('pass_long',longCandidates);
+      }else if(distribution === 'long'){
+        if(longCandidates.length) add('pass_long',longCandidates); else add('pass_short',shortCandidates);
+      }else{
+        add('pass_short',shortCandidates); add('pass_long',longCandidates);
+      }
+      return actions.length ? actions : [{ type:'pass_long', candidates:continuousEntriesV974(attackingPower).filter(entry=>Number(entry.playerId)!==Number(carrier.playerId)) }];
+    }
+    add('pass_short',shortCandidates);
+    add('pass_long',longCandidates);
+    add('pass_through',throughCandidates);
+    if((origin.y <= 30 || origin.y >= 70) && origin.x >= 54) add('cross',crossCandidates);
+    if(origin.x >= 50) add('shot');
+    if(origin.x < 95) add('dribble');
+    return actions.length ? actions : [{ type:'dribble', candidates:[] }];
+  }
+  function continuousScoreInstructionV974(state, attackingPower){
+    const side = continuousSideV974(state,attackingPower.clubId);
+    const own = Number(state.score?.[side] || 0);
+    const rival = Number(state.score?.[side === 'home' ? 'away' : 'home'] || 0);
+    return instructionForScore(attackingPower.tactic,own,rival);
+  }
+  function continuousActionWeightV974(state, attackingPower, action, carrier, runtime={}){
+    const type = action.type;
+    const origin = continuousOriginForCarrierV974(state,carrier);
+    let weight = Number(CONTINUOUS_MATCH_CONFIG_V974.actionBase[type] || 1);
+    const build = normalizeBuildUpStyleV974(attackingPower?.tactic?.buildUpStyle);
+    const counterActive = Number(state.counterPhasesLeft || 0) > 0 && String(state.transitionType || '').includes('recovery');
+    const styleMultipliers = {
+      possession:{ pass_short:2.05, pass_long:0.48, pass_through:0.66, cross:0.72, shot:0.78, dribble:0.82 },
+      direct:{ pass_short:0.82, pass_long:1.35, pass_through:1.72, cross:1.12, shot:1.18, dribble:1.05 },
+      counter:{ pass_short:counterActive?0.55:0.92, pass_long:counterActive?1.55:1.08, pass_through:counterActive?2.30:1.18, cross:counterActive?1.20:0.92, shot:counterActive?1.38:0.96, dribble:counterActive?1.55:1.00 },
+      long_ball:{ pass_short:0.42, pass_long:2.55, pass_through:1.46, cross:1.18, shot:1.02, dribble:0.72 }
+    };
+    weight *= Number(styleMultipliers[build]?.[type] || 1);
+    const scoreInstruction = continuousScoreInstructionV974(state,attackingPower);
+    if(scoreInstruction === 'lower') weight *= ({ pass_short:1.35, pass_long:0.75, pass_through:0.72, cross:0.82, shot:0.78, dribble:0.82 })[type] || 1;
+    if(scoreInstruction === 'push') weight *= ({ pass_short:0.85, pass_long:1.22, pass_through:1.40, cross:1.24, shot:1.55, dribble:1.22 })[type] || 1;
+    const liveInstruction = String(runtime.liveInstructionByClub?.[String(attackingPower.clubId)] || 'none');
+    if(['attack','goal_anyway'].includes(liveInstruction)) weight *= ({ pass_short:0.78, pass_long:1.18, pass_through:1.48, cross:1.28, shot:liveInstruction==='goal_anyway'?1.85:1.50, dribble:1.22 })[type] || 1;
+    if(['all_defense','hold_result','lower_tempo'].includes(liveInstruction)) weight *= ({ pass_short:1.40, pass_long:0.68, pass_through:0.62, cross:0.62, shot:0.55, dribble:0.78 })[type] || 1;
+    const mentality = simPlayerMentality(carrier.player,attackingPower.tactic);
+    const mentalityMul = ({ muy_defensivo:{shot:.45,pass_through:.62,pass_short:1.28,dribble:.65}, defensivo:{shot:.72,pass_through:.82,pass_short:1.15}, normal:{}, ofensivo:{shot:1.25,pass_through:1.18,dribble:1.12}, muy_ofensivo:{shot:1.55,pass_through:1.35,dribble:1.22,pass_short:.88} })[mentality] || {};
+    weight *= Number(mentalityMul[type] || 1);
+    if(type === 'shot') weight *= simClamp((origin.x - 43) / 24, 0.18, 2.3) * simClamp(1.25 - Math.abs(origin.y-50)/65,0.55,1.25);
+    if(type === 'cross') weight *= simClamp((origin.x-45)/30,0.35,1.6);
+    if(type === 'pass_through') weight *= simClamp((100-origin.x)/65,0.55,1.45);
+    if(type === 'pass_short' && action.candidates.length >= 3) weight *= 1.12;
+    if(type === 'pass_long' && !action.candidates.length) weight *= 0.05;
+    return Math.max(0.001,weight);
+  }
+  function continuousChooseActionV974(state, attackingPower, defendingPower, carrier, runtime={}){
+    const available = continuousAvailableActionsV974(state,attackingPower,defendingPower,carrier);
+    return continuousWeightedPickV974(state,available,action => continuousActionWeightV974(state,attackingPower,action,carrier,runtime));
+  }
+  function continuousReceiverScoreV974(state, attackingPower, defendingPower, carrier, candidate, actionType){
+    const origin = continuousOriginForCarrierV974(state,carrier);
+    const dist = continuousDistanceV974(origin,candidate);
+    const progress = candidate.x-origin.x;
+    const density = continuousDensityAtV974(defendingPower,candidate,CONTINUOUS_MATCH_CONFIG_V974.markingRadius);
+    const freeSpace = simClamp(1-density/2.2,0,1);
+    const condition = simClamp(Number(currentCondition(candidate.playerId) || 70),1,100)/100;
+    const positionSkill = simAvg([matchSkill(candidate.player,'posicionamiento'),matchSkill(candidate.player,'serenidad')]);
+    let score = 28 + freeSpace*34 + condition*10 + positionSkill*0.12;
+    if(actionType === 'pass_short') score += Math.max(0,34-dist)*1.1 + progress*0.28 - Math.max(0,progress-24)*0.45;
+    if(actionType === 'pass_long') score += dist*0.38 + Math.max(0,progress)*0.62 - Math.max(0,dist-70)*1.2;
+    if(actionType === 'pass_through') score += Math.max(0,progress)*1.35 + freeSpace*22 - Math.abs(candidate.y-50)*0.10;
+    if(actionType === 'cross') score += candidate.x*0.52 + (100-Math.abs(candidate.y-50)*1.5)*0.16 + matchSkill(candidate.player,'cabezazo')*0.24 + matchSkill(candidate.player,'remate')*0.16;
+    return Math.max(1,score-density*18);
+  }
+  function continuousChooseTargetV974(state, attackingPower, defendingPower, carrier, action){
+    if(!action?.candidates?.length) return null;
+    return continuousWeightedPickV974(state,action.candidates,candidate => continuousReceiverScoreV974(state,attackingPower,defendingPower,carrier,candidate,action.type));
+  }
+  function continuousDefensiveContextV974(state, attackingPower, defendingPower, carrier, target, actionType){
+    const origin = continuousOriginForCarrierV974(state,carrier);
+    const targetPoint = target ? { x:Number(target.x), y:Number(target.y) } : { x:100, y:50 };
+    const defenders = continuousEntriesV974(defendingPower).map(continuousOpponentPerspectiveV974);
+    const directPressure = defenders.filter(entry => continuousDistanceV974(entry,origin) <= CONTINUOUS_MATCH_CONFIG_V974.pressureRadius);
+    const receiverMarkers = defenders.filter(entry => continuousDistanceV974(entry,targetPoint) <= CONTINUOUS_MATCH_CONFIG_V974.markingRadius);
+    const laneInterceptors = defenders.filter(entry => continuousSegmentDistanceV974(entry,origin,targetPoint) <= CONTINUOUS_MATCH_CONFIG_V974.interceptionRadius);
+    const coverPlayers = defenders.filter(entry => continuousDistanceV974(entry,targetPoint) <= CONTINUOUS_MATCH_CONFIG_V974.markingRadius*1.55);
+    const densityAtOrigin = directPressure.reduce((sum,entry)=>sum + Math.max(0,1-continuousDistanceV974(entry,origin)/CONTINUOUS_MATCH_CONFIG_V974.pressureRadius),0);
+    const densityAtTarget = receiverMarkers.reduce((sum,entry)=>sum + Math.max(0,1-continuousDistanceV974(entry,targetPoint)/CONTINUOUS_MATCH_CONFIG_V974.markingRadius),0);
+    let relevant = [];
+    if(['pass_short','pass_long','pass_through','cross'].includes(actionType)) relevant = laneInterceptors.concat(receiverMarkers);
+    else if(actionType === 'dribble') relevant = directPressure;
+    else relevant = directPressure.concat(coverPlayers);
+    const unique = [];
+    const seen = new Set();
+    relevant.forEach(entry=>{ if(!seen.has(entry.playerId)){ seen.add(entry.playerId); unique.push(entry); } });
+    const defender = unique.slice().sort((a,b) => {
+      const ad = actionType === 'dribble' ? continuousDistanceV974(a,origin) : continuousSegmentDistanceV974(a,origin,targetPoint);
+      const bd = actionType === 'dribble' ? continuousDistanceV974(b,origin) : continuousSegmentDistanceV974(b,origin,targetPoint);
+      return ad-bd;
+    })[0] || defenders.slice().sort((a,b)=>continuousDistanceV974(a,targetPoint)-continuousDistanceV974(b,targetPoint))[0] || null;
+    return { origin,targetPoint,directPressure,receiverMarkers,laneInterceptors,coverPlayers,densityAtOrigin,densityAtTarget,defender };
+  }
+  function continuousSkillAverageV974(player, keys, fallback=55){
+    if(!player) return fallback;
+    const values = (keys || []).map(key => Number(matchSkill(player,key))).filter(Number.isFinite);
+    return values.length ? simAvg(values) : fallback;
+  }
+  function continuousExecutionAbilityV974(actionType, actor){
+    if(actionType === 'pass_short') return continuousSkillAverageV974(actor,['paseCorto','vision','serenidad']);
+    if(actionType === 'pass_long') return continuousSkillAverageV974(actor,['paseLargo','vision','serenidad']);
+    if(actionType === 'pass_through') return continuousSkillAverageV974(actor,['vision','paseLargo','paseCorto','serenidad']);
+    if(actionType === 'cross') return continuousSkillAverageV974(actor,['paseLargo','vision','serenidad']);
+    if(actionType === 'dribble') return continuousSkillAverageV974(actor,['regate','velocidad','aceleracion','serenidad']);
+    if(actionType === 'shot') return continuousSkillAverageV974(actor,['remate','serenidad','posicionamiento']);
+    return Number(effectiveOverall(actor) || 55);
+  }
+  function continuousDefensiveAbilityV974(actionType, defender){
+    if(!defender) return 42;
+    if(actionType === 'dribble') return continuousSkillAverageV974(defender,['entradas','marca','aceleracion','posicionamiento']);
+    return continuousSkillAverageV974(defender,['posicionamiento','marca','entradas','serenidad']);
+  }
+  function continuousPossessionEntryFromDefenderV974(defendingPower, perspectiveDefender){
+    if(!perspectiveDefender) return continuousGoalkeeperEntryV974(defendingPower);
+    return continuousEntryByPlayerV974(defendingPower,perspectiveDefender.playerId) || continuousGoalkeeperEntryV974(defendingPower);
+  }
+  function continuousFoulChanceV974(defendingPower, context, actionType){
+    const aggression = simClamp(Number(defendingPower?.aggression || 55),1,99);
+    const discipline = simClamp(Number(defendingPower?.discipline || 55),1,99);
+    const pressure = Math.min(3,context?.directPressure?.length || 0);
+    const actionExtra = actionType === 'dribble' ? 0.026 : ['pass_through','cross'].includes(actionType) ? 0.012 : 0;
+    return simClamp(0.010 + aggression/3200 + (100-discipline)/4200 + pressure*0.009 + actionExtra,0.008,0.16);
+  }
+  function continuousSpatialQualityV974(power, point, mode='support'){
+    const entries = continuousEntriesV974(power);
+    if(!entries.length) return 55;
+    let weighted = 0;
+    let weightTotal = 0;
+    entries.forEach(entry => {
+      const distance = continuousDistanceV974(entry,point);
+      const weight = Math.max(0.05,1-distance/92);
+      const skill = mode === 'defense'
+        ? continuousSkillAverageV974(entry.player,['posicionamiento','marca','entradas','serenidad'])
+        : continuousSkillAverageV974(entry.player,['vision','paseCorto','paseLargo','serenidad']);
+      weighted += skill * Number(entry.factor || 1) * weight;
+      weightTotal += weight;
+    });
+    return weightTotal > 0 ? weighted/weightTotal : 55;
+  }
+  function continuousDuelResultV974(state, attackingPower, defendingPower, carrier, target, actionType, context, runtime={}){
+    const origin = context.origin;
+    const distance = target ? continuousDistanceV974(origin,target) : 0;
+    const conditionResolver = typeof runtime.conditionResolver === 'function' ? runtime.conditionResolver : (id=>currentCondition(id));
+    const actorCondition = simClamp(Number(conditionResolver(carrier.playerId) || 70),1,100);
+    const actorConditionFactor = 0.72 + actorCondition/100*0.28;
+    let execution = continuousExecutionAbilityV974(actionType,carrier.player) * Number(carrier.factor || 1) * actorConditionFactor;
+    const ownSupport = continuousSpatialQualityV974(attackingPower,origin,'support');
+    const rivalPoint = { x:100-Number(origin.x || 0), y:100-Number(origin.y || 0) };
+    const rivalSupport = continuousSpatialQualityV974(defendingPower,rivalPoint,'defense');
+    execution += (ownSupport-rivalSupport)*0.10;
+    execution += ({ pass_short:18,pass_long:8,pass_through:4,cross:4,dribble:3 })[actionType] || 0;
+    execution += Number(pitchEffectV2(state.context?.pitch).passDelta || 0) * (actionType === 'shot' ? 0.10 : 0.35);
+    execution *= 1 + continuousLocalAdvantagePctV974(state,attackingPower.clubId);
+    if(actionType === 'pass_short') execution -= Math.max(0,distance-18)*0.22;
+    if(actionType === 'pass_long') execution -= Math.max(0,distance-38)*0.18;
+    if(actionType === 'pass_through') execution -= Math.max(0,distance-34)*0.16;
+    if(actionType === 'cross') execution -= Math.max(0,distance-42)*0.12;
+    execution -= Number(context.densityAtOrigin || 0)*5.5 + Number(context.densityAtTarget || 0)*7.0;
+    const defenderCondition = context.defender ? simClamp(Number(conditionResolver(context.defender.playerId) || 70),1,100) : 70;
+    const defenderAbility = continuousDefensiveAbilityV974(actionType,context.defender?.player) * (0.72 + defenderCondition/100*0.28);
+    const coverage = Math.min(3,(context.laneInterceptors?.length || 0))*3.2 + Math.min(3,(context.coverPlayers?.length || 0))*1.8;
+    const attackPower = execution + continuousRndV974(state,-CONTINUOUS_MATCH_CONFIG_V974.duelRandomRange,CONTINUOUS_MATCH_CONFIG_V974.duelRandomRange);
+    const defensePower = defenderAbility + coverage + continuousRndV974(state,-CONTINUOUS_MATCH_CONFIG_V974.duelRandomRange,CONTINUOUS_MATCH_CONFIG_V974.duelRandomRange);
+    return { success:attackPower>defensePower, attackPower, defensePower, executionAbility:execution, defenderAbility };
+  }
+  function continuousGoalEventV974(state, attackingPower, carrier, shotQuality){
+    const previous = state.lastCompletedPass;
+    const assistId = previous && Number(previous.clubId) === Number(attackingPower.clubId) && Number(previous.targetId) === Number(carrier.playerId) && (state.phase-Number(previous.phase || 0)) <= 3 && Number(previous.actorId) !== Number(carrier.playerId) ? Number(previous.actorId) : null;
+    return { clubId:Number(attackingPower.clubId), playerId:Number(carrier.playerId), assistId, minute:Math.max(1,Math.ceil(state.phase/4)), phase:Number(state.phase), setPiece:false, errorGoal:false, errorById:null, chanceQuality:Number(shotQuality.toFixed(3)) };
+  }
+  function continuousShotResolutionV974(state, attackingPower, defendingPower, carrier, context, runtime={}){
+    const origin = context.origin;
+    const keeper = continuousGoalkeeperEntryV974(defendingPower);
+    const conditionResolver = typeof runtime.conditionResolver === 'function' ? runtime.conditionResolver : (id=>currentCondition(id));
+    const shooterCondition = simClamp(Number(conditionResolver(carrier.playerId) || 70),1,100);
+    const keeperCondition = keeper ? simClamp(Number(conditionResolver(keeper.playerId) || 70),1,100) : 70;
+    const shooterSkill = continuousExecutionAbilityV974('shot',carrier.player) * (0.72 + shooterCondition/100*0.28);
+    const keeperSkill = keeper ? continuousSkillAverageV974(keeper.player,['porteria','posicionamiento','serenidad']) * (0.72 + keeperCondition/100*0.28) : 42;
+    const distanceToGoal = Math.hypot(100-origin.x,(origin.y-50)*0.72);
+    const defenseDensity = Number(context.densityAtTarget || 0) + Math.min(2,context.coverPlayers?.length || 0)*0.28;
+    const ownSupport = continuousSpatialQualityV974(attackingPower,origin,'support');
+    const rivalSupport = continuousSpatialQualityV974(defendingPower,{x:100-Number(origin.x || 0),y:100-Number(origin.y || 0)},'defense');
+    const teamEdge = (ownSupport-rivalSupport)/900;
+    let xg = 0.035 + Math.max(0,origin.x-48)*0.0046 - Math.max(0,distanceToGoal-18)*0.0018 + (shooterSkill-keeperSkill)*0.0016 + teamEdge - defenseDensity*0.018;
+    xg *= Number(attackingPower.styleEffects?.conversionMultiplier || 1) * Number(defendingPower.styleEffects?.rivalConversionMultiplier || 1) * Number(pitchEffectV2(state.context?.pitch).chanceMultiplier || 1);
+    xg *= 1.35;
+    xg *= 1 + continuousLocalAdvantagePctV974(state,attackingPower.clubId);
+    xg = simClamp(xg,0.012,0.46);
+    const penalty = simHighScoreGoalPenaltyForNextGoal(Number(state.score.home || 0)+Number(state.score.away || 0));
+    const goalProbability = simClamp(xg*(1-penalty),0,0.46);
+    const onTargetProbability = simClamp(0.34 + (shooterSkill-50)/150 - Math.max(0,distanceToGoal-25)/160 - Number(context.densityAtOrigin || 0)*0.025,0.18,0.82);
+    const onTarget = continuousRandomV974(state) < onTargetProbability;
+    const goal = onTarget && continuousRandomV974(state) < goalProbability / Math.max(0.25,onTargetProbability);
+    const blockChance = simClamp(0.06 + (context.coverPlayers?.length || 0)*0.045 + Number(context.densityAtOrigin || 0)*0.04,0.04,0.42);
+    const blocked = !goal && continuousRandomV974(state) < blockChance;
+    let keySave = null;
+    if(!goal && onTarget && !blocked && keeper){ keySave = { clubId:Number(defendingPower.clubId), playerId:Number(keeper.playerId), minute:Math.max(1,Math.ceil(state.phase/4)), phase:Number(state.phase), chanceById:Number(carrier.playerId), chanceQuality:Number(goalProbability.toFixed(3)) }; }
+    const goalEvent = goal ? continuousGoalEventV974(state,attackingPower,carrier,goalProbability) : null;
+    return { xg,goalProbability,onTarget,goal,blocked,keySave,goalEvent,keeper };
+  }
+  function continuousResolveActionV974(state, attackingPower, defendingPower, carrier, action, target, context, runtime={}){
+    const type = action.type;
+    const base = { type, action:type, actorId:Number(carrier.playerId), targetId:Number(target?.playerId || 0) || null, attackingClubId:Number(attackingPower.clubId), defendingClubId:Number(defendingPower.clubId), fromSlot:Number(carrier.slotIndex), toSlot:Number(target?.slotIndex ?? carrier.slotIndex), fromPosition:{ ...context.origin }, toPosition:target?{x:Number(target.x),y:Number(target.y)}:{x:100,y:50}, defenderId:Number(context.defender?.playerId || 0) || null, success:false, possessionChanged:false, foul:false, shot:null, reason:'failed' };
+    if(type === 'shot'){
+      const shot = continuousShotResolutionV974(state,attackingPower,defendingPower,carrier,context,runtime);
+      return { ...base, success:Boolean(shot.goal), shot, possessionChanged:!shot.goal, reason:shot.goal?'goal':shot.blocked?'shot_blocked':shot.onTarget?'shot_saved':'shot_off_target', executionAbility:continuousExecutionAbilityV974('shot',carrier.player) };
+    }
+    const duel = continuousDuelResultV974(state,attackingPower,defendingPower,carrier,target,type,context,runtime);
+    const foulChance = continuousFoulChanceV974(defendingPower,context,type);
+    if(!duel.success && context.defender && continuousRandomV974(state) < foulChance){
+      return { ...base, success:false, foul:true, possessionChanged:false, reason:'foul_won', executionAbility:duel.executionAbility, attackPower:duel.attackPower, defensePower:duel.defensePower };
+    }
+    return { ...base, success:duel.success, possessionChanged:!duel.success, reason:duel.success?'completed':'intercepted', executionAbility:duel.executionAbility, attackPower:duel.attackPower, defensePower:duel.defensePower };
+  }
+  function continuousApplyActionV974(state, attackingPower, defendingPower, carrier, target, context, result){
+    state.lastAction = { phase:state.phase, type:result.type, actorId:result.actorId, targetId:result.targetId };
+    state.lastResult = result;
+    if(result.foul){
+      state.transitionType = 'restart';
+      state.counterPhasesLeft = 0;
+      return;
+    }
+    if(result.type === 'shot'){
+      if(result.shot?.goal){
+        const side = continuousSideV974(state,attackingPower.clubId);
+        state.score[side] = Number(state.score[side] || 0) + 1;
+        const restartPower = defendingPower;
+        const restartCarrier = continuousKickoffCarrierV974(restartPower) || continuousGoalkeeperEntryV974(restartPower);
+        continuousSetCarrierV974(state,restartPower.clubId,restartCarrier,'kickoff',restartCarrier?{x:restartCarrier.x,y:restartCarrier.y}:{x:50,y:50});
+        state.lastCompletedPass = null;
+        return;
+      }
+      const keeper = result.shot?.keeper || continuousGoalkeeperEntryV974(defendingPower);
+      if(result.shot?.blocked && context.defender){
+        const defenderEntry = continuousPossessionEntryFromDefenderV974(defendingPower,context.defender);
+        continuousSetCarrierV974(state,defendingPower.clubId,defenderEntry,'recovery');
+      }else continuousSetCarrierV974(state,defendingPower.clubId,keeper,'goalkeeper');
+      state.lastCompletedPass = null;
+      return;
+    }
+    if(result.success){
+      if(['pass_short','pass_long','pass_through','cross'].includes(result.type) && target){
+        continuousSetCarrierV974(state,attackingPower.clubId,target,'possession');
+        state.lastCompletedPass = { phase:state.phase,clubId:attackingPower.clubId,actorId:carrier.playerId,targetId:target.playerId,type:result.type };
+        if(Number(target.x) < Number(context.origin.x)-8) state.counterPhasesLeft = 0;
+      }else if(result.type === 'dribble'){
+        const advance = simClamp(6 + continuousExecutionAbilityV974('dribble',carrier.player)/18,6,12);
+        const nextPosition = { x:simClamp(Number(context.origin.x)+advance,0,96), y:simClamp(Number(context.origin.y)+(50-Number(context.origin.y))*0.12,3,97) };
+        continuousSetCarrierV974(state,attackingPower.clubId,carrier,'possession',nextPosition);
+        state.lastCompletedPass = null;
+      }
+      return;
+    }
+    const defenderEntry = continuousPossessionEntryFromDefenderV974(defendingPower,context.defender);
+    continuousSetCarrierV974(state,defendingPower.clubId,defenderEntry,'recovery');
+    state.lastCompletedPass = null;
+  }
+  function continuousEmptyAccumulatorV974(){
+    const side = { phases:0,attacks:0,chances:0,fouls:0,xg:0,passScoreSum:0,passScoreCount:0 };
+    CONTINUOUS_STAT_KEYS_V974.forEach(key=>{ side[key]=0; });
+    return { home:{...side}, away:{...side}, phaseCount:0, goals:[], keySaves:[], errors:[], results:[] };
+  }
+  function continuousUpdateAccumulatorV974(state, accumulator, result, possessionAtStart){
+    accumulator.phaseCount += 1;
+    const startSide = continuousSideV974(state,possessionAtStart);
+    accumulator[startSide].phases += 1;
+    const attackSide = continuousSideV974(state,result.attackingClubId);
+    const defendSide = attackSide === 'home' ? 'away' : 'home';
+    const attackStats = accumulator[attackSide];
+    const defendStats = accumulator[defendSide];
+    if(['pass_short','pass_long','pass_through','cross'].includes(result.type)){
+      attackStats.passesAttempted += 1;
+      if(result.success) attackStats.passesCompleted += 1;
+      attackStats.passScoreSum += Number(result.executionAbility || 0); attackStats.passScoreCount += 1;
+      if(result.type === 'pass_long'){ attackStats.longPassesAttempted += 1; if(result.success) attackStats.longPassesCompleted += 1; }
+      if(result.type === 'pass_through'){ attackStats.throughPassesAttempted += 1; if(result.success) attackStats.throughPassesCompleted += 1; }
+      if(result.type === 'cross'){ attackStats.crossesAttempted += 1; if(result.success) attackStats.crossesCompleted += 1; }
+      if(result.success && ['pass_through','cross'].includes(result.type)) attackStats.attacks += 1;
+    }
+    if(result.type === 'dribble'){
+      attackStats.dribblesAttempted += 1;
+      if(result.success){ attackStats.dribblesWon += 1; if(Number(result.fromPosition?.x || 0) >= 58) attackStats.attacks += 1; }
+      if(!result.success && result.defenderId) defendStats.tackles += 1;
+    }
+    if(result.type === 'shot'){
+      attackStats.attacks += 1; attackStats.chances += 1; attackStats.shots += 1;
+      attackStats.xg += Number(result.shot?.xg || 0);
+      if(result.shot?.onTarget) attackStats.shotsOnTarget += 1;
+      if(result.shot?.goalEvent) accumulator.goals.push(result.shot.goalEvent);
+      if(result.shot?.keySave) accumulator.keySaves.push(result.shot.keySave);
+    }
+    if(result.foul) defendStats.fouls += 1;
+    if(!result.success && !result.foul && result.defenderId && ['pass_short','pass_long','pass_through','cross'].includes(result.type)) defendStats.interceptions += 1;
+    accumulator.results.push(result);
+  }
+  function continuousBlockStatsV974(accumulator, side){
+    const stats = accumulator[side];
+    const phaseCount = Math.max(1,Number(accumulator.phaseCount || 0));
+    const out = {
+      attacks:Number(stats.attacks || 0),
+      chances:Number(stats.chances || 0),
+      possession:simClamp((Number(stats.phases || 0)/phaseCount)*100,0,100),
+      fouls:Number(stats.fouls || 0),
+      passScore:stats.passScoreCount ? Number(stats.passScoreSum || 0)/Number(stats.passScoreCount || 1) : 60,
+      xg:Number(stats.xg || 0)
+    };
+    CONTINUOUS_STAT_KEYS_V974.forEach(key=>{ out[key]=Number(stats[key] || 0); });
+    return out;
+  }
+  function continuousTechnicalLogV974(state,result,context){
+    if(!CONTINUOUS_MATCH_CONFIG_V974.technicalLog) return;
+    state.technicalLog = Array.isArray(state.technicalLog) ? state.technicalLog : [];
+    state.technicalLog.push({
+      phase:Number(state.phase),
+      time:`${String(Math.floor(Number(state.clockSeconds || 0)/60)).padStart(2,'0')}:${String(Number(state.clockSeconds || 0)%60).padStart(2,'0')}`,
+      team:Number(result.attackingClubId), carrier:Number(result.actorId), fromSlot:Number(result.fromSlot), action:String(result.type), target:result.targetId?Number(result.targetId):null, targetSlot:Number(result.toSlot), defenders:(context?.laneInterceptors || []).concat(context?.directPressure || []).map(entry=>Number(entry.playerId)).filter((id,index,arr)=>arr.indexOf(id)===index).slice(0,6), success:Boolean(result.success), foul:Boolean(result.foul), nextCarrier:Number(state.ballCarrierId || 0), possessionTeamId:Number(state.possessionTeamId || 0), reason:String(result.reason || '')
+    });
+    if(state.technicalLog.length > CONTINUOUS_MATCH_CONFIG_V974.maxTechnicalLog) state.technicalLog.splice(0,state.technicalLog.length-CONTINUOUS_MATCH_CONFIG_V974.maxTechnicalLog);
+  }
+  function continuousCreateMatchStateV974(match, homePower, awayPower, context){
+    const state = {
+      version:'V9.74', phase:0,totalPhases:360,clockSeconds:0,
+      homeId:Number(match.homeId),awayId:Number(match.awayId),
+      possessionTeamId:null,ballCarrierId:null,ballSlot:null,previousBallSlot:null,ballPosition:null,
+      possessionStartPhase:0,transitionType:'kickoff',counterPhasesLeft:0,lastAction:null,lastResult:null,lastCompletedPass:null,
+      score:{home:0,away:0},context:context || {},rngState:continuousSeedForMatchV974(match),technicalLog:[]
+    };
+    state.possessionTeamId = continuousRandomV974(state) < 0.5 ? state.homeId : state.awayId;
+    const firstPower = Number(state.possessionTeamId) === state.homeId ? homePower : awayPower;
+    const carrier = continuousKickoffCarrierV974(firstPower) || continuousEntriesV974(firstPower)[0];
+    if(carrier) continuousSetCarrierV974(state,state.possessionTeamId,carrier,'kickoff');
+    return state;
+  }
+  function continuousRunPhaseV974(state, home, away, runtime={}){
+    if(!state || state.phase >= CONTINUOUS_MATCH_CONFIG_V974.totalPhases) return null;
+    state.phase += 1;
+    state.clockSeconds = state.phase * CONTINUOUS_MATCH_CONFIG_V974.secondsPerPhase;
+    if(Number(state.counterPhasesLeft || 0)>0) state.counterPhasesLeft -= 1;
+    const ensured = continuousEnsureCarrierV974(state,home,away);
+    const attackingPower = ensured.power;
+    const carrier = ensured.carrier;
+    if(!attackingPower || !carrier) return null;
+    const defendingPower = continuousOtherPowerV974(state,home,away,attackingPower.clubId);
+    const possessionAtStart = Number(attackingPower.clubId);
+    const action = continuousChooseActionV974(state,attackingPower,defendingPower,carrier,runtime);
+    const target = continuousChooseTargetV974(state,attackingPower,defendingPower,carrier,action);
+    const context = continuousDefensiveContextV974(state,attackingPower,defendingPower,carrier,target,action.type);
+    const result = continuousResolveActionV974(state,attackingPower,defendingPower,carrier,action,target,context,runtime);
+    continuousApplyActionV974(state,attackingPower,defendingPower,carrier,target,context,result);
+    continuousTechnicalLogV974(state,result,context);
+    return { result,context,possessionAtStart };
+  }
+  function continuousRunMinuteV974(state, home, away, runtime={}){
+    const accumulator = continuousEmptyAccumulatorV974();
+    for(let i=0;i<4 && state.phase<CONTINUOUS_MATCH_CONFIG_V974.totalPhases;i++){
+      const phase = continuousRunPhaseV974(state,home,away,runtime);
+      if(!phase) continue;
+      continuousUpdateAccumulatorV974(state,accumulator,phase.result,phase.possessionAtStart);
+    }
+    return { home:continuousBlockStatsV974(accumulator,'home'), away:continuousBlockStatsV974(accumulator,'away'), goals:accumulator.goals, keySaves:accumulator.keySaves, errors:accumulator.errors, results:accumulator.results, phases:accumulator.phaseCount };
+  }
+  function continuousEngineSummaryV974(state){
+    return { version:'V9.74',phases:Number(state?.phase || 0),totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:Number(state?.clockSeconds || 0),possessionTeamId:Number(state?.possessionTeamId || 0),ballCarrierId:Number(state?.ballCarrierId || 0),ballSlot:Number(state?.ballSlot ?? -1),transitionType:String(state?.transitionType || ''),rngState:Number(state?.rngState || 0)>>>0,technicalLog:CONTINUOUS_MATCH_CONFIG_V974.technicalLog ? (state?.technicalLog || []).slice() : [] };
+  }
+  function debugContinuousCoreV974(match,home,away,context={}){
+    const state = continuousCreateMatchStateV974(match,home,away,context);
+    const totals = { home:emptyStats(),away:emptyStats(),goals:[],keySaves:[],results:[] };
+    for(let minute=1;minute<=90 && state.phase<CONTINUOUS_MATCH_CONFIG_V974.totalPhases;minute++){
+      const core = continuousRunMinuteV974(state,home,away,{});
+      mergeBlockStats(totals.home,core.home);
+      mergeBlockStats(totals.away,core.away);
+      totals.goals.push(...(core.goals || []));
+      totals.keySaves.push(...(core.keySaves || []));
+      totals.results.push(...(core.results || []));
+    }
+    return { summary:continuousEngineSummaryV974(state), home:finalizeStats(totals.home),away:finalizeStats(totals.away),goals:totals.goals.slice(),keySaves:totals.keySaves.slice(),results:totals.results.slice() };
+  }
+
   function createLiveMatchSession(match){
     const homeTactic = ensureLiveTacticShape(getTacticForClubV2(match.homeId, match.awayId), match.homeId);
     const awayTactic = ensureLiveTacticShape(getTacticForClubV2(match.awayId, match.homeId), match.awayId);
@@ -1708,7 +2319,7 @@
     applyTacticCohesionPenalty(match.awayId, awayTactic);
     const matchContext = makeMatchContextV2(match);
     const powers = livePowerPair({ match, homeTactic, awayTactic, matchContext });
-    return {
+    const session = {
       match:{ ...match },
       homeTactic,
       awayTactic,
@@ -1746,6 +2357,10 @@
       instructionLog:[],
       finished:false
     };
+    if(USE_CONTINUOUS_MATCH_ENGINE_V974){
+      session.continuousV974 = continuousCreateMatchStateV974(match,powers.home,powers.away,matchContext);
+    }
+    return session;
   }
   function addLiveInstructionCondition(session, clubId, instruction){
     if(!session) return;
@@ -1814,25 +2429,48 @@
     else away = applyBotOverexertionPowerV2(away, awayBotOverexertion);
     const homeInstruction = Number(session.match.homeId) === ownId ? 'normal' : instructionForScore(session.homeTactic, session.homeGoals, session.awayGoals);
     const awayInstruction = Number(session.match.awayId) === ownId ? 'normal' : instructionForScore(session.awayTactic, session.awayGoals, session.homeGoals);
-    const h = blockStatsForTeam(home, away, session.matchContext, homeInstruction, awayInstruction, true, block);
-    const a = blockStatsForTeam(away, home, session.matchContext, awayInstruction, homeInstruction, false, block);
+    let h;
+    let a;
+    if(USE_CONTINUOUS_MATCH_ENGINE_V974 && session.continuousV974){
+      session.continuousV974.score.home = Number(session.homeGoals || 0);
+      session.continuousV974.score.away = Number(session.awayGoals || 0);
+      const core = continuousRunMinuteV974(session.continuousV974,home,away,{
+        conditionResolver:id=>liveEffectiveCondition(session,id),
+        liveInstructionByClub:{ [String(ownId)]:instruction }
+      });
+      h = core.home;
+      a = core.away;
+      (core.goals || []).forEach(goal=>session.goals.push(goal));
+      (core.keySaves || []).forEach(event=>session.keySaves.push(event));
+      (core.errors || []).forEach(event=>session.errors.push(event));
+      session.homeGoals = Number(session.continuousV974.score.home || 0);
+      session.awayGoals = Number(session.continuousV974.score.away || 0);
+    }else{
+      h = blockStatsForTeam(home, away, session.matchContext, homeInstruction, awayInstruction, true, block);
+      a = blockStatsForTeam(away, home, session.matchContext, awayInstruction, homeInstruction, false, block);
+      const hBaseProb = h.chances > 0 ? simClamp(h.xg / Math.max(1, h.chances), 0.025, 0.70) : 0;
+      const aBaseProb = a.chances > 0 ? simClamp(a.xg / Math.max(1, a.chances), 0.025, 0.70) : 0;
+      for(let i=0;i<h.chances;i++){
+        const goal = resolveChanceV2(home, away, session.match.homeId, session.match.awayId, Math.floor(simRnd(block.from, block.to + 1)), hBaseProb, session.homeTotals, session.awayTotals, session, session.homeGoals + session.awayGoals);
+        if(goal){ session.goals.push(goal); session.homeGoals++; }
+      }
+      for(let i=0;i<a.chances;i++){
+        const goal = resolveChanceV2(away, home, session.match.awayId, session.match.homeId, Math.floor(simRnd(block.from, block.to + 1)), aBaseProb, session.awayTotals, session.homeTotals, session, session.homeGoals + session.awayGoals);
+        if(goal){ session.goals.push(goal); session.awayGoals++; }
+      }
+    }
     mergeBlockStats(session.homeTotals, h);
     mergeBlockStats(session.awayTotals, a);
-    const hBaseProb = h.chances > 0 ? simClamp(h.xg / Math.max(1, h.chances), 0.025, 0.70) : 0;
-    const aBaseProb = a.chances > 0 ? simClamp(a.xg / Math.max(1, a.chances), 0.025, 0.70) : 0;
-    for(let i=0;i<h.chances;i++){
-      const goal = resolveChanceV2(home, away, session.match.homeId, session.match.awayId, Math.floor(simRnd(block.from, block.to + 1)), hBaseProb, session.homeTotals, session.awayTotals, session, session.homeGoals + session.awayGoals);
-      if(goal){ session.goals.push(goal); session.homeGoals++; }
-    }
-    for(let i=0;i<a.chances;i++){
-      const goal = resolveChanceV2(away, home, session.match.awayId, session.match.homeId, Math.floor(simRnd(block.from, block.to + 1)), aBaseProb, session.awayTotals, session.homeTotals, session, session.homeGoals + session.awayGoals);
-      if(goal){ session.goals.push(goal); session.awayGoals++; }
-    }
     const friendlyNoSanctions = Boolean(session.match?.friendly);
-    const cardCandidates = friendlyNoSanctions ? [] : [
-      ...liveCardsForBlock(session, session.match.homeId, home, h.fouls, block),
-      ...liveCardsForBlock(session, session.match.awayId, away, a.fouls, block)
-    ].sort((x,y)=>x.minute-y.minute);
+    const cardCandidates = friendlyNoSanctions ? [] : (session.continuousV974
+      ? continuousWithMathRandomV974(session.continuousV974,()=>[
+          ...liveCardsForBlock(session, session.match.homeId, home, h.fouls, block),
+          ...liveCardsForBlock(session, session.match.awayId, away, a.fouls, block)
+        ].sort((x,y)=>x.minute-y.minute))
+      : [
+          ...liveCardsForBlock(session, session.match.homeId, home, h.fouls, block),
+          ...liveCardsForBlock(session, session.match.awayId, away, a.fouls, block)
+        ].sort((x,y)=>x.minute-y.minute));
     const cards = friendlyNoSanctions ? [] : applyCardVolumePenaltyV2(cardCandidates, session.cards || []);
     cards.forEach(card => {
       session.cards.push(card);
@@ -1843,10 +2481,15 @@
       applyDefaultLossToLiveSession(session, defaultLoss);
       return finishLiveMatchSession(session);
     }
-    const injuries = friendlyNoSanctions ? [] : [
-      ...liveInjuriesForBlock(session, session.match.homeId, home, session.matchContext, block),
-      ...liveInjuriesForBlock(session, session.match.awayId, away, session.matchContext, block)
-    ].sort((x,y)=>x.minute-y.minute);
+    const injuries = friendlyNoSanctions ? [] : (session.continuousV974
+      ? continuousWithMathRandomV974(session.continuousV974,()=>[
+          ...liveInjuriesForBlock(session, session.match.homeId, home, session.matchContext, block),
+          ...liveInjuriesForBlock(session, session.match.awayId, away, session.matchContext, block)
+        ].sort((x,y)=>x.minute-y.minute))
+      : [
+          ...liveInjuriesForBlock(session, session.match.homeId, home, session.matchContext, block),
+          ...liveInjuriesForBlock(session, session.match.awayId, away, session.matchContext, block)
+        ].sort((x,y)=>x.minute-y.minute));
     injuries.forEach(injury => {
       session.injuries.push(injury);
       handleLiveInjury(session, injury, injury.minute || block.from);
@@ -1954,6 +2597,10 @@
       minute:session.currentMinute,
       period:liveCurrentPeriod(session),
       phaseIndex:Number(session.blockIndex || 0),
+      continuousPhase:Number(session.continuousV974?.phase || 0),
+      continuousTotalPhases:session.continuousV974 ? 360 : 0,
+      continuousBallCarrierId:Number(session.continuousV974?.ballCarrierId || 0),
+      continuousPossessionTeamId:Number(session.continuousV974?.possessionTeamId || 0),
       phaseLabel:(session.blocks[Math.max(0, Number(session.blockIndex || 0) - 1)] || {}).label || `0'`,
       finished:Boolean(session.finished),
       nextBlock:session.blocks[session.blockIndex] || null,
@@ -2020,7 +2667,7 @@
     const result = {
       ...session.match,
       played:true,
-      engine:'live-tactical',
+      engine:session.continuousV974 ? 'continuous-360-v974' : 'live-tactical',
       starterIdsHome,
       starterIdsAway,
       homeGoals:session.homeGoals,
@@ -2040,7 +2687,8 @@
       botOverexertionEvents:Array.isArray(session.botOverexertionEvents) ? session.botOverexertionEvents.slice() : [],
       liveBlocks:session.instructionLog,
       suspended:Boolean(session.suspended),
-      defaultLoss:session.defaultLoss || null
+      defaultLoss:session.defaultLoss || null,
+      continuousEngine:session.continuousV974 ? continuousEngineSummaryV974(session.continuousV974) : null
     };
     if(!result.friendly){
       applyMatchCohesionResult(result, result.substitutions, result.cards);
@@ -2056,7 +2704,7 @@
     session.result = finalResult;
     return finalResult;
   }
-  function simulateMatch(match){
+  function simulateMatchLegacyV973(match){
     const homeTactic = getTacticForClubV2(match.homeId, match.awayId);
     const awayTactic = getTacticForClubV2(match.awayId, match.homeId);
     applyTacticCohesionPenalty(match.homeId, homeTactic);
@@ -2158,6 +2806,106 @@
       : result;
   }
 
+
+  function simulateMatchContinuousV974(match){
+    const homeTactic = ensureLiveTacticShape(getTacticForClubV2(match.homeId, match.awayId), match.homeId);
+    const awayTactic = ensureLiveTacticShape(getTacticForClubV2(match.awayId, match.homeId), match.awayId);
+    applyTacticCohesionPenalty(match.homeId, homeTactic);
+    applyTacticCohesionPenalty(match.awayId, awayTactic);
+    const matchContext = makeMatchContextV2(match);
+    let home = teamPowerV2(match.homeId, homeTactic, { crowdBonus:matchContext.homeCrowdBonus || 0 });
+    let away = teamPowerV2(match.awayId, awayTactic, { crowdBonus:0 });
+    ({ home, away } = applyManagerTacticalAdaptationPairV2(home, away, match, matchContext));
+    const state = continuousCreateMatchStateV974(match,home,away,matchContext);
+    const homeTotals = emptyStats();
+    const awayTotals = emptyStats();
+    const incidents = { keySaves:[], errors:[] };
+    const goals = [];
+    for(let minute=1; minute<=90 && state.phase<CONTINUOUS_MATCH_CONFIG_V974.totalPhases; minute++){
+      const homeBotOverexertion = isManagerClubV2(match.homeId) ? null : botOverexertionRuleV2(state.score.home,state.score.away);
+      const awayBotOverexertion = isManagerClubV2(match.awayId) ? null : botOverexertionRuleV2(state.score.away,state.score.home);
+      const homeMinutePower = applyBotOverexertionPowerV2(home,homeBotOverexertion);
+      const awayMinutePower = applyBotOverexertionPowerV2(away,awayBotOverexertion);
+      const core = continuousRunMinuteV974(state,homeMinutePower,awayMinutePower,{});
+      mergeBlockStats(homeTotals,core.home);
+      mergeBlockStats(awayTotals,core.away);
+      (core.goals || []).forEach(goal=>goals.push(goal));
+      (core.keySaves || []).forEach(event=>incidents.keySaves.push(event));
+      (core.errors || []).forEach(event=>incidents.errors.push(event));
+    }
+    goals.sort((a,b)=>a.minute-b.minute);
+    let homeGoals = Number(state.score.home || 0);
+    let awayGoals = Number(state.score.away || 0);
+    const matchStats = { home:finalizeStats(homeTotals), away:finalizeStats(awayTotals) };
+    matchStats.away.possession = 100 - matchStats.home.possession;
+    const friendlyNoSanctions = Boolean(match?.friendly);
+    const cardCandidates = friendlyNoSanctions ? [] : continuousWithMathRandomV974(state,()=>[
+      ...makeCardsV2(match.homeId, home, matchStats.home.fouls),
+      ...makeCardsV2(match.awayId, away, matchStats.away.fouls)
+    ].sort((a,b)=>a.minute-b.minute));
+    const cards = friendlyNoSanctions ? [] : applyCardVolumePenaltyV2(cardCandidates, []);
+    const defaultLoss = friendlyNoSanctions ? null : defaultLossByRedCards(cards, match.homeId, match.awayId);
+    if(defaultLoss){
+      homeGoals = Number(defaultLoss.homeGoals || 0);
+      awayGoals = Number(defaultLoss.awayGoals || 0);
+      state.score.home = homeGoals;
+      state.score.away = awayGoals;
+    }
+    const injuries = friendlyNoSanctions || defaultLoss ? [] : continuousWithMathRandomV974(state,()=>[
+      ...makeInjuriesV2(match.homeId, home, matchContext),
+      ...makeInjuriesV2(match.awayId, away, matchContext)
+    ].sort((a,b)=>a.minute-b.minute));
+    const regularSubs = [
+      ...makeSubstitutions(match.homeId, homeTactic),
+      ...makeSubstitutions(match.awayId, awayTactic)
+    ];
+    const injurySubs = [
+      ...makeInjurySubstitutions(match.homeId, homeTactic, injuries, regularSubs),
+      ...makeInjurySubstitutions(match.awayId, awayTactic, injuries, regularSubs)
+    ];
+    const substitutions = [...regularSubs, ...injurySubs].sort((a,b)=>a.minute-b.minute);
+    const starterIdsHome = home.lineup.map(p=>p.id);
+    const starterIdsAway = away.lineup.map(p=>p.id);
+    const playedIdsHome = [...new Set(starterIdsHome.concat(substitutions.filter(item=>Number(item.clubId)===Number(match.homeId)).map(item=>item.inId)))];
+    const playedIdsAway = [...new Set(starterIdsAway.concat(substitutions.filter(item=>Number(item.clubId)===Number(match.awayId)).map(item=>item.inId)))];
+    const playerStatsResult = { ...match, played:true, engine:'continuous-360-v974', homeGoals, awayGoals, goals, cards, injuries, substitutions, keySaves:incidents.keySaves, errors:incidents.errors, starterIdsHome, starterIdsAway, playedIdsHome, playedIdsAway, matchStats, matchContext, continuousEngine:continuousEngineSummaryV974(state) };
+    if(!match.friendly){
+      applyMatchCohesionResult(playerStatsResult, substitutions, cards);
+      applyResultToTables(playerStatsResult, homeGoals, awayGoals);
+      applyPlayerStats(match.homeId, home.lineup, substitutions, goals, cards, injuries, incidents.keySaves, incidents.errors, playerStatsResult);
+      applyPlayerStats(match.awayId, away.lineup, substitutions, goals, cards, injuries, incidents.keySaves, incidents.errors, playerStatsResult);
+      applyAvailability(cards, injuries, playerStatsResult);
+      if(typeof updatePlayerStarTrackingForMatch === 'function') updatePlayerStarTrackingForMatch(playerStatsResult);
+    }
+    const botOverexertionConditionDelta = (clubId, gf, gc, ids) => {
+      if(isManagerClubV2(clubId)) return {};
+      const rule = botOverexertionRuleV2(gf, gc);
+      if(!rule) return {};
+      const result = {};
+      (ids || []).forEach(id => {
+        const player = playerById(id);
+        const baseLoss = player && typeof conditionLossForPlayer === 'function' ? Math.max(1, Number(conditionLossForPlayer(player) || 0)) : 10;
+        result[id] = -Math.max(1, Math.round(baseLoss * Number(rule.desgasteFisicoPct || 0)));
+      });
+      return result;
+    };
+    const instructionConditionDeltas = mergeConditionDeltas(
+      instructionConditionDelta(homeTactic, homeGoals, awayGoals, starterIdsHome),
+      instructionConditionDelta(awayTactic, awayGoals, homeGoals, starterIdsAway),
+      sectorStyleConditionDelta(home, starterIdsHome),
+      sectorStyleConditionDelta(away, starterIdsAway),
+      botOverexertionConditionDelta(match.homeId, homeGoals, awayGoals, starterIdsHome),
+      botOverexertionConditionDelta(match.awayId, awayGoals, homeGoals, starterIdsAway)
+    );
+    const result = { ...playerStatsResult, instructionConditionDeltas, suspended:Boolean(defaultLoss), defaultLoss:defaultLoss ? { ...defaultLoss, reason:'Cinco expulsiones' } : null };
+    return typeof window.finalizeWinnerRequiredMatchResult === 'function'
+      ? window.finalizeWinnerRequiredMatchResult(match, result)
+      : result;
+  }
+  function simulateMatch(match){
+    return USE_CONTINUOUS_MATCH_ENGINE_V974 ? simulateMatchContinuousV974(match) : simulateMatchLegacyV973(match);
+  }
+
   window.MATCH_INSTRUCTION_OPTIONS = MATCH_INSTRUCTION_OPTIONS;
   window.DEFAULT_MATCH_INSTRUCTIONS = DEFAULT_MATCH_INSTRUCTIONS;
   window.LIVE_MANAGER_INSTRUCTIONS = LIVE_MANAGER_INSTRUCTIONS;
@@ -2172,6 +2920,11 @@
     pitchEffect:pitchEffectV2,
     normalizeMatchInstructions,
     normalizeSectorStyles:normalizeSectorStylesV2,
+    normalizeGoalkeeperDistribution:normalizeGoalkeeperDistributionV974,
+    normalizeBuildUpStyle:normalizeBuildUpStyleV974,
+    continuousEngineEnabled:USE_CONTINUOUS_MATCH_ENGINE_V974,
+    continuousEngineConfig:{ ...CONTINUOUS_MATCH_CONFIG_V974 },
+    _debugContinuousCoreV974:debugContinuousCoreV974,
     botTacticForClub:botTacticForClubV2
   };
 })();

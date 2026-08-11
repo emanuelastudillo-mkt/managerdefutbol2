@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V9.73',
+  version: 'V9.74',
   marca: {
     nombre: 'Una vida de manager',
     nombreCorto: 'Una vida de manager',
@@ -58,7 +58,7 @@ window.GAME_CONFIG = {
     employeesUrl: 'data/empleados.json?v=9.04',
     installationsUrl: 'data/instalaciones.json?v=9.04',
     eventsUrl: 'data/eventos.json?v=9.04',
-    specialSkillsUrl: 'data/habilidades_especiales.json?v=9.73',
+    specialSkillsUrl: 'data/habilidades_especiales.json?v=9.74',
     managerAchievementsUrl: 'data/hitos_manager.json?v=9.04',
     retosManagerUrl: 'data/retos_manager.json?v=9.04',
     estadiosUrls: ['data/estadios_argentina.json?v=9.04', 'data/estadios_chile.json?v=9.04', 'data/estadios_brasil.json?v=9.04', 'data/estadios_inglaterra.json?v=9.04', 'data/estadios_espana.json?v=9.04', 'data/estadios_italia.json?v=9.04', 'data/estadios_rumania.json?v=9.04'],
@@ -1175,6 +1175,35 @@ window.GAME_CONFIG = {
   },
 
   simulador: {
+    // V9.74 · Motor de posesión continua. La interfaz puede seguir avanzando por minuto,
+    // pero cada partido reglamentario procesa exactamente 360 fases internas de 15 segundos.
+    motorContinuoV974: {
+      activo: true,
+      fasesPorPartido: 360,
+      segundosPorFase: 15,
+      logTecnico: false,
+      maxLogTecnico: 360,
+      distancias: {
+        paseCortoMax: 34,
+        paseLargoMin: 25,
+        paseLargoMax: 78,
+        paseProfundoAvanceMin: 12,
+        radioPresion: 20,
+        radioMarcaje: 18,
+        radioIntercepcion: 12
+      },
+      accionesBase: {
+        paseCorto: 36,
+        paseLargo: 12,
+        paseProfundo: 10,
+        centro: 6,
+        tiro: 4,
+        regate: 12
+      },
+      contraataqueFases: 7,
+      ventajaLocalMaxPct: 0.08,
+      azarPuja: 13
+    },
     // Equilibrio del resultado de cada ocasión: mitad construcción colectiva y mitad duelo individual.
     // Se aplica al partido normal, al simulador en vivo y a Ver solo resultados.
     pesoColectivo: 0.50,

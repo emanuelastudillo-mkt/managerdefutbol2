@@ -1290,6 +1290,9 @@ function renderTactics(){
           <h3>Instrucciones zonales</h3>
           <p class="muted small">Defensa, medios y delanteros. Pueden contraponerse o no con la mentalidad individual de cada jugador.</p>
           <div class="sector-style-grid vertical">${sectorStyleControls()}</div>
+          <h3>Creación de juego</h3>
+          <p class="muted small">Estas opciones cambian qué acciones intenta el equipo. No agregan precisión artificial a los jugadores.</p>
+          ${continuousBuildUpControlsV974()}
         </div>
         ${savedTacticsPanelMarkup()}
       </aside>
@@ -1366,6 +1369,32 @@ function sectorStyleControls(){
   };
   return row('defense','Defensa') + row('midfield','Medios') + row('attack','Delanteros');
 }
+function continuousBuildUpControlsV974(){
+  const tactic = game?.tactic || {};
+  const normalizeGk = window.Simulator20?.normalizeGoalkeeperDistribution || (value => ['short','long','varied'].includes(String(value || '')) ? String(value) : 'varied');
+  const normalizeBuild = window.Simulator20?.normalizeBuildUpStyle || (value => ['possession','direct','counter','long_ball'].includes(String(value || '')) ? String(value) : 'possession');
+  const goalkeeperDistribution = normalizeGk(tactic.goalkeeperDistribution);
+  const buildUpStyle = normalizeBuild(tactic.buildUpStyle);
+  const gkOptions = typeof TACTIC_GOALKEEPER_DISTRIBUTION_OPTIONS !== 'undefined' ? TACTIC_GOALKEEPER_DISTRIBUTION_OPTIONS : [
+    { value:'short', label:'Siempre corto' }, { value:'long', label:'Siempre largo' }, { value:'varied', label:'Variado' }
+  ];
+  const buildOptions = typeof TACTIC_BUILD_UP_STYLE_OPTIONS !== 'undefined' ? TACTIC_BUILD_UP_STYLE_OPTIONS : [
+    { value:'possession', label:'Posesión' }, { value:'direct', label:'Directo' }, { value:'counter', label:'Contraataque' }, { value:'long_ball', label:'Pelotazo' }
+  ];
+  return `<div class="sector-style-grid vertical continuous-build-controls-v974">
+    <div class="sector-style-control training-tone-tactical">
+      <label>Saque del arquero</label>
+      <select class="training-individual-select training-tone-tactical" data-goalkeeper-distribution>${gkOptions.map(opt=>`<option value="${opt.value}" ${goalkeeperDistribution===opt.value?'selected':''}>${opt.label}</option>`).join('')}</select>
+      <span class="muted small">Corto busca apoyos cercanos; largo intenta saltar líneas; variado decide por contexto.</span>
+    </div>
+    <div class="sector-style-control training-tone-tactical">
+      <label>Creación</label>
+      <select class="training-individual-select training-tone-tactical" data-build-up-style>${buildOptions.map(opt=>`<option value="${opt.value}" ${buildUpStyle===opt.value?'selected':''}>${opt.label}</option>`).join('')}</select>
+      <span class="muted small">Posesión prioriza apoyo; Directo verticaliza; Contraataque acelera tras recuperar; Pelotazo salta el mediocampo.</span>
+    </div>
+  </div>`;
+}
+
 function autoSubRow(index){
   const rule = game.tactic.autoSubs[index] || { outId:0, inId:0, trigger:'tired' };
   const starterOpts = [`<option value="0">Sin cambio</option>`].concat(game.tactic.starters.map(id=>{
@@ -1411,7 +1440,9 @@ function saveTacticFromScreen(){
     autoSubs,
     playerMentalities:{ ...(game.playerMentalities || {}), ...(game.tactic.playerMentalities || {}) },
     matchInstructions: window.Simulator20?.normalizeMatchInstructions ? window.Simulator20.normalizeMatchInstructions(selectedInstructions) : selectedInstructions,
-    sectorStyles:selectedSectorStyles
+    sectorStyles:selectedSectorStyles,
+    goalkeeperDistribution:window.Simulator20?.normalizeGoalkeeperDistribution ? window.Simulator20.normalizeGoalkeeperDistribution(document.querySelector('[data-goalkeeper-distribution]')?.value) : (document.querySelector('[data-goalkeeper-distribution]')?.value || 'varied'),
+    buildUpStyle:window.Simulator20?.normalizeBuildUpStyle ? window.Simulator20.normalizeBuildUpStyle(document.querySelector('[data-build-up-style]')?.value) : (document.querySelector('[data-build-up-style]')?.value || 'possession')
   });
   const errors = validateTactic(nextTactic);
   if(errors.length){
