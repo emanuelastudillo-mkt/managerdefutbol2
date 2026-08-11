@@ -17,6 +17,8 @@
   let liveCommentaryExpanded = false;
   let livePlaybackMode = 'full';
   let liveLastBlockHadImportantPlay = false;
+  let livePitchVisual = null;
+  let liveSeenPitchEventKeys = new Set();
   let liveSelectedInstruction = 'none';
   let liveSelectedStarterId = 0;
   let liveSelectedBenchId = 0;
@@ -158,32 +160,39 @@
     let endingIcon = '';
     let highlight = '';
     let highlightLabel = '';
+    let visualKind = 'action';
+    let visualTitle = 'JUGADA';
     player(actorId);
     if(type === 'pass_short'){
-      if(foul){ text(' intenta jugar en corto'); if(targetId){ text(' con '); player(targetId); } text(', pero '); player(defenderId,'un rival'); text(' corta con falta.'); endingIcon='⚠'; }
-      else if(success){ text(' toca en corto para '); player(targetId,'un compañero'); text('.'); }
-      else{ text(' busca a '); player(targetId,'un compañero'); text(' con un pase corto, pero '); player(defenderId,'un rival'); text(' intercepta.'); endingIcon='🛡️'; }
+      visualTitle = 'PASE CORTO';
+      if(foul){ text(' intenta jugar en corto'); if(targetId){ text(' con '); player(targetId); } text(', pero '); player(defenderId,'un rival'); text(' corta con falta.'); endingIcon='⚠'; visualKind='foul'; visualTitle='FALTA'; }
+      else if(success){ text(' toca en corto para '); player(targetId,'un compañero'); text('.'); visualKind='pass'; }
+      else{ text(' busca a '); player(targetId,'un compañero'); text(' con un pase corto, pero '); player(defenderId,'un rival'); text(' intercepta.'); endingIcon='🛡️'; visualKind='steal'; visualTitle='ROBO'; highlight='steal'; highlightLabel='Robo'; }
     }else if(type === 'pass_long'){
-      if(foul){ text(' intenta un envío largo hacia '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' lo frena con falta.'); endingIcon='⚠'; }
-      else if(success){ text(' lanza un pase largo hacia '); player(targetId,'un compañero'); text(' y encuentra destino.'); }
-      else{ text(' busca en largo a '); player(targetId,'un compañero'); text(', pero '); player(defenderId,'un rival'); text(' corta el envío.'); endingIcon='🛡️'; }
+      visualTitle = 'PASE LARGO';
+      if(foul){ text(' intenta un envío largo hacia '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' lo frena con falta.'); endingIcon='⚠'; visualKind='foul'; visualTitle='FALTA'; }
+      else if(success){ text(' lanza un pase largo hacia '); player(targetId,'un compañero'); text(' y encuentra destino.'); visualKind='pass'; }
+      else{ text(' busca en largo a '); player(targetId,'un compañero'); text(', pero '); player(defenderId,'un rival'); text(' corta el envío.'); endingIcon='🛡️'; visualKind='steal'; visualTitle='ROBO'; highlight='steal'; highlightLabel='Robo'; }
     }else if(type === 'pass_through'){
-      if(foul){ text(' intenta filtrar para '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' interrumpe con falta.'); endingIcon='⚠'; }
-      else if(success){ text(' filtra un pase profundo para '); player(targetId,'un compañero'); text(' y rompe una línea.'); }
-      else{ text(' intenta un pase profundo para '); player(targetId,'un compañero'); text(', pero '); player(defenderId,'un rival'); text(' anticipa.'); endingIcon='🛡️'; }
+      visualTitle = 'PASE PROFUNDO';
+      if(foul){ text(' intenta filtrar para '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' interrumpe con falta.'); endingIcon='⚠'; visualKind='foul'; visualTitle='FALTA'; }
+      else if(success){ text(' filtra un pase profundo para '); player(targetId,'un compañero'); text(' y rompe una línea.'); visualKind='pass'; }
+      else{ text(' intenta un pase profundo para '); player(targetId,'un compañero'); text(', pero '); player(defenderId,'un rival'); text(' anticipa.'); endingIcon='🛡️'; visualKind='steal'; visualTitle='ROBO'; highlight='steal'; highlightLabel='Robo'; }
     }else if(type === 'cross'){
-      if(foul){ text(' busca el centro para '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' corta con falta.'); endingIcon='⚠'; }
-      else if(success){ text(' envía un centro buscando a '); player(targetId,'un compañero'); text(' y conecta la jugada.'); }
-      else{ text(' tira el centro hacia '); player(targetId,'el área'); text(', pero '); player(defenderId,'un rival'); text(' despeja.'); endingIcon='🛡️'; }
+      visualTitle = 'CENTRO';
+      if(foul){ text(' busca el centro para '); player(targetId,'un compañero'); text(' y '); player(defenderId,'un rival'); text(' corta con falta.'); endingIcon='⚠'; visualKind='foul'; visualTitle='FALTA'; }
+      else if(success){ text(' envía un centro buscando a '); player(targetId,'un compañero'); text(' y conecta la jugada.'); visualKind='pass'; }
+      else{ text(' tira el centro hacia '); player(targetId,'el área'); text(', pero '); player(defenderId,'un rival'); text(' despeja.'); endingIcon='🛡️'; visualKind='steal'; visualTitle='ROBO'; highlight='steal'; highlightLabel='Robo'; }
     }else if(type === 'dribble'){
-      if(foul){ text(' encara a '); player(defenderId,'su marcador'); text(' y recibe la falta.'); endingIcon='⚠'; }
-      else if(success){ if(defenderId){ text(' encara a '); player(defenderId); text(' y logra superarlo.'); } else text(' avanza en conducción y gana metros.'); }
-      else{ text(' intenta el regate, pero '); player(defenderId,'un rival'); text(' le gana el duelo y recupera.'); endingIcon='🛡️'; }
+      visualTitle = 'REGATE';
+      if(foul){ text(' encara a '); player(defenderId,'su marcador'); text(' y recibe la falta.'); endingIcon='⚠'; visualKind='foul'; visualTitle='FALTA'; }
+      else if(success){ if(defenderId){ text(' encara a '); player(defenderId); text(' y logra superarlo.'); } else text(' avanza en conducción y gana metros.'); visualKind='dribble'; }
+      else{ text(' intenta el regate, pero '); player(defenderId,'un rival'); text(' le gana el duelo y recupera.'); endingIcon='🛡️'; visualKind='steal'; visualTitle='ROBO'; highlight='steal'; highlightLabel='Robo'; }
     }else if(type === 'shot'){
-      if(result.shot?.goal){ text(' remata al arco y convierte el gol.'); endingIcon='⚽'; highlight='goal'; highlightLabel='Gol'; }
-      else if(result.shot?.blocked){ text(' remata, pero '); player(defenderId,'un defensor'); text(' bloquea el disparo.'); endingIcon='🧱'; }
-      else if(result.shot?.onTarget){ text(' remata al arco y '); player(keeperId,'el arquero'); text(' contiene el disparo.'); endingIcon='🎯'; highlight='shot'; highlightLabel='Tiro al arco'; }
-      else{ text(' prueba al arco, pero el remate se va desviado.'); endingIcon='↗'; }
+      if(result.shot?.goal){ text(' remata al arco y convierte el gol.'); endingIcon='⚽'; highlight='goal'; highlightLabel='Gol'; visualKind='goal'; visualTitle='GOL'; }
+      else if(result.shot?.blocked){ text(' remata, pero '); player(defenderId,'un defensor'); text(' bloquea el disparo.'); endingIcon='🧱'; visualKind='block'; visualTitle='BLOQUEO'; }
+      else if(result.shot?.onTarget){ text(' remata al arco y '); player(keeperId,'el arquero'); text(' contiene el disparo.'); endingIcon='🧤'; highlight='save'; highlightLabel='Atajada'; visualKind='save'; visualTitle='ATAJADA'; }
+      else{ text(' prueba al arco, pero el remate se va desviado.'); endingIcon='↗'; highlight='miss'; highlightLabel='Errada'; visualKind='miss'; visualTitle='ERRADA'; }
     }
     if(segments.length <= 1) return null;
     const seconds = Math.max(0, Math.min(5400, Number(result.clockSeconds || Number(result.phase || 0) * Number(liveState?.continuousSecondsPerPhase || 10))));
@@ -192,11 +201,24 @@
       clockSeconds:seconds,
       time:liveClockText(seconds),
       clubId:Number(result.attackingClubId || 0),
+      defendingClubId:Number(result.defendingClubId || 0),
       type,
       actorId,
       targetId:targetId || null,
       defenderId:defenderId || null,
       keeperId:keeperId || null,
+      fromPosition:result.fromPosition ? { x:Number(result.fromPosition.x), y:Number(result.fromPosition.y) } : null,
+      toPosition:result.toPosition ? { x:Number(result.toPosition.x), y:Number(result.toPosition.y) } : null,
+      defenderPosition:result.defenderPosition ? { x:Number(result.defenderPosition.x), y:Number(result.defenderPosition.y) } : null,
+      keeperPosition:result.keeperPosition ? { x:Number(result.keeperPosition.x), y:Number(result.keeperPosition.y) } : null,
+      success,
+      foul,
+      reason:String(result.reason || ''),
+      shotGoal:Boolean(result.shot?.goal),
+      shotOnTarget:Boolean(result.shot?.onTarget),
+      shotBlocked:Boolean(result.shot?.blocked),
+      visualKind,
+      visualTitle,
       segments,
       endingIcon,
       highlight,
@@ -238,7 +260,7 @@
       const item = liveActionNarration(result);
       if(!item || liveSeenActionNarrationKeys.has(item.key) || livePendingActionNarrations.some(current => current.key === item.key)) return;
       item.category = 'action';
-      item.important = importantResults.has(result);
+      item.important = importantResults.has(result) || Boolean(item.highlight);
       livePendingActionNarrations.push(item);
       queued += 1;
     });
@@ -270,18 +292,144 @@
     if(commentary) bindLivePlayerLinksWithin(commentary);
     if(highlights) bindLivePlayerLinksWithin(highlights);
   }
+  function livePitchClamp(value, min=3, max=97){ return Math.max(min, Math.min(max, Number(value ?? 50))); }
+  function livePitchPerspectivePoint(point, attackingClubId){
+    if(!point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y))) return null;
+    let x = Number(point.x), y = Number(point.y);
+    if(Number(attackingClubId || 0) === Number(liveState?.match?.awayId || 0)){ x = 100 - x; y = 100 - y; }
+    return { x:livePitchClamp(x), y:livePitchClamp(y) };
+  }
+  function liveNominalPlayerPoint(playerId, clubId){
+    const side = Number(clubId || 0) === Number(liveState?.match?.awayId || 0) ? 'away' : 'home';
+    const player = sideLineup(side).find(entry => Number(entry?.id || 0) === Number(playerId || 0));
+    const role = String(player?.role || player?.position || '').toUpperCase();
+    const rolePoints = {
+      POR:[8,50], DFC:[24,50], LI:[27,18], LD:[27,82], MCD:[40,50], MC:[50,50], MCO:[63,50], MI:[52,20], MD:[52,80], EI:[74,20], ED:[74,80], DC:[82,50]
+    };
+    let pair = rolePoints[role] || [50,50];
+    const slotIndex = Number(player?.slotIndex || 0);
+    let x = pair[0], y = pair[1];
+    if(['DFC','MCD','MC','MCO','DC'].includes(role)) y = livePitchClamp(y + ((slotIndex % 3) - 1) * 12, 10, 90);
+    if(side === 'away'){ x = 100 - x; y = 100 - y; }
+    return { x:livePitchClamp(x), y:livePitchClamp(y) };
+  }
+  function livePitchPlayerMarkup(playerId, point, clubId, roleLabel, extraClass=''){
+    const id = Number(playerId || 0);
+    if(!id || !point) return '';
+    const sideClass = Number(clubId || 0) === Number(liveState?.match?.homeId || 0) ? 'home' : 'away';
+    return `<button type="button" class="live-pitch-player ${sideClass} ${ehtml(extraClass)}" data-live-player-id="${id}" style="--px:${Number(point.x).toFixed(2)};--py:${Number(point.y).toFixed(2)}" title="${ehtml(liveActionPlayerName(id))}"><span>${ehtml(eventPlayerLabel(id))}</span><small>${ehtml(roleLabel || '')}</small></button>`;
+  }
+  function livePitchBallMarkup(fromPoint, toPoint, kind='action'){
+    if(!fromPoint || !toPoint) return '';
+    return `<span class="live-pitch-ball ${ehtml(kind)}" style="--fx:${Number(fromPoint.x).toFixed(2)};--fy:${Number(fromPoint.y).toFixed(2)};--tx:${Number(toPoint.x).toFixed(2)};--ty:${Number(toPoint.y).toFixed(2)}" aria-hidden="true">●</span>`;
+  }
+  function livePitchDetail(item){
+    const actor = item?.actorId ? eventPlayerLabel(item.actorId, true) : '';
+    const target = item?.targetId ? eventPlayerLabel(item.targetId, true) : '';
+    const defender = item?.defenderId ? eventPlayerLabel(item.defenderId, true) : '';
+    const keeper = item?.keeperId ? eventPlayerLabel(item.keeperId, true) : '';
+    if(item?.visualKind === 'goal') return actor ? `${actor} convierte` : 'Gol';
+    if(item?.visualKind === 'miss') return actor ? `${actor} remata afuera` : 'Remate desviado';
+    if(item?.visualKind === 'steal') return defender ? `${defender} recupera ante ${actor}` : `${actor} pierde la pelota`;
+    if(item?.visualKind === 'save') return keeper ? `${keeper} ataja el remate de ${actor}` : `Atajada ante ${actor}`;
+    if(item?.visualKind === 'block') return defender ? `${defender} bloquea a ${actor}` : `Remate bloqueado`;
+    if(item?.visualKind === 'foul') return defender ? `${defender} comete falta sobre ${actor}` : `Falta sobre ${actor}`;
+    if(item?.visualKind === 'yellow') return `${actor} · tarjeta amarilla`;
+    if(item?.visualKind === 'red') return `${actor} · expulsado`;
+    if(item?.visualKind === 'injury') return `${actor} · ${item.injuryLabel || 'lesión'}`;
+    if(item?.type === 'dribble') return defender ? `${actor} supera a ${defender}` : `${actor} avanza`;
+    if(target) return `${actor} → ${target}`;
+    return actor || 'Partido en juego';
+  }
+  function livePitchDestination(item, fromPoint){
+    const attackClubId = Number(item?.clubId || 0);
+    if(item?.visualKind === 'goal') return livePitchPerspectivePoint({x:100,y:50}, attackClubId);
+    if(item?.visualKind === 'miss'){
+      const actorAttackPoint = item?.fromPosition || {x:80,y:50};
+      const missY = Number(actorAttackPoint.y || 50) <= 50 ? 33 : 67;
+      return livePitchPerspectivePoint({x:100,y:missY}, attackClubId);
+    }
+    if(item?.visualKind === 'save' && item?.keeperPosition) return livePitchPerspectivePoint(item.keeperPosition, attackClubId);
+    if((item?.visualKind === 'steal' || item?.visualKind === 'block' || item?.visualKind === 'foul') && item?.defenderPosition) return livePitchPerspectivePoint(item.defenderPosition, attackClubId);
+    return livePitchPerspectivePoint(item?.toPosition, attackClubId) || fromPoint;
+  }
+  function livePitchStageMarkup(item=livePitchVisual){
+    const match = liveState?.match || {};
+    const colors = liveContrastColorPair(match.homeId, match.awayId);
+    if(!item){
+      const stateLabel = liveState?.finished ? 'FINAL' : (liveIsBreak() ? 'ENTRETIEMPO' : 'PARTIDO EN JUEGO');
+      const stateDetail = liveState?.finished ? 'El partido terminó.' : (liveIsBreak() ? 'Los equipos están en descanso.' : 'Esperando la próxima acción.');
+      return `<div class="live-animated-pitch idle" style="--pitch-home:${ehtml(colors.home)};--pitch-away:${ehtml(colors.away)}"><div class="live-pitch-markings"><i class="mid"></i><i class="circle"></i><i class="box left"></i><i class="box right"></i><i class="goal left"></i><i class="goal right"></i></div><div class="live-pitch-status neutral"><strong>${ehtml(stateLabel)}</strong><span>${ehtml(stateDetail)}</span></div></div>`;
+    }
+    const attackClubId = Number(item.clubId || 0);
+    const defendingClubId = Number(item.defendingClubId || (attackClubId === Number(match.homeId) ? match.awayId : match.homeId));
+    const fromPoint = item.absolutePoint || livePitchPerspectivePoint(item.fromPosition, attackClubId) || liveNominalPlayerPoint(item.actorId, attackClubId);
+    const toPoint = item.absolutePoint || livePitchDestination(item, fromPoint);
+    const actorPoint = fromPoint;
+    const targetPoint = item.targetId ? (livePitchPerspectivePoint(item.toPosition, attackClubId) || toPoint) : null;
+    const defenderPoint = item.defenderId ? (livePitchPerspectivePoint(item.defenderPosition, attackClubId) || toPoint) : null;
+    const keeperPoint = item.keeperId ? (livePitchPerspectivePoint(item.keeperPosition, attackClubId) || livePitchPerspectivePoint({x:96,y:50}, attackClubId)) : null;
+    const players = [
+      livePitchPlayerMarkup(item.actorId, actorPoint, attackClubId, item.visualKind === 'yellow' || item.visualKind === 'red' || item.visualKind === 'injury' ? 'jugador' : 'poseedor', 'actor'),
+      item.targetId && Number(item.targetId) !== Number(item.actorId) ? livePitchPlayerMarkup(item.targetId, targetPoint, attackClubId, 'receptor', 'target') : '',
+      item.defenderId && Number(item.defenderId) !== Number(item.actorId) ? livePitchPlayerMarkup(item.defenderId, defenderPoint, defendingClubId, item.visualKind === 'steal' ? 'recupera' : 'rival', 'defender') : '',
+      item.keeperId && Number(item.keeperId) !== Number(item.defenderId) ? livePitchPlayerMarkup(item.keeperId, keeperPoint, defendingClubId, 'arquero', 'keeper') : ''
+    ].filter(Boolean).join('');
+    const specialNoBall = ['yellow','red','injury'].includes(String(item.visualKind || ''));
+    const ball = specialNoBall ? '' : livePitchBallMarkup(fromPoint,toPoint,item.visualKind || 'action');
+    const direction = attackClubId === Number(match.awayId) ? '←' : '→';
+    return `<div class="live-animated-pitch ${ehtml(item.visualKind || 'action')}" style="--pitch-home:${ehtml(colors.home)};--pitch-away:${ehtml(colors.away)}"><div class="live-pitch-markings"><i class="mid"></i><i class="circle"></i><i class="box left"></i><i class="box right"></i><i class="goal left"></i><i class="goal right"></i></div><div class="live-pitch-team-label home">${liveBadge(match.homeId)} ${ehtml(liveClubName(match.homeId))}</div><div class="live-pitch-team-label away">${ehtml(liveClubName(match.awayId))} ${liveBadge(match.awayId)}</div>${players}${ball}<div class="live-pitch-status ${ehtml(item.visualKind || 'action')}"><strong>${ehtml(item.visualTitle || 'JUGADA')}</strong><span>${ehtml(livePitchDetail(item))}</span><small>${ehtml(item.time || liveClockText())} · ${direction} ${ehtml(liveClubName(attackClubId))}</small></div></div>`;
+  }
+  function livePitchCardMarkup(){
+    return `<div class="card inner live-pitch-card"><div class="live-card-head"><h3>Cancha en vivo</h3><span class="muted small">jugadores que intervienen · acción por acción</span></div><div id="liveAnimatedPitchStage">${livePitchStageMarkup()}</div><div class="live-pitch-legend"><span><i class="home"></i>Local</span><span><i class="away"></i>Visitante</span><span><b>⚽</b> Gol</span><span><b>↗</b> Errada</span><span><b>🛡️</b> Robo</span><span><b>🟨</b> Tarjeta</span><span><b>✚</b> Lesión</span></div></div>`;
+  }
+  function refreshLivePitchOnly(){
+    const stage = document.querySelector('#liveAnimatedPitchStage');
+    if(stage){ stage.innerHTML = livePitchStageMarkup(); bindLivePlayerLinksWithin(stage); }
+  }
+  function liveSpecialPitchItems(){
+    const items = [];
+    (liveState?.cards || []).forEach(card => {
+      const kind = card.type === 'yellow' ? 'yellow' : 'red';
+      const label = card.type === 'yellow' ? 'TARJETA AMARILLA' : (card.type === 'secondYellowRed' ? 'DOBLE AMARILLA · ROJA' : 'TARJETA ROJA');
+      const seconds = Math.max(0, Math.min(5400, Number(card.minute || 0) * 60));
+      items.push({ key:`pitch-card-${card.minute}-${card.clubId}-${card.playerId}-${card.type}`, clockSeconds:seconds, time:liveClockText(seconds), clubId:Number(card.clubId || 0), actorId:Number(card.playerId || 0), visualKind:kind, visualTitle:label, endingIcon:kind === 'yellow' ? '🟨' : '🟥', highlight:kind, highlightLabel:card.type === 'yellow' ? 'Amarilla' : 'Roja', important:true, category:'special', absolutePoint:liveNominalPlayerPoint(card.playerId, card.clubId), segments:[{playerId:Number(card.playerId || 0),fallback:'Jugador'},{text:card.type === 'yellow' ? ' recibe tarjeta amarilla.' : ' es expulsado.'}] });
+    });
+    (liveState?.injuries || []).forEach(injury => {
+      const seconds = Math.max(0, Math.min(5400, Number(injury.minute || 0) * 60));
+      items.push({ key:`pitch-injury-${injury.minute}-${injury.clubId}-${injury.playerId}-${injury.injuryLabel || injury.name || ''}`, clockSeconds:seconds, time:liveClockText(seconds), clubId:Number(injury.clubId || 0), actorId:Number(injury.playerId || 0), visualKind:'injury', visualTitle:'LESIÓN', injuryLabel:String(injury.injuryLabel || injury.name || 'Lesión'), endingIcon:'✚', highlight:'injury', highlightLabel:'Lesión', important:true, category:'special', absolutePoint:liveNominalPlayerPoint(injury.playerId, injury.clubId), segments:[{playerId:Number(injury.playerId || 0),fallback:'Jugador'},{text:` · ${String(injury.injuryLabel || injury.name || 'Lesión')}`}] });
+    });
+    return items.sort((a,b)=>Number(a.clockSeconds || 0)-Number(b.clockSeconds || 0));
+  }
+  function syncLiveSpecialPitchEventsUpTo(seconds){
+    const limit = Number(seconds || 0);
+    let changed = false;
+    liveSpecialPitchItems().forEach(item => {
+      if(Number(item.clockSeconds || 0) > limit || liveSeenPitchEventKeys.has(item.key)) return;
+      liveSeenPitchEventKeys.add(item.key);
+      if(!liveHighlightedHistory.some(entry => entry.key === item.key)) liveHighlightedHistory.push(item);
+      livePitchVisual = item;
+      changed = true;
+    });
+    if(changed){ refreshLivePitchOnly(); refreshLiveCommentaryHistoryOnly(); }
+  }
   function flushLiveActionNarrationsUpTo(seconds){
     const limit = Number(seconds || 0);
     let changed = false;
+    let pitchChanged = false;
     while(livePendingActionNarrations.length && Number(livePendingActionNarrations[0].clockSeconds || 0) <= limit){
       const item = livePendingActionNarrations.shift();
       if(!item || liveSeenActionNarrationKeys.has(item.key)) continue;
       liveSeenActionNarrationKeys.add(item.key);
       liveCommentaryHistory.push(item);
       if(item.highlight && !liveHighlightedHistory.some(entry => entry.key === item.key)) liveHighlightedHistory.push(item);
+      const showOnPitch = livePlaybackMode !== 'important' || item.important === true;
+      if(showOnPitch){ livePitchVisual = item; pitchChanged = true; }
       changed = true;
     }
     if(changed) refreshLiveCommentaryHistoryOnly();
+    if(pitchChanged) refreshLivePitchOnly();
+    syncLiveSpecialPitchEventsUpTo(limit);
   }
   function narrationFallback(event, player, club, rival){
     const p = player?.name || 'el jugador';
@@ -600,7 +748,7 @@
     return `<div class="live-pending-subs">${livePendingSubstitutions.map((s, index) => `<div><span>Próx. minuto</span><strong>Entra ${ehtml(eventPlayerLabel(s.inId))} · Sale ${ehtml(eventPlayerLabel(s.outId))}</strong><button type="button" data-live-remove-pending-sub="${index}" class="ghost mini">Quitar</button></div>`).join('')}</div>`;
   }
   function livePlaybackModeControl(){
-    return `<label class="live-playback-mode"><span>Visualización</span><select id="livePlaybackModeSelect" aria-label="Modo de visualización del partido"><option value="full" ${livePlaybackMode === 'full' ? 'selected' : ''}>Partido completo</option><option value="important" ${livePlaybackMode === 'important' ? 'selected' : ''}>Jugadas importantes</option></select></label>`;
+    return `<label class="live-playback-mode"><span>Cancha</span><select id="livePlaybackModeSelect" aria-label="Modo de animación de la cancha"><option value="full" ${livePlaybackMode === 'full' ? 'selected' : ''}>Todas las acciones</option><option value="important" ${livePlaybackMode === 'important' ? 'selected' : ''}>Solo momentos clave</option></select></label>`;
   }
   function liveManagerPanel(){
     return `<div class="card inner live-bottom-controls">
@@ -699,13 +847,10 @@
       <div class="live-v512-grid">
         ${liveTeamPanel('home')}
         <section class="live-center-stack">
-          <div class="card inner live-events-card live-commentary-history-card ${liveCommentaryExpanded ? 'is-expanded' : ''}">
-            <div class="live-card-head"><h3>Relato en vivo</h3><div class="live-commentary-head-actions"><span class="muted small">historial · últimos arriba</span><button type="button" class="ghost mini" id="liveCommentaryExpandBtn" aria-pressed="${liveCommentaryExpanded ? 'true' : 'false'}">${liveCommentaryExpanded ? 'Reducir' : 'Pantalla completa'}</button></div></div>
-            <div class="live-events-list live-commentary-history-list">${liveCommentaryHistoryMarkup()}</div>
-          </div>
+          ${livePitchCardMarkup()}
           ${compareStatsCard()}
           <div class="card inner live-events-card">
-            <div class="live-card-head"><h3>Eventos</h3><span class="muted small">jugadas destacadas · últimos arriba</span></div>
+            <div class="live-card-head"><h3>Momentos clave</h3><span class="muted small">goles · erradas · robos · tarjetas · lesiones</span></div>
             <div class="live-events-list live-highlight-events-list">${liveHighlightedEventsMarkup()}</div>
           </div>
           <div class="card inner compact-match-context live-context-compact">
@@ -883,6 +1028,7 @@
     });
     document.querySelector('#livePlaybackModeSelect')?.addEventListener('change', event => {
       livePlaybackMode = event.target.value === 'important' ? 'important' : 'full';
+      livePitchVisual = null;
       renderLiveMatch();
       if(!livePaused) runAutoMode();
     });
@@ -901,7 +1047,7 @@
       window.__activeCompetitionSuspensionMatch = null;
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
-      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; document.body?.classList.remove('live-commentary-expanded');
+      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); document.body?.classList.remove('live-commentary-expanded');
       resetLiveSelections(); clearTimeout(liveAutoTimer); stopLiveClockAnimation(); liveDisplayedClockSeconds = 0;
     });
   }
@@ -914,7 +1060,7 @@
   function start(match, options={}){
     if(!match || !window.Simulator20?.createLiveMatchSession) return false;
     clearTimeout(liveAutoTimer);
-    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; document.body?.classList.remove('live-commentary-expanded'); resetLiveSelections();
+    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; livePlaybackMode = 'full'; liveLastBlockHadImportantPlay = false; livePitchVisual = null; liveSeenPitchEventKeys = new Set(); document.body?.classList.remove('live-commentary-expanded'); resetLiveSelections();
     liveSession = typeof withCompetitionSuspensionContext === 'function'
       ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
       : window.Simulator20.createLiveMatchSession(match);

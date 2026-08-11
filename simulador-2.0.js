@@ -2236,10 +2236,11 @@
   }
   function continuousResolveActionV974(state, attackingPower, defendingPower, carrier, action, target, context, runtime={}){
     const type = action.type;
-    const base = { type, action:type, actorId:Number(carrier.playerId), targetId:Number(target?.playerId || 0) || null, attackingClubId:Number(attackingPower.clubId), defendingClubId:Number(defendingPower.clubId), fromSlot:Number(carrier.slotIndex), toSlot:Number(target?.slotIndex ?? carrier.slotIndex), fromPosition:{ ...context.origin }, toPosition:target?{x:Number(target.x),y:Number(target.y)}:{x:100,y:50}, defenderId:Number(context.defender?.playerId || 0) || null, success:false, possessionChanged:false, foul:false, shot:null, reason:'failed' };
+    const base = { type, action:type, actorId:Number(carrier.playerId), targetId:Number(target?.playerId || 0) || null, attackingClubId:Number(attackingPower.clubId), defendingClubId:Number(defendingPower.clubId), fromSlot:Number(carrier.slotIndex), toSlot:Number(target?.slotIndex ?? carrier.slotIndex), fromPosition:{ ...context.origin }, toPosition:target?{x:Number(target.x),y:Number(target.y)}:{x:100,y:50}, defenderId:Number(context.defender?.playerId || 0) || null, defenderPosition:context.defender?{x:Number(context.defender.x),y:Number(context.defender.y)}:null, keeperPosition:null, success:false, possessionChanged:false, foul:false, shot:null, reason:'failed' };
     if(type === 'shot'){
       const shot = continuousShotResolutionV974(state,attackingPower,defendingPower,carrier,context,runtime);
-      return { ...base, success:Boolean(shot.goal), shot, possessionChanged:!shot.goal, reason:shot.goal?'goal':shot.blocked?'shot_blocked':shot.onTarget?'shot_saved':'shot_off_target', executionAbility:continuousExecutionAbilityV974('shot',carrier.player) };
+      const keeperPosition = shot?.keeper ? { x:100-Number(shot.keeper.x || 0), y:100-Number(shot.keeper.y || 0) } : null;
+      return { ...base, keeperPosition, success:Boolean(shot.goal), shot, possessionChanged:!shot.goal, reason:shot.goal?'goal':shot.blocked?'shot_blocked':shot.onTarget?'shot_saved':'shot_off_target', executionAbility:continuousExecutionAbilityV974('shot',carrier.player) };
     }
     const duel = continuousDuelResultV974(state,attackingPower,defendingPower,carrier,target,type,context,runtime);
     const possessionProfile = continuousPossessionControlProfileV981(state,attackingPower,defendingPower,runtime);
