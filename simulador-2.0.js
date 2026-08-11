@@ -128,6 +128,7 @@
     const raw = simConfigValue('simulador.motorContinuoV974', {}) || {};
     const distances = raw.distancias || {};
     const actions = raw.accionesBase || {};
+    const possessionControl = raw.controlPosesion || {};
     const totalPhases = Math.max(90, Math.round(Number(raw.fasesPorPartido || 540)));
     const secondsPerPhase = Math.max(1, Math.round(Number(raw.segundosPorFase || (5400 / totalPhases))));
     const phasesPerMinute = Math.max(1, Math.round(60 / secondsPerPhase));
@@ -150,6 +151,18 @@
       duelRandomRange:Math.max(1, Number(raw.azarPuja || 13)),
       attackIntentMultiplier:Math.max(1, Number(raw.multiplicadorIntencionAtaque || 1.60)),
       volumeConversionMultiplier:simClamp(Number(raw.multiplicadorConversionVolumen ?? 0.60),0.10,1.50),
+      possessionControl:{
+        enabled:possessionControl.activo !== false,
+        minimumQuality:simClamp(Number(possessionControl.calidadMinima ?? 68),45,95),
+        baseTarget:simClamp(Number(possessionControl.pasesObjetivoBase ?? 2),0,20),
+        qualityCoefficient:simClamp(Number(possessionControl.coefCalidad ?? 0.30),0,1.5),
+        qualityEdgeCoefficient:simClamp(Number(possessionControl.coefVentajaCalidad ?? 0.12),0,1.0),
+        extraMidfielderCoefficient:simClamp(Number(possessionControl.coefMedioExtra ?? 1.00),0,5),
+        holdResultBonus:simClamp(Number(possessionControl.bonusCuidarResultado ?? 6),0,20),
+        scoreLowerBonus:simClamp(Number(possessionControl.bonusBajarRitmoResultado ?? 2),0,15),
+        maxTarget:simClamp(Number(possessionControl.pasesObjetivoMax ?? 26),5,45),
+        maxPassSecurityBonus:simClamp(Number(possessionControl.bonusSeguridadPaseMax ?? 18),0,30)
+      },
       actionBase:{
         pass_short:Math.max(1, Number(actions.paseCorto || 36)),
         pass_long:Math.max(1, Number(actions.paseLargo || 12)),
@@ -758,7 +771,7 @@
     return {
       attacks:simClamp(Math.round(stats.attacks), 1, 75),
       chances:simClamp(Math.round(stats.chances), 0, 30),
-      possession:simClamp(Math.round(stats.possessionWeighted / Math.max(1, divisor)), 15, 85),
+      possession:simClamp(Math.round(stats.possessionWeighted / Math.max(1, divisor)), 8, 92),
       fouls:simClamp(Math.round(stats.fouls), 0, 40),
       passScore:simClamp(Math.round(stats.passScore / Math.max(1, divisor)), 1, 140),
       xg:Number(stats.xg.toFixed(2)),
@@ -1742,7 +1755,7 @@
     return {
       attacks:simClamp(Math.round(stats.attacks), 1, 75),
       chances:simClamp(Math.round(stats.chances), 0, 30),
-      possession:simClamp(Math.round(stats.possessionWeighted / divisor), 15, 85),
+      possession:simClamp(Math.round(stats.possessionWeighted / divisor), 8, 92),
       fouls:simClamp(Math.round(stats.fouls), 0, 40),
       passScore:simClamp(Math.round(stats.passScore / divisor), 1, 140),
       xg:Number(stats.xg.toFixed(2)),
@@ -1758,7 +1771,7 @@
     return {
       attacks:simClamp(Math.round(Number(stats.attacks || 0)), 0, 75),
       chances:simClamp(Math.round(Number(stats.chances || 0)), 0, 18),
-      possession:phases > 0 ? simClamp(Math.round(Number(stats.possessionWeighted || 0) / divisor), 20, 80) : 50,
+      possession:phases > 0 ? simClamp(Math.round(Number(stats.possessionWeighted || 0) / divisor), 8, 92) : 50,
       fouls:simClamp(Math.round(Number(stats.fouls || 0)), 0, 32),
       passScore:phases > 0 ? simClamp(Math.round(Number(stats.passScore || 0) / divisor), 1, 140) : 0,
       xg:Number(Number(stats.xg || 0).toFixed(2)),
@@ -1775,7 +1788,7 @@
     const away = teamPowerV2(session.match.awayId, session.awayTactic, { crowdBonus:0, conditionResolver, sentOffIds });
     return applyManagerTacticalAdaptationPairV2(home, away, session.match, session.matchContext);
   }
-  /* V9.79 · Motor de posesión continua de 540 fases (10 s por fase).
+  /* V9.81 · Motor de posesión continua de 540 fases (10 s por fase).
      La geometría nace de tacticAssignedEntries/tacticSlotCoordinates; no deduce formaciones clásicas. */
   function continuousHash32V974(value){
     const text = String(value || 'match');
@@ -1868,8 +1881,14 @@
   function continuousSideV974(state, clubId){ return Number(clubId) === Number(state.homeId) ? 'home' : 'away'; }
   function continuousSetCarrierV974(state, clubId, entry, transition='possession', ballPosition=null){
     if(!entry) return false;
+    const previousTeamId = Number(state.possessionTeamId || 0);
+    const nextTeamId = Number(clubId || entry.clubId || 0);
     state.previousBallSlot = state.ballSlot;
-    state.possessionTeamId = Number(clubId || entry.clubId || 0);
+    if(previousTeamId && previousTeamId !== nextTeamId){
+      state.completedPassStreak = 0;
+      state.possessionStartPhase = Number(state.phase || 0);
+    }
+    state.possessionTeamId = nextTeamId;
     state.ballCarrierId = Number(entry.playerId || entry.player?.id || 0);
     state.ballSlot = Number(entry.slotIndex ?? 0);
     state.ballPosition = ballPosition ? { x:simClamp(Number(ballPosition.x),0,100), y:simClamp(Number(ballPosition.y),0,100) } : { x:Number(entry.x), y:Number(entry.y) };
@@ -1956,6 +1975,65 @@
     const rival = Number(state.score?.[side === 'home' ? 'away' : 'home'] || 0);
     return instructionForScore(attackingPower.tactic,own,rival);
   }
+  function continuousPossessionControlProfileV981(state, attackingPower, defendingPower, runtime={}){
+    const cfg = CONTINUOUS_MATCH_CONFIG_V974.possessionControl || {};
+    if(!cfg.enabled) return { active:false,targetPasses:0,passQuality:0,qualityEdge:0,midfielders:0,securityBonus:0 };
+    const entries = continuousEntriesV974(attackingPower).filter(entry => entry.slot !== 'POR' && entry.player?.position !== 'POR');
+    const rivalEntries = continuousEntriesV974(defendingPower).filter(entry => entry.slot !== 'POR' && entry.player?.position !== 'POR');
+    if(!entries.length) return { active:false,targetPasses:0,passQuality:0,qualityEdge:0,midfielders:0,securityBonus:0 };
+    let weightedPass = 0, weightTotal = 0, midfielders = 0;
+    entries.forEach(entry => {
+      const inMiddleBand = Number(entry.x) >= 32 && Number(entry.x) <= 68;
+      const nominalMid = /^(MC|MCD|MCO|MI|MD)$/i.test(String(entry.slot || entry.player?.position || ''));
+      const weight = (inMiddleBand || nominalMid) ? 1.35 : 0.82;
+      if(inMiddleBand || nominalMid) midfielders += 1;
+      weightedPass += continuousSkillAverageV974(entry.player,['paseCorto','vision','serenidad']) * Number(entry.factor || 1) * weight;
+      weightTotal += weight;
+    });
+    const passQuality = weightTotal > 0 ? weightedPass/weightTotal : 55;
+    const rivalDefQuality = rivalEntries.length
+      ? rivalEntries.reduce((sum,entry)=>sum + continuousDefensiveAbilityV974('pass_short',entry.player)*Number(entry.factor || 1),0)/rivalEntries.length
+      : 55;
+    const qualityEdge = passQuality-rivalDefQuality;
+    const build = normalizeBuildUpStyleV974(attackingPower?.tactic?.buildUpStyle);
+    const scoreInstruction = continuousScoreInstructionV974(state,attackingPower);
+    const liveInstruction = String(runtime.liveInstructionByClub?.[String(attackingPower.clubId)] || 'none');
+    const active = build === 'possession' || liveInstruction === 'hold_result' || liveInstruction === 'lower_tempo' || scoreInstruction === 'lower';
+    if(!active) return { active:false,targetPasses:0,passQuality,qualityEdge,midfielders,securityBonus:0,build,liveInstruction,scoreInstruction };
+    const qualityAbove = Math.max(0,passQuality-Number(cfg.minimumQuality || 68));
+    const extraMids = Math.max(0,midfielders-3);
+    let targetPasses = Number(cfg.baseTarget || 2)
+      + qualityAbove*Number(cfg.qualityCoefficient || 0.30)
+      + Math.max(0,qualityEdge)*Number(cfg.qualityEdgeCoefficient || 0.12)
+      + extraMids*Number(cfg.extraMidfielderCoefficient || 1.0);
+    if(liveInstruction === 'hold_result') targetPasses += Number(cfg.holdResultBonus || 6);
+    if(liveInstruction === 'lower_tempo') targetPasses += Number(cfg.scoreLowerBonus || 2) + 2;
+    if(scoreInstruction === 'lower') targetPasses += Number(cfg.scoreLowerBonus || 2);
+    if(build !== 'possession') targetPasses *= 0.72;
+    targetPasses = simClamp(targetPasses,0,Number(cfg.maxTarget || 26));
+    const securityBonus = simClamp(
+      qualityAbove*0.52 + Math.max(0,qualityEdge)*0.18 + extraMids*1.15 + (liveInstruction === 'hold_result' ? 2.2 : 0),
+      0,Number(cfg.maxPassSecurityBonus || 18)
+    );
+    return { active,targetPasses,passQuality,qualityEdge,midfielders,securityBonus,build,liveInstruction,scoreInstruction };
+  }
+  function continuousPossessionStreakWeightV981(state, profile, type, origin){
+    if(!profile?.active || Number(profile.targetPasses || 0) <= 0) return 1;
+    const streak = Math.max(0,Number(state.completedPassStreak || 0));
+    const depthRelief = simClamp(1 - Math.max(0,Number(origin?.x || 0)-75)/62,0.64,1);
+    const target = Math.max(1,Number(profile.targetPasses || 1)*depthRelief);
+    const ratio = simClamp(streak/target,0,1.70);
+    if(type === 'pass_short') return ratio < 1 ? 1.22 + (1-ratio)*0.92 : simClamp(1.00-(ratio-1)*0.88,0.55,1.00);
+    if(type === 'pass_long') return ratio < 1 ? 0.78 + ratio*0.24 : 1.02;
+    if(type === 'pass_through') return ratio < 1 ? 0.42 + ratio*0.50 : simClamp(1.18+(ratio-1)*2.10,1.18,2.45);
+    if(type === 'cross') return ratio < 1 ? 0.38 + ratio*0.48 : simClamp(1.08+(ratio-1)*1.80,1.08,2.20);
+    if(type === 'dribble') return ratio < 1 ? 0.70 + ratio*0.22 : simClamp(1.05+(ratio-1)*0.90,1.05,1.55);
+    if(type === 'shot'){
+      if(ratio < 1) return 0.055 + Math.pow(ratio,2.35)*0.63;
+      return simClamp(5.50 + (ratio-1)*15.00,5.50,13.00);
+    }
+    return 1;
+  }
   function continuousActionWeightV974(state, attackingPower, action, carrier, runtime={}){
     const type = action.type;
     const origin = continuousOriginForCarrierV974(state,carrier);
@@ -1988,11 +2066,14 @@
     if(['pass_through','cross','shot'].includes(type) || (type === 'dribble' && origin.x >= 50)){
       weight *= CONTINUOUS_MATCH_CONFIG_V974.attackIntentMultiplier;
     }
+    if(runtime.__possessionProfileV981) weight *= continuousPossessionStreakWeightV981(state,runtime.__possessionProfileV981,type,origin);
     return Math.max(0.001,weight);
   }
   function continuousChooseActionV974(state, attackingPower, defendingPower, carrier, runtime={}){
     const available = continuousAvailableActionsV974(state,attackingPower,defendingPower,carrier);
-    return continuousWeightedPickV974(state,available,action => continuousActionWeightV974(state,attackingPower,action,carrier,runtime));
+    const possessionProfile = continuousPossessionControlProfileV981(state,attackingPower,defendingPower,runtime);
+    const weightedRuntime = { ...runtime, __possessionProfileV981:possessionProfile };
+    return continuousWeightedPickV974(state,available,action => continuousActionWeightV974(state,attackingPower,action,carrier,weightedRuntime));
   }
   function continuousReceiverScoreV974(state, attackingPower, defendingPower, carrier, candidate, actionType){
     const origin = continuousOriginForCarrierV974(state,carrier);
@@ -2099,6 +2180,12 @@
     execution += ({ pass_short:18,pass_long:8,pass_through:4,cross:4,dribble:3 })[actionType] || 0;
     execution += Number(pitchEffectV2(state.context?.pitch).passDelta || 0) * (actionType === 'shot' ? 0.10 : 0.35);
     execution *= 1 + continuousLocalAdvantagePctV974(state,attackingPower.clubId);
+    const possessionProfile = continuousPossessionControlProfileV981(state,attackingPower,defendingPower,runtime);
+    if(possessionProfile.active){
+      if(actionType === 'pass_short') execution += Number(possessionProfile.securityBonus || 0);
+      else if(actionType === 'pass_long') execution += Number(possessionProfile.securityBonus || 0)*0.30;
+      else if(actionType === 'pass_through') execution += Number(possessionProfile.securityBonus || 0)*0.12;
+    }
     if(actionType === 'pass_short') execution -= Math.max(0,distance-18)*0.22;
     if(actionType === 'pass_long') execution -= Math.max(0,distance-38)*0.18;
     if(actionType === 'pass_through') execution -= Math.max(0,distance-34)*0.16;
@@ -2155,6 +2242,13 @@
       return { ...base, success:Boolean(shot.goal), shot, possessionChanged:!shot.goal, reason:shot.goal?'goal':shot.blocked?'shot_blocked':shot.onTarget?'shot_saved':'shot_off_target', executionAbility:continuousExecutionAbilityV974('shot',carrier.player) };
     }
     const duel = continuousDuelResultV974(state,attackingPower,defendingPower,carrier,target,type,context,runtime);
+    const possessionProfile = continuousPossessionControlProfileV981(state,attackingPower,defendingPower,runtime);
+    if(duel.success && ['pass_short','pass_long'].includes(type) && possessionProfile.active){
+      const technicalErrorChance = simClamp(0.115 - Number(possessionProfile.passQuality || 55)*0.00105 - Math.max(0,Number(possessionProfile.qualityEdge || 0))*0.00035,0.012,0.085);
+      if(continuousRandomV974(state) < technicalErrorChance){
+        return { ...base, success:false, possessionChanged:true, reason:'technical_error', executionAbility:duel.executionAbility, attackPower:duel.attackPower, defensePower:duel.defensePower };
+      }
+    }
     const foulChance = continuousFoulChanceV974(defendingPower,context,type);
     if(!duel.success && context.defender && continuousRandomV974(state) < foulChance){
       return { ...base, success:false, foul:true, possessionChanged:false, reason:'foul_won', executionAbility:duel.executionAbility, attackPower:duel.attackPower, defensePower:duel.defensePower };
@@ -2190,6 +2284,8 @@
     if(result.success){
       if(['pass_short','pass_long','pass_through','cross'].includes(result.type) && target){
         continuousSetCarrierV974(state,attackingPower.clubId,target,'possession');
+        state.completedPassStreak = Math.max(0,Number(state.completedPassStreak || 0)) + 1;
+        result.completedPassStreakAfter = Number(state.completedPassStreak || 0);
         state.lastCompletedPass = { phase:state.phase,clubId:attackingPower.clubId,actorId:carrier.playerId,targetId:target.playerId,type:result.type };
         if(Number(target.x) < Number(context.origin.x)-8) state.counterPhasesLeft = 0;
       }else if(result.type === 'dribble'){
@@ -2268,10 +2364,10 @@
   }
   function continuousCreateMatchStateV974(match, homePower, awayPower, context){
     const state = {
-      version:'V9.79', phase:0,totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:0,
+      version:'V9.81', phase:0,totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:0,
       homeId:Number(match.homeId),awayId:Number(match.awayId),
       possessionTeamId:null,ballCarrierId:null,ballSlot:null,previousBallSlot:null,ballPosition:null,
-      possessionStartPhase:0,transitionType:'kickoff',counterPhasesLeft:0,lastAction:null,lastResult:null,lastCompletedPass:null,
+      possessionStartPhase:0,transitionType:'kickoff',counterPhasesLeft:0,completedPassStreak:0,lastAction:null,lastResult:null,lastCompletedPass:null,
       score:{home:0,away:0},context:context || {},rngState:continuousSeedForMatchV974(match),technicalLog:[]
     };
     state.possessionTeamId = continuousRandomV974(state) < 0.5 ? state.homeId : state.awayId;
@@ -2295,6 +2391,7 @@
     const target = continuousChooseTargetV974(state,attackingPower,defendingPower,carrier,action);
     const context = continuousDefensiveContextV974(state,attackingPower,defendingPower,carrier,target,action.type);
     const result = continuousResolveActionV974(state,attackingPower,defendingPower,carrier,action,target,context,runtime);
+    result.completedPassStreakBefore = Number(state.completedPassStreak || 0);
     result.phase = Number(state.phase || 0);
     result.clockSeconds = Number(state.clockSeconds || 0);
     continuousApplyActionV974(state,attackingPower,defendingPower,carrier,target,context,result);
@@ -2311,13 +2408,13 @@
     return { home:continuousBlockStatsV974(accumulator,'home'), away:continuousBlockStatsV974(accumulator,'away'), goals:accumulator.goals, keySaves:accumulator.keySaves, errors:accumulator.errors, results:accumulator.results, phases:accumulator.phaseCount };
   }
   function continuousEngineSummaryV974(state){
-    return { version:'V9.79',phases:Number(state?.phase || 0),totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:Number(state?.clockSeconds || 0),possessionTeamId:Number(state?.possessionTeamId || 0),ballCarrierId:Number(state?.ballCarrierId || 0),ballSlot:Number(state?.ballSlot ?? -1),transitionType:String(state?.transitionType || ''),rngState:Number(state?.rngState || 0)>>>0,technicalLog:CONTINUOUS_MATCH_CONFIG_V974.technicalLog ? (state?.technicalLog || []).slice() : [] };
+    return { version:'V9.81',phases:Number(state?.phase || 0),totalPhases:CONTINUOUS_MATCH_CONFIG_V974.totalPhases,clockSeconds:Number(state?.clockSeconds || 0),possessionTeamId:Number(state?.possessionTeamId || 0),ballCarrierId:Number(state?.ballCarrierId || 0),ballSlot:Number(state?.ballSlot ?? -1),transitionType:String(state?.transitionType || ''),completedPassStreak:Number(state?.completedPassStreak || 0),rngState:Number(state?.rngState || 0)>>>0,technicalLog:CONTINUOUS_MATCH_CONFIG_V974.technicalLog ? (state?.technicalLog || []).slice() : [] };
   }
   function debugContinuousCoreV974(match,home,away,context={}){
     const state = continuousCreateMatchStateV974(match,home,away,context);
     const totals = { home:emptyStats(),away:emptyStats(),goals:[],keySaves:[],results:[] };
     for(let minute=1;minute<=90 && state.phase<CONTINUOUS_MATCH_CONFIG_V974.totalPhases;minute++){
-      const core = continuousRunMinuteV974(state,home,away,{});
+      const core = continuousRunMinuteV974(state,home,away,context?.runtime || {});
       mergeBlockStats(totals.home,core.home);
       mergeBlockStats(totals.away,core.away);
       totals.goals.push(...(core.goals || []));
@@ -2709,7 +2806,7 @@
     const result = {
       ...session.match,
       played:true,
-      engine:session.continuousV974 ? 'continuous-540-v979' : 'live-tactical',
+      engine:session.continuousV974 ? 'continuous-540-v981' : 'live-tactical',
       starterIdsHome,
       starterIdsAway,
       homeGoals:session.homeGoals,
@@ -2910,7 +3007,7 @@
     const starterIdsAway = away.lineup.map(p=>p.id);
     const playedIdsHome = [...new Set(starterIdsHome.concat(substitutions.filter(item=>Number(item.clubId)===Number(match.homeId)).map(item=>item.inId)))];
     const playedIdsAway = [...new Set(starterIdsAway.concat(substitutions.filter(item=>Number(item.clubId)===Number(match.awayId)).map(item=>item.inId)))];
-    const playerStatsResult = { ...match, played:true, engine:'continuous-540-v979', homeGoals, awayGoals, goals, cards, injuries, substitutions, keySaves:incidents.keySaves, errors:incidents.errors, starterIdsHome, starterIdsAway, playedIdsHome, playedIdsAway, matchStats, matchContext, continuousEngine:continuousEngineSummaryV974(state) };
+    const playerStatsResult = { ...match, played:true, engine:'continuous-540-v981', homeGoals, awayGoals, goals, cards, injuries, substitutions, keySaves:incidents.keySaves, errors:incidents.errors, starterIdsHome, starterIdsAway, playedIdsHome, playedIdsAway, matchStats, matchContext, continuousEngine:continuousEngineSummaryV974(state) };
     if(!match.friendly){
       applyMatchCohesionResult(playerStatsResult, substitutions, cards);
       applyResultToTables(playerStatsResult, homeGoals, awayGoals);

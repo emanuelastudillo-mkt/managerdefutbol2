@@ -469,3 +469,63 @@
   background:rgba(100,116,139,.14);
   border:1px solid rgba(148,163,184,.24);
 }
+
+
+/* V9.81 · relato compacto y ampliable */
+.live-v517 .live-commentary-head-actions{
+  display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;
+}
+.live-v517 .live-commentary-history-card:not(.is-expanded) .live-event.commentary{
+  max-height:42px;
+  overflow:hidden;
+  align-items:start;
+}
+.live-v517 .live-commentary-history-card:not(.is-expanded) .live-event.commentary strong{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+  line-height:1.18;
+  max-height:2.36em;
+}
+.live-v517 .live-commentary-history-card.is-expanded{
+  position:fixed;
+  inset:10px;
+  z-index:45;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  gap:8px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(8,15,28,.985);
+  border:1px solid rgba(148,163,184,.28);
+  box-shadow:0 18px 70px rgba(0,0,0,.55);
+}
+.live-v517 .live-commentary-history-card.is-expanded .live-events-list{
+  max-height:none;
+  height:100%;
+  overflow:auto;
+  align-content:start;
+  padding-right:6px;
+}
+.live-v517 .live-commentary-history-card.is-expanded .live-event.commentary{
+  grid-template-columns:54px 30px minmax(0,1fr) 30px;
+  gap:9px;
+  min-height:38px;
+  padding:7px 9px;
+  align-items:center;
+}
+.live-v517 .live-commentary-history-card.is-expanded .live-event.commentary strong{
+  font-size:13px;
+  line-height:1.35;
+}
+.live-v517 .live-commentary-history-card.is-expanded .live-commentary-player{font-size:inherit;}
+.live-v517 .live-commentary-history-card.is-expanded .live-event-time{font-size:11px;}
+.live-v517 .live-commentary-history-card.is-expanded .live-event-badge .club-badge{width:22px;height:22px;}
+.live-v517 .live-commentary-history-card.is-expanded .live-action-ending{font-size:16px;}
+.live-player-quick-overlay{z-index:55;}
+@media (max-width:760px){
+  .live-v517 .live-commentary-history-card.is-expanded{inset:4px;padding:8px;}
+  .live-v517 .live-commentary-history-card.is-expanded .live-event.commentary{grid-template-columns:46px 26px minmax(0,1fr) 24px;gap:6px;}
+  .live-v517 .live-commentary-history-card.is-expanded .live-event.commentary strong{font-size:11px;}
+}

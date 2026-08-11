@@ -4,7 +4,7 @@
   Nota: si ya existe una partida guardada, algunos cambios sólo aplican a nuevas partidas o a nuevos eventos.
 */
 window.GAME_CONFIG = {
-  version: 'V9.80',
+  version: 'V9.81',
   marca: {
     nombre: 'Una vida de manager',
     nombreCorto: 'Una vida de manager',
@@ -1175,7 +1175,7 @@ window.GAME_CONFIG = {
   },
 
   simulador: {
-    // V9.79 · Motor de posesión continua. La interfaz sigue avanzando por minuto,
+    // V9.81 · Motor de posesión continua con control prolongado y 540 fases.
     // pero cada partido reglamentario procesa exactamente 540 fases internas de 10 segundos.
     motorContinuoV974: {
       activo: true,
@@ -1206,6 +1206,21 @@ window.GAME_CONFIG = {
       multiplicadorIntencionAtaque: 1.60,
       // Compensa el mayor volumen de remates para sostener un rango de goles similar al anterior.
       multiplicadorConversionVolumen: 0.60,
+      // V9.81 · La posesión puede convertirse en una herramienta defensiva real.
+      // La duración objetivo depende de calidad de pase, superioridad técnica,
+      // densidad de mediocampo y las instrucciones Posesión / Cuidar resultado.
+      controlPosesion: {
+        activo: true,
+        calidadMinima: 68,
+        pasesObjetivoBase: 2,
+        coefCalidad: 0.30,
+        coefVentajaCalidad: 0.12,
+        coefMedioExtra: 1.00,
+        bonusCuidarResultado: 6,
+        bonusBajarRitmoResultado: 2,
+        pasesObjetivoMax: 26,
+        bonusSeguridadPaseMax: 18
+      },
       ventajaLocalMaxPct: 0.08,
       azarPuja: 13
     },
@@ -1526,8 +1541,8 @@ window.GAME_CONFIG = {
     fasesSimulacionPartido: 90,
     duracionSimulacionPartidoMs: 270000,
     duracionMinimaFaseSimulacionMs: 3000,
-    // Simulador vivo: demora entre minutos cuando se usa el botón Auto.
-    simulacionVivaAutoMs: 1680,
+    // Simulador vivo: demora entre cada minuto de reproducción continua.
+    simulacionVivaAutoMs: 3360,
     relatoMantenerFases: 1,
     // Animación para acciones que pueden salir bien o fallar: tratar lesionados, charla motivacional, etc.
     accionesFeedbackCargaMs: 750,

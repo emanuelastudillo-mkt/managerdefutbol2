@@ -14,6 +14,7 @@
   let liveHighlightedHistory = [];
   let liveInspectPlayerId = 0;
   let liveInspectResumeAfterClose = false;
+  let liveCommentaryExpanded = false;
   let liveSelectedInstruction = 'none';
   let liveSelectedStarterId = 0;
   let liveSelectedBenchId = 0;
@@ -82,7 +83,7 @@
       return;
     }
     if(livePaused){ syncLiveClockDom(); return; }
-    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 1680));
+    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 3360));
     const remaining = Math.max(1, target - liveDisplayedClockSeconds);
     const delay = Math.max(8, Math.min(40, Math.floor(autoDelay / Math.max(1, remaining))));
     liveClockTimer = setInterval(() => {
@@ -653,8 +654,8 @@
       <div class="live-v512-grid">
         ${liveTeamPanel('home')}
         <section class="live-center-stack">
-          <div class="card inner live-events-card live-commentary-history-card">
-            <div class="live-card-head"><h3>Relato en vivo</h3><span class="muted small">historial · últimos arriba</span></div>
+          <div class="card inner live-events-card live-commentary-history-card ${liveCommentaryExpanded ? 'is-expanded' : ''}">
+            <div class="live-card-head"><h3>Relato en vivo</h3><div class="live-commentary-head-actions"><span class="muted small">historial · últimos arriba</span><button type="button" class="ghost mini" id="liveCommentaryExpandBtn" aria-pressed="${liveCommentaryExpanded ? 'true' : 'false'}">${liveCommentaryExpanded ? 'Reducir' : 'Pantalla completa'}</button></div></div>
             <div class="live-events-list live-commentary-history-list">${liveCommentaryHistoryMarkup()}</div>
           </div>
           ${compareStatsCard()}
@@ -829,6 +830,10 @@
       liveSelectedStarterId = 0; liveSelectedBenchId = 0; renderLiveMatch();
     }));
     document.querySelector('#liveCloseBoardBtn')?.addEventListener('click', () => { liveTacticOpen = false; liveSelectedBoardSlot = -1; renderLiveMatch(); });
+    document.querySelector('#liveCommentaryExpandBtn')?.addEventListener('click', () => {
+      liveCommentaryExpanded = !liveCommentaryExpanded;
+      renderLiveMatch();
+    });
     document.querySelector('#liveTacticBtn')?.addEventListener('click', () => { liveTacticOpen = !liveTacticOpen; livePaused = true; clearTimeout(liveAutoTimer); liveSelectedBoardSlot = -1; renderLiveMatch(); });
     document.querySelector('#liveInstantFinishBtn')?.addEventListener('click', () => { finishLiveMatchInstantlyFromUi(); });
     document.querySelector('#livePauseBtn')?.addEventListener('click', () => {
@@ -844,20 +849,20 @@
       window.__activeCompetitionSuspensionMatch = null;
       closeModal();
       if(typeof liveOptions?.onComplete === 'function') liveOptions.onComplete(result);
-      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false;
+      liveSession = null; liveOptions = null; liveState = null; livePaused = true; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false;
       resetLiveSelections(); clearTimeout(liveAutoTimer); stopLiveClockAnimation(); liveDisplayedClockSeconds = 0;
     });
   }
   function runAutoMode(){
     clearTimeout(liveAutoTimer);
     if(livePaused || !liveSession || liveState?.finished) return;
-    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 1680));
+    const autoDelay = Math.max(300, Number(window.GAME_CONFIG?.ui?.simulacionVivaAutoMs || 3360));
     liveAutoTimer = setTimeout(() => { simulateNextBlockFromUi(); runAutoMode(); }, autoDelay);
   }
   function start(match, options={}){
     if(!match || !window.Simulator20?.createLiveMatchSession) return false;
     clearTimeout(liveAutoTimer);
-    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; resetLiveSelections();
+    liveOptions = options || {}; livePaused = false; liveSelectedInstruction = 'none'; livePendingSubstitutions = []; liveHalftimePaused = false; liveTacticOpen = false; liveSelectedBoardSlot = -1; liveCommentaryHistory = []; liveLastCommentaryKey = ''; livePendingActionNarrations = []; liveSeenActionNarrationKeys = new Set(); liveHighlightedHistory = []; liveInspectPlayerId = 0; liveInspectResumeAfterClose = false; liveCommentaryExpanded = false; resetLiveSelections();
     liveSession = typeof withCompetitionSuspensionContext === 'function'
       ? withCompetitionSuspensionContext(match, () => window.Simulator20.createLiveMatchSession(match))
       : window.Simulator20.createLiveMatchSession(match);
